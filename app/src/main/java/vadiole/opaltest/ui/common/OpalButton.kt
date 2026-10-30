@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,7 +60,6 @@ fun OpalButton(
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .minimumInteractiveComponentSize()
             .semantics { if (loading) stateDescription = busyDescription }
             .height(metrics.height)
             .alpha(if (enabled) 1f else DISABLED_ALPHA)
