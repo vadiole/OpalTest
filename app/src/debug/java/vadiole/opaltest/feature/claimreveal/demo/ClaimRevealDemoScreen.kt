@@ -53,8 +53,8 @@ import vadiole.opaltest.feature.claimreveal.RevealContent
 import vadiole.opaltest.feature.claimreveal.RevealSound
 import vadiole.opaltest.feature.claimreveal.claimRevealSource
 import vadiole.opaltest.feature.claimreveal.rememberClaimRevealState
-import vadiole.opaltest.feature.claimreveal.revealImage
-import vadiole.opaltest.feature.claimreveal.thumbnail
+import vadiole.opaltest.feature.referral.revealImage
+import vadiole.opaltest.feature.referral.thumbnail
 import vadiole.opaltest.ui.common.OpalButton
 import vadiole.opaltest.ui.common.OpalButtonSize
 import vadiole.opaltest.ui.common.OpalButtonStyle
