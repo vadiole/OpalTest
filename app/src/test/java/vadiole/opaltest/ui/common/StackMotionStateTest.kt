@@ -13,6 +13,7 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,7 +29,6 @@ class StackMotionStateTest {
     private val size = Size(1000f, 2000f)
     private val offset = 96f
     private val event = NavigationEvent(swipeEdge = NavigationEvent.EDGE_LEFT, progress = 0.5f, touchY = 100f)
-    private val startEvent = NavigationEvent(swipeEdge = NavigationEvent.EDGE_LEFT, progress = 0f, touchY = 100f)
 
     private fun TestScope.frameScope(): CoroutineScope {
         val clock = object : MonotonicFrameClock {
@@ -61,28 +61,17 @@ class StackMotionStateTest {
     }
 
     @Test
-    fun `back gesture during push ends the push and jumps to the gesture pose`() = runTest {
-        val (motion, _) = pushed()
-        advanceTimeBy(100)
-        motion.onGesture(startEvent, stack)
-        assertEquals(StackMotion.None, motion.motion)
-        assertEquals(BackPhase.Gesture, motion.phase)
-        val top = motion.pose("referral")
-        assertEquals(0f, top.translationX, 0.01f)
-        assertEquals(1f, top.alpha, 0.01f)
-        assertEquals(-offset, motion.pose("console").translationX, 0.01f)
-        advanceTimeBy(1_000)
-        assertEquals(0f, motion.pose("referral").translationX, 0.01f)
-    }
-
-    @Test
-    fun `button pop animates and keeps the popped screen hidden`() = runTest {
+    fun `button back plays the pop and keeps the popped screen hidden`() = runTest {
         val (motion, scope) = pushed()
         advanceTimeBy(1_000)
+        motion.onBackCompleted()
         motion.onStack(root, scope)
         assertEquals(StackMotion.Pop, motion.motion)
+        assertTrue(motion.isTransitioning)
+        assertEquals(0f, motion.pose("console").translationX + offset, 0.01f)
         advanceTimeBy(1_000)
         assertEquals(StackMotion.None, motion.motion)
+        assertFalse(motion.isTransitioning)
         assertEquals(0f, motion.pose("referral").alpha, 0.01f)
     }
 
@@ -96,37 +85,21 @@ class StackMotionStateTest {
         assertEquals(StackMotion.None, motion.motion)
         motion.onRelease(scope)
         assertEquals(BackPhase.Commit, motion.phase)
+        assertTrue(motion.isTransitioning)
         advanceTimeBy(1_000)
         assertEquals(BackPhase.Idle, motion.phase)
-    }
-
-    @Test
-    fun `push during commit blends from the leaving pose`() = runTest {
-        val (motion, scope) = pushed()
-        advanceTimeBy(1_000)
-        motion.onGesture(event, stack)
-        motion.onBackCompleted()
-        motion.onStack(root, scope)
-        motion.onRelease(scope)
-        val leaving = motion.pose("referral")
-        motion.onStack(stack, scope)
-        assertEquals(StackMotion.Blend, motion.motion)
-        assertEquals(BackPhase.Idle, motion.phase)
-        val start = motion.pose("referral")
-        assertEquals(leaving.scale, start.scale, 0.01f)
-        assertEquals(leaving.translationX, start.translationX, 0.01f)
-        assertTrue(start.scale < 1f)
-        advanceTimeBy(1_000)
-        assertEquals(1f, motion.pose("referral").scale, 0.01f)
-        assertEquals(1f, motion.pose("referral").alpha, 0.01f)
+        assertFalse(motion.isTransitioning)
     }
 
     @Test
     fun `released gesture without completion cancels`() = runTest {
         val (motion, scope) = pushed()
+        advanceTimeBy(1_000)
         motion.onGesture(event, stack)
+        assertFalse(motion.isTransitioning)
         motion.onRelease(scope)
         assertEquals(BackPhase.Cancel, motion.phase)
+        assertTrue(motion.isTransitioning)
         advanceTimeBy(1_000)
         assertEquals(BackPhase.Idle, motion.phase)
     }
@@ -144,14 +117,26 @@ class StackMotionStateTest {
     }
 
     @Test
-    fun `gesture started before settle finishes takes over`() = runTest {
-        val motion = StackMotionState()
+    fun `back gestures are ignored while a push runs`() = runTest {
+        val (motion, _) = pushed()
+        assertTrue(motion.isTransitioning)
         motion.onGesture(event, stack)
-        motion.onRelease(frameScope())
-        runCurrent()
-        motion.onGesture(event, stack)
+        assertEquals(BackPhase.Idle, motion.phase)
         advanceTimeBy(1_000)
+        assertFalse(motion.isTransitioning)
+        motion.onGesture(event, stack)
         assertEquals(BackPhase.Gesture, motion.phase)
-        assertTrue(motion.pose("referral").scale < 1f)
+    }
+
+    @Test
+    fun `gesture owned by the blocker is ignored until it ends`() = runTest {
+        val (motion, _) = pushed()
+        advanceTimeBy(1_000)
+        motion.gestureBlocked = true
+        motion.onGesture(event, stack)
+        assertEquals(BackPhase.Idle, motion.phase)
+        motion.gestureBlocked = false
+        motion.onGesture(event, stack)
+        assertEquals(BackPhase.Gesture, motion.phase)
     }
 }

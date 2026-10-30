@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
@@ -27,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Size
@@ -41,6 +43,9 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavEntryDecorator
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigationevent.NavigationEvent
+import androidx.navigationevent.NavigationEventDispatcher
+import androidx.navigationevent.NavigationEventHandler
+import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.NavigationEventTransitionState
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import kotlin.math.abs
@@ -54,6 +59,8 @@ import vadiole.opaltest.ui.theme.OpalMotion
 
 @Stable
 class StackTransitions<T : Any> internal constructor(private val motion: StackMotionState) {
+
+    val isTransitioning: Boolean get() = motion.isTransitioning
 
     val decorator: NavEntryDecorator<T> = NavEntryDecorator { entry ->
         val keyed = remember(entry) {
@@ -84,6 +91,7 @@ internal fun <T : Any> rememberStackTransitions(backStack: List<T>, motion: Stac
         motion.onStack(stack, scope)
     }
     val dispatcher = LocalNavigationEventDispatcherOwner.current?.navigationEventDispatcher
+    if (dispatcher != null) BlockBackWhileTransitioning(dispatcher, motion)
     val currentBackStack by rememberUpdatedState(backStack)
     LaunchedEffect(motion, dispatcher) {
         val settleScope = this
@@ -100,6 +108,38 @@ internal fun <T : Any> rememberStackTransitions(backStack: List<T>, motion: Stac
         }
     }
     return remember(motion) { StackTransitions(motion) }
+}
+
+@Composable
+private fun BlockBackWhileTransitioning(dispatcher: NavigationEventDispatcher, motion: StackMotionState) {
+    val blocker = remember(motion) { TransitionBackBlocker(motion) }
+    DisposableEffect(dispatcher, blocker) {
+        dispatcher.addHandler(blocker, NavigationEventDispatcher.PRIORITY_OVERLAY)
+        onDispose { blocker.remove() }
+    }
+    LaunchedEffect(blocker) {
+        snapshotFlow { motion.isTransitioning }.collect { blocker.isBackEnabled = it }
+    }
+}
+
+private class TransitionBackBlocker(private val motion: StackMotionState) :
+    NavigationEventHandler<NavigationEventInfo>(
+        NavigationEventInfo.None,
+        isBackEnabled = false,
+        isForwardEnabled = false
+    ) {
+
+    override fun onBackStarted(event: NavigationEvent) {
+        motion.gestureBlocked = true
+    }
+
+    override fun onBackCompleted() {
+        motion.gestureBlocked = false
+    }
+
+    override fun onBackCancelled() {
+        motion.gestureBlocked = false
+    }
 }
 
 @Composable
@@ -149,7 +189,7 @@ private fun displayCornerRadius(view: View, density: Density): Float =
 
 internal enum class BackPhase { Idle, Gesture, Commit, Cancel }
 
-internal enum class StackMotion { None, Push, Pop, Blend }
+internal enum class StackMotion { None, Push, Pop }
 
 internal class Pose(
     val scale: Float = 1f,
@@ -167,10 +207,13 @@ private val HiddenPose = Pose(alpha = 0f)
 @Stable
 internal class StackMotionState(private val emphasized: Easing = OpalMotion.Emphasized) {
     var density: Density = Density(1f)
+    var gestureBlocked = false
     var phase by mutableStateOf(BackPhase.Idle)
         private set
     var motion by mutableStateOf(StackMotion.None)
         private set
+    val isTransitioning: Boolean
+        get() = motion != StackMotion.None || phase == BackPhase.Commit || phase == BackPhase.Cancel
     private var progress by mutableFloatStateOf(0f)
     private var touchY by mutableFloatStateOf(0f)
     private var topKey: Any? by mutableStateOf(null)
@@ -187,13 +230,9 @@ internal class StackMotionState(private val emphasized: Easing = OpalMotion.Emph
     private var motionTop: Any? by mutableStateOf(null)
     private var motionPrevious: Any? by mutableStateOf(null)
     private var hiddenKey: Any? by mutableStateOf(null)
-    private var blendTopFrom = IdentityPose
-    private var blendPreviousFrom = IdentityPose
     private var motionSession = 0
     private var motionJob: Job? = null
     private var lastStack: List<Any>? = null
-    private var lastSize = Size.Zero
-    private var lastCornerRadius = 0f
 
     fun onStack(stack: List<Any>, scope: CoroutineScope) {
         val old = lastStack
@@ -201,49 +240,23 @@ internal class StackMotionState(private val emphasized: Easing = OpalMotion.Emph
         if (old == null || old == stack || stack.isEmpty()) return
         if (hiddenKey in stack) hiddenKey = null
         val newTop = stack.last()
-        val newPrevious = stack.getOrNull(stack.lastIndex - 1)
         val oldTop = old.lastOrNull()
-        when {
-            stack.size < old.size -> {
-                if (pendingCommitPop) {
-                    pendingCommitPop = false
-                    return
-                }
-                endBack()
-                endMotion()
-                if (oldTop != null && oldTop !in stack) hiddenKey = oldTop
-                startMotion(StackMotion.Pop, oldTop, newTop, scope)
+        if (stack.size < old.size) {
+            if (pendingCommitPop) {
+                pendingCommitPop = false
+                return
             }
-
-            newTop != oldTop -> {
-                val leaving = when {
-                    phase == BackPhase.Commit -> topKey
-                    motion == StackMotion.Pop -> motionTop
-                    else -> null
-                }
-                if (leaving != null) {
-                    val leavingPrevious = if (phase == BackPhase.Commit) previousKey else motionPrevious
-                    blendTopFrom = pose(leaving, lastSize, lastCornerRadius)
-                    blendPreviousFrom = leavingPrevious?.let { pose(it, lastSize, lastCornerRadius) } ?: IdentityPose
-                    hiddenKey = leaving.takeIf { it != newTop }
-                    endBack()
-                    endMotion()
-                    startMotion(StackMotion.Blend, newTop, newPrevious, scope)
-                } else {
-                    endBack()
-                    endMotion()
-                    startMotion(StackMotion.Push, newTop, newPrevious, scope)
-                }
-            }
+            if (oldTop != null && oldTop !in stack) hiddenKey = oldTop
+            startMotion(StackMotion.Pop, oldTop, newTop, scope)
+        } else if (newTop != oldTop) {
+            startMotion(StackMotion.Push, newTop, stack.getOrNull(stack.lastIndex - 1), scope)
         }
     }
 
     fun onGesture(event: NavigationEvent, backStack: List<Any>) {
+        if (gestureBlocked) return
         if (phase != BackPhase.Gesture) {
-            if (backStack.size <= 1) return
-            endMotion()
-            settleJob?.cancel()
-            settleJob = null
+            if (backStack.size <= 1 || isTransitioning) return
             session++
             completed = false
             pendingCommitPop = false
@@ -289,20 +302,11 @@ internal class StackMotionState(private val emphasized: Easing = OpalMotion.Emph
         }
     }
 
-    private fun endBack() {
+    private fun startMotion(kind: StackMotion, top: Any?, previous: Any?, scope: CoroutineScope) {
         settleJob?.cancel()
         settleJob = null
         phase = BackPhase.Idle
-    }
-
-    private fun endMotion() {
         motionJob?.cancel()
-        motionJob = null
-        motionSession++
-        motion = StackMotion.None
-    }
-
-    private fun startMotion(kind: StackMotion, top: Any?, previous: Any?, scope: CoroutineScope) {
         val id = ++motionSession
         motionTop = top
         motionPrevious = previous
@@ -320,8 +324,6 @@ internal class StackMotionState(private val emphasized: Easing = OpalMotion.Emph
     }
 
     fun pose(key: Any, size: Size, cornerRadius: Float): Pose {
-        lastSize = size
-        lastCornerRadius = cornerRadius
         if (phase != BackPhase.Idle) {
             if (key == topKey) return backPose(top = true, size, cornerRadius)
             if (key == previousKey) return backPose(top = false, size, cornerRadius)
@@ -350,27 +352,6 @@ internal class StackMotionState(private val emphasized: Easing = OpalMotion.Emph
                 Pose(translationX = offset * e, alpha = 1f - e)
             } else {
                 Pose(translationX = -offset * (1f - e))
-            }
-
-            StackMotion.Blend -> if (top) {
-                val from = blendTopFrom
-                val scale = lerp(from.scale, 1f, e)
-                Pose(
-                    scale = scale,
-                    translationX = lerp(from.translationX, 0f, e),
-                    translationY = lerp(from.translationY, 0f, e),
-                    alpha = lerp(from.alpha, 1f, e),
-                    cornerRadius = from.cornerRadius * from.scale / scale
-                )
-            } else {
-                val from = blendPreviousFrom
-                val scale = lerp(from.scale, 1f, e)
-                Pose(
-                    scale = scale,
-                    translationX = lerp(from.translationX, -offset, e),
-                    translationY = lerp(from.translationY, 0f, e),
-                    scrimAlpha = from.scrimAlpha * (1f - e)
-                )
             }
         }
     }
@@ -426,6 +407,4 @@ internal class StackMotionState(private val emphasized: Easing = OpalMotion.Emph
 
     private fun fadeGate(t: Float): Float =
         ((t - OpalMotion.SCREEN_FADE_IN_DELAY) / OpalMotion.SCREEN_FADE_IN_DURATION).coerceIn(0f, 1f)
-
-    private fun lerp(from: Float, to: Float, fraction: Float) = from + (to - from) * fraction
 }

@@ -23,13 +23,19 @@ data object ReferralRoute : NavKey
 fun AppNavigation(modifier: Modifier = Modifier) {
     val backStack = rememberNavBackStack(ConsoleRoute)
     val transitions = rememberStackTransitions(backStack)
+    val navigate: (NavKey) -> Unit = { route ->
+        if (!transitions.isTransitioning && backStack.lastOrNull() != route) backStack.add(route)
+    }
+    val navigateBack: () -> Unit = {
+        if (!transitions.isTransitioning && backStack.size > 1) {
+            transitions.onBackCompleted()
+            backStack.removeAt(backStack.lastIndex)
+        }
+    }
     NavDisplay(
         backStack = backStack,
         modifier = modifier,
-        onBack = {
-            transitions.onBackCompleted()
-            backStack.removeLastOrNull()
-        },
+        onBack = navigateBack,
         entryDecorators = listOf(
             rememberSaveableStateHolderNavEntryDecorator(),
             rememberViewModelStoreNavEntryDecorator(),
@@ -40,7 +46,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
         predictivePopTransitionSpec = { transitions.hold() },
         entryProvider = entryProvider {
             entry<ConsoleRoute> {
-                ConsoleScreen(onOpenReferrals = { backStack.add(ReferralRoute) })
+                ConsoleScreen(onOpenReferrals = { navigate(ReferralRoute) })
             }
             entry<ReferralRoute> {
                 ReferralScreen()
