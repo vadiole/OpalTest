@@ -4,6 +4,9 @@ import android.graphics.Bitmap
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
@@ -71,6 +74,25 @@ class ReferralScreenshotTest {
     fun loadingLandscapeNarrow() = capture("referral_loading_landscape_narrow", ReferralState.Loading)
 
     @Test
+    @Config(qualifiers = "w732dp-h412dp-xxhdpi")
+    fun landscapeLongInviter() = capture(
+        "referral_landscape_long_inviter",
+        ReferralState.Ready(previewProgram().copy(invitedBy = LONG_INVITER))
+    )
+
+    @Test
+    @Config(qualifiers = "w874dp-h330dp-xxhdpi")
+    fun landscapeBarInsets() = captureFittingStartPane("referral_landscape_bar_insets")
+
+    @Test
+    @Config(qualifiers = "w915dp-h340dp-xxhdpi")
+    fun landscapeWideBarInsets() = captureFittingStartPane("referral_landscape_wide_bar_insets")
+
+    @Test
+    @Config(qualifiers = "w732dp-h340dp-xxhdpi")
+    fun landscapeNarrowBarInsets() = captureFittingStartPane("referral_landscape_narrow_bar_insets")
+
+    @Test
     @Config(qualifiers = "w1280dp-h800dp-xhdpi")
     fun loadingTablet() = capture("referral_loading_tablet", ReferralState.Loading)
 
@@ -89,6 +111,11 @@ class ReferralScreenshotTest {
     @Test
     @Config(qualifiers = "w320dp-h1861dp-xxhdpi", fontScale = 2f)
     fun narrowLargeFont() = capture("referral_narrow_large_font", ReferralState.Ready(previewProgram()))
+
+    private fun captureFittingStartPane(name: String) {
+        capture(name, ReferralState.Ready(previewProgram()))
+        compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.ScrollBy)).assertCountEquals(1)
+    }
 
     private fun capture(name: String, state: ReferralState) {
         compose.mainClock.autoAdvance = false

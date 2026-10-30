@@ -13,5 +13,6 @@ internal object ReferralDimens {
     val codeCellGap = 6.dp
     val tierArtworkSize = 100.dp
     val tierConnectorHeight = 32.dp
+    val compactInviteCardHeight = tierArtworkSize + OpalSpacing.small * 2
     val progressMaxWidth = 179.dp
 }
