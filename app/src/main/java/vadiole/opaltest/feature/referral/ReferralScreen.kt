@@ -3,9 +3,13 @@ package vadiole.opaltest.feature.referral
 import android.content.ClipData
 import android.content.Intent
 import android.content.res.Resources
+import android.os.SystemClock
 import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
@@ -15,8 +19,12 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -40,7 +48,6 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
@@ -51,17 +58,16 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Rect
@@ -137,7 +143,9 @@ import vadiole.opaltest.ui.common.OpalTopBlur
 import vadiole.opaltest.ui.common.SkeletonBlock
 import vadiole.opaltest.ui.common.SkeletonLine
 import vadiole.opaltest.ui.common.brushTint
+import vadiole.opaltest.ui.common.opalRipple
 import vadiole.opaltest.ui.common.outlineBorder
+import vadiole.opaltest.ui.common.pressFeedback
 import vadiole.opaltest.ui.common.rememberTopBlurVisibility
 import vadiole.opaltest.ui.theme.OpalLayout
 import vadiole.opaltest.ui.theme.OpalMotion
@@ -215,10 +223,15 @@ fun ReferralContent(
 ) {
     val title = stringResource(R.string.referral_title)
     val hazeState = rememberHazeState()
+    val twoPane = isTwoPane()
     val listState = rememberLazyListState()
     val headerState = rememberLazyListState()
+    val tiersState = rememberLazyListState()
     val listBlur by rememberTopBlurVisibility(listState)
     val headerBlur by rememberTopBlurVisibility(headerState)
+    val tiersBlur by rememberTopBlurVisibility(tiersState)
+    val skeletonListState = rememberScrollState()
+    val skeletonHeaderState = rememberScrollState()
     val program = state.program
     ClaimRevealHost(
         state = reveal,
@@ -234,25 +247,74 @@ fun ReferralContent(
                     .background(OpalTheme.colors.background)
             ) {
                 OpalGlow(Modifier.fillMaxWidth())
-                when {
-                    program != null -> Program(
-                        program = program,
-                        claimingTierId = state.claimingTierId,
-                        reveal = reveal,
-                        onIntent = onIntent,
-                        listState = listState,
-                        headerState = headerState
-                    )
+                val body = rememberBody(
+                    when {
+                        program != null -> Body.Program
+                        state.loadError != null -> Body.Error
+                        else -> Body.Loading
+                    }
+                )
+                LaunchedEffect(body) {
+                    when (body) {
+                        Body.Loading -> {
+                            skeletonListState.scrollTo(0)
+                            skeletonHeaderState.scrollTo(0)
+                        }
 
-                    state.loadError != null -> LoadError(onRetry = { onIntent(ReferralIntent.Retry) })
+                        Body.Program -> if (twoPane) {
+                            tiersState.scrollBy(skeletonListState.value.toFloat())
+                            headerState.scrollBy(skeletonHeaderState.value.toFloat())
+                        } else {
+                            listState.scrollBy(skeletonListState.value.toFloat())
+                        }
 
-                    else -> DelayedLoading()
+                        else -> Unit
+                    }
+                }
+                AnimatedContent(
+                    targetState = body,
+                    transitionSpec = {
+                        if (initialState == Body.Blank) {
+                            EnterTransition.None togetherWith ExitTransition.None using null
+                        } else {
+                            fadeIn(OpalMotion.CrossFade) togetherWith fadeOut(OpalMotion.CrossFade) using null
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                    label = "body"
+                ) {
+                    when (it) {
+                        Body.Program -> program?.let { program ->
+                            Program(
+                                program = program,
+                                claimingTierId = state.claimingTierId,
+                                reveal = reveal,
+                                onIntent = onIntent,
+                                twoPane = twoPane,
+                                listState = listState,
+                                headerState = headerState,
+                                tiersState = tiersState
+                            )
+                        }
+
+                        Body.Error -> LoadError(onRetry = { onIntent(ReferralIntent.Retry) })
+
+                        Body.Loading -> Loading(headerState = skeletonHeaderState, listState = skeletonListState)
+
+                        Body.Blank -> Unit
+                    }
                 }
             }
             OpalTopBlur(
                 state = hazeState,
-                visibility = { if (program != null) maxOf(listBlur, headerBlur) else 0f },
-                height = OpalTheme.spacing.small * 2 + OpalTheme.layout.iconButtonSize + OpalTheme.spacing.large
+                visibility = {
+                    when {
+                        program == null -> 0f
+                        twoPane -> maxOf(headerBlur, tiersBlur)
+                        else -> listBlur
+                    }
+                },
+                height = OpalTheme.spacing.small * 2 + OpalTheme.layout.iconButtonSize
             )
             OpalIconButton(
                 icon = R.drawable.ic_arrow_back,
@@ -296,11 +358,13 @@ private fun Program(
     claimingTierId: String?,
     reveal: ClaimRevealState,
     onIntent: (ReferralIntent) -> Unit,
+    twoPane: Boolean,
     listState: LazyListState,
     headerState: LazyListState,
+    tiersState: LazyListState,
     modifier: Modifier = Modifier
 ) {
-    if (isTwoPane()) {
+    if (twoPane) {
         Row(modifier.fillMaxSize()) {
             LazyColumn(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -315,7 +379,7 @@ private fun Program(
             LazyColumn(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 contentPadding = paneContentPadding(Pane.End),
-                state = listState,
+                state = tiersState,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
@@ -336,11 +400,13 @@ private fun Program(
     }
 }
 
+private enum class HeaderItem { Invite, Code, Share }
+
 private fun LazyListScope.programHeader(program: ReferralProgram, onIntent: (ReferralIntent) -> Unit) {
-    item(key = "invite") {
+    item(key = HeaderItem.Invite) {
         InviteCard(program.invitedBy, paneItemModifier)
     }
-    item(key = "code") {
+    item(key = HeaderItem.Code) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.large),
@@ -350,7 +416,7 @@ private fun LazyListScope.programHeader(program: ReferralProgram, onIntent: (Ref
             Code(program.code, onCopy = { onIntent(ReferralIntent.CopyInvite) })
         }
     }
-    item(key = "share") {
+    item(key = HeaderItem.Share) {
         OpalButton(
             text = stringResource(R.string.referral_share),
             onClick = { onIntent(ReferralIntent.Share) },
@@ -367,6 +433,7 @@ private fun LazyListScope.tiers(
     onIntent: (ReferralIntent) -> Unit,
     firstTopPadding: Dp
 ) {
+    val activeTierId = program.tiers.firstOrNull { it.status != TierStatus.Claimed }?.id
     itemsIndexed(program.tiers, key = { _, tier -> tier.id }) { index, tier ->
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -387,6 +454,7 @@ private fun LazyListScope.tiers(
                 successfulReferrals = program.successfulReferrals,
                 claiming = tier.id == claimingTierId,
                 claimable = claimingTierId == null || tier.id == claimingTierId,
+                active = tier.id == activeTierId,
                 reveal = reveal,
                 onClaim = { onIntent(ReferralIntent.Claim(tier.id)) }
             )
@@ -478,6 +546,8 @@ private fun Code(code: String, onCopy: () -> Unit) {
     val cells = remember(code.length) { mutableStateListOf(*arrayOfNulls<Rect>(code.length)) }
     val shape = OpalTheme.shapes.small
     val fill = OpalTheme.colors.fill
+    val interactionSource = remember { MutableInteractionSource() }
+    val indicationSource = remember { MutableInteractionSource() }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small)
@@ -491,6 +561,7 @@ private fun Code(code: String, onCopy: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
             verticalArrangement = Arrangement.spacedBy(6.dp),
             modifier = Modifier
+                .pressFeedback(interactionSource, indicationSource)
                 .drawWithCache {
                     val mask = Path()
                     cells.forEach { cell ->
@@ -504,9 +575,10 @@ private fun Code(code: String, onCopy: () -> Unit) {
                         clipPath(mask) { this@onDrawWithContent.drawContent() }
                     }
                 }
+                .indication(indicationSource, opalRipple(OpalTheme.colors.content, OpalTheme.alpha.rippleOnFill))
                 .combinedClickable(
-                    interactionSource = null,
-                    indication = ripple(),
+                    interactionSource = interactionSource,
+                    indication = null,
                     onClickLabel = stringResource(R.string.referral_copy_invite),
                     onLongClick = onCopy,
                     onClick = onCopy
@@ -533,6 +605,7 @@ private fun TierCard(
     successfulReferrals: Int,
     claiming: Boolean,
     claimable: Boolean,
+    active: Boolean,
     reveal: ClaimRevealState,
     onClaim: () -> Unit
 ) {
@@ -545,7 +618,7 @@ private fun TierCard(
         label = "tierAlpha"
     )
     OpalCard(
-        highlighted = featured,
+        highlighted = active,
         modifier = Modifier
             .fillMaxWidth()
             .graphicsLayer { this.alpha = alpha }
@@ -582,13 +655,14 @@ private fun TierCard(
                     label = "tierAction"
                 ) { showClaim ->
                     if (showClaim) {
+                        val exiting = transition.targetState != EnterExitState.Visible
                         OpalButton(
                             text = stringResource(R.string.referral_claim),
                             onClick = onClaim,
                             style = OpalButtonStyle.Primary,
                             size = OpalButtonSize.Small,
                             enabled = claimable,
-                            loading = claiming
+                            loading = claiming || exiting
                         )
                     } else {
                         OpalProgressBar(
@@ -620,7 +694,8 @@ private fun TierCaption(tier: RewardTier, status: TierStatus) {
                 horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xxSmall),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val scale = remember { Animatable(if (transition.isRunning) OpalMotion.POP_START_SCALE else 1f) }
+                val entering = transition.currentState == EnterExitState.PreEnter
+                val scale = remember { Animatable(if (entering) OpalMotion.POP_START_SCALE else 1f) }
                 LaunchedEffect(Unit) { scale.animateTo(1f, OpalMotion.PopSpring) }
                 Box(
                     contentAlignment = Alignment.Center,
@@ -772,27 +847,44 @@ private fun LoadError(onRetry: () -> Unit) {
     }
 }
 
+private enum class Body { Blank, Loading, Error, Program }
+
 @Composable
-private fun DelayedLoading() {
-    val immediate = LocalInspectionMode.current
-    var visible by remember { mutableStateOf(immediate) }
-    LaunchedEffect(Unit) {
-        delay(OpalMotion.LOADING_DELAY_MILLIS)
-        visible = true
+private fun rememberBody(target: Body): Body {
+    val inspection = LocalInspectionMode.current
+    var body by remember { mutableStateOf(if (target == Body.Loading && !inspection) Body.Blank else target) }
+    var loadingSince by remember { mutableLongStateOf(SystemClock.uptimeMillis()) }
+    LaunchedEffect(target) {
+        when {
+            target == body -> Unit
+
+            target == Body.Loading -> {
+                delay(OpalMotion.LOADING_DELAY_MILLIS)
+                loadingSince = SystemClock.uptimeMillis()
+                body = Body.Loading
+            }
+
+            else -> {
+                if (body == Body.Loading) {
+                    delay(loadingSince + OpalMotion.LOADING_MIN_MILLIS - SystemClock.uptimeMillis())
+                }
+                body = target
+            }
+        }
     }
-    if (visible) Loading()
+    return body
 }
 
 @Composable
-private fun Loading() {
+private fun Loading(headerState: ScrollState, listState: ScrollState) {
     OpalSkeleton(description = stringResource(R.string.referral_loading), modifier = Modifier.fillMaxSize()) {
         if (isTwoPane()) {
             Row(Modifier.fillMaxSize()) {
-                SkeletonPane(Pane.Start, Modifier.weight(1f)) { HeaderSkeleton() }
-                SkeletonPane(Pane.End, Modifier.weight(1f)) { TiersSkeleton() }
+                SkeletonPane(Pane.Start, headerState, Modifier.weight(1f)) { HeaderSkeleton() }
+                SkeletonPane(Pane.End, listState, Modifier.weight(1f)) { TiersSkeleton() }
             }
         } else {
-            SkeletonPane(Pane.Single, Modifier.fillMaxWidth()) {
+            SkeletonPane(Pane.Single, listState, Modifier.fillMaxWidth()) {
                 HeaderSkeleton()
                 TiersSkeleton()
             }
@@ -801,13 +893,18 @@ private fun Loading() {
 }
 
 @Composable
-private fun SkeletonPane(pane: Pane, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+private fun SkeletonPane(
+    pane: Pane,
+    scrollState: ScrollState,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xLarge),
         modifier = modifier
             .fillMaxHeight()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
             .padding(paneContentPadding(pane)),
         content = content
     )
