@@ -157,7 +157,7 @@ class ReferralContentTest {
     )
 
     @Test
-    fun `claiming the free year announces it once through one status node`() {
+    fun `claiming the free year announces it once through one status node that then clears`() {
         val program = previewProgram(referrals = 5)
         setContent(ReferralState.Ready(program, claimingTierId = "year"))
         assertEquals(null, announcement())
@@ -167,6 +167,9 @@ class ReferralContentTest {
 
         assertEquals(1, liveRegions().size)
         assertEquals("1 Year of Opal Pro claimed", announcement())
+
+        compose.mainClock.advanceTimeBy(5_000)
+        assertEquals(null, announcement())
     }
 
     @Test

@@ -56,7 +56,7 @@ import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
-import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.delay
 import vadiole.opaltest.R
 import vadiole.opaltest.container
 import vadiole.opaltest.domain.referral.MilestoneStone
@@ -275,9 +275,16 @@ private fun ClaimAnnouncement(state: ReferralState, reveal: ClaimRevealState) {
         seen = instantClaims
     }
     LaunchedEffect(reveal) {
-        snapshotFlow { (reveal.activeKey as? MilestoneStone)?.takeIf { reveal.landed } }
-            .filterNotNull()
-            .collect { claimed = Reward.Milestone(it) }
+        var held: MilestoneStone? = null
+        snapshotFlow { (reveal.activeKey as? MilestoneStone)?.takeUnless { reveal.landed } }.collect { stone ->
+            if (stone == null) held?.let { claimed = Reward.Milestone(it) }
+            held = stone
+        }
+    }
+    LaunchedEffect(claimed) {
+        if (claimed == null) return@LaunchedEffect
+        delay(ANNOUNCEMENT_HOLD_MS)
+        claimed = null
     }
     val announcement = claimed?.takeUnless { reveal.activeKey != null && !reveal.landed }
         ?.let { stringResource(R.string.referral_claimed_announcement, it.title()) }
@@ -291,6 +298,8 @@ private fun ClaimAnnouncement(state: ReferralState, reveal: ClaimRevealState) {
             }
     )
 }
+
+private const val ANNOUNCEMENT_HOLD_MS = 5_000L
 
 @Composable
 private fun LoadError(retrying: Boolean, onRetry: () -> Unit) {
