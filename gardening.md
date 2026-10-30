@@ -18,12 +18,12 @@ Maintained by the gardener agent. See [WORKFLOW.md](WORKFLOW.md).
 
 ## Active
 
-- 2026-10-30: Reviewed #4 and #6. The user approved one gardening PR: console loading and error states with retry, Reset as a small OpalButton with a confirm, a font-scale-safe label column, chip haptic and onClick only on a real change, a single max-content-width token (480dp, the console's value), and OpalButton screen-reader text while loading. The main agent confirmed no overlap. → PR #7 (`gardening/console-polish`), awaiting user review. It adds `OpalTheme.layout.maxContentWidth`, a new public `OpalToggleChip`, and Reset as "Tap again to reset" for 4s. ReferralScreen previews and scrolling are left to the main agent, which is still building it.
 
 ## Findings
 
 ## Done
 
+- 2026-10-30: Reviewed #4 and #6. The user approved one gardening PR: console loading and error states with retry, Reset as a small OpalButton with a confirm, a font-scale-safe label column, chip haptic and onClick only on a real change, a single max-content-width token (480dp, the console's value), and OpalButton screen-reader text while loading. The main agent confirmed no overlap. → PR #7 (`gardening/console-polish`), merged as e8d8b76. It adds `OpalTheme.layout.maxContentWidth`, a new public `OpalToggleChip`, and Reset as "Tap again to reset" for 4s. ReferralScreen previews and scrolling are left to the main agent, which is still building it.
 - 2026-10-30 PR #3 update: fixed the push replaying on back and the outgoing screen vanishing on open. Root cause of the vanishing: a no-op NavDisplay ContentTransform has zero duration, so the exiting entry was disposed after one frame. The user decided to block navigation mid-transition through the `navigate`/`navigateBack` helpers, and to make the window and screens Opal black (the app is always dark). Merged develop (#4, #6) and resolved the AppNavigation conflict.
 - 2026-10-30 `gardening/nav-transitions` → PR #3, merged as 78ae1a9: Port the Unicode app's `Nav.kt` push, pop and predictive-back transitions to Nav3 (requested by the user). Tokens are in `ui/theme/OpalMotion.kt`. A `NavEntryDecorator` in `ui/common/StackTransitions.kt` draws predictive back, while Nav3's predictive spec is a timed no-op. Known gaps: Nav3 shortens the commit fade and the cancel duration in proportion to back progress, push during a back commit snaps, and there's no RTL handling. Risk: it relies on Nav3/navigationevent predictive-back internals. The user checked the animations on their phone.
 
