@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowSizeClass
 import vadiole.opaltest.R
 import vadiole.opaltest.domain.referral.ReferralProgram
+import vadiole.opaltest.domain.referral.Reward
 import vadiole.opaltest.domain.referral.TierStatus
 import vadiole.opaltest.feature.claimreveal.ClaimRevealState
 import vadiole.opaltest.ui.common.OpalButton
@@ -166,7 +167,10 @@ internal fun LazyListScope.tiers(
                 claimAction = claimAction(tier.id, claimingTierId),
                 active = tier.id == activeTierId,
                 reveal = reveal,
-                onClaim = { onIntent(ReferralIntent.Claim(tier.id)) }
+                onClaim = {
+                    (tier.reward as? Reward.Milestone)?.let { reveal.prefetch(it.stone.revealImage) }
+                    onIntent(ReferralIntent.Claim(tier.id))
+                }
             )
         }
     }

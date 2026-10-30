@@ -2,6 +2,8 @@ package vadiole.opaltest.feature.claimreveal
 
 import android.graphics.Bitmap
 import androidx.activity.compose.PredictiveBackHandler
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
@@ -24,9 +26,17 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -52,10 +62,16 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.node.LayoutAwareModifierNode
+import androidx.compose.ui.node.ModifierNodeElement
+import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.LineBreak
@@ -72,8 +88,10 @@ import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.ln
 import kotlin.random.Random
+import kotlinx.coroutines.flow.first
 import vadiole.opaltest.R
 import vadiole.opaltest.ui.common.OpalButton
+import vadiole.opaltest.ui.common.rememberOpalBitmap
 import vadiole.opaltest.ui.theme.OpalColors
 import vadiole.opaltest.ui.theme.OpalTheme
 
@@ -88,31 +106,121 @@ fun ClaimRevealHost(state: ClaimRevealState, modifier: Modifier = Modifier, cont
             feedback.release()
         }
     }
+    state.prefetchedGem?.let { rememberRevealImage(it) }
+    val focusManager = LocalFocusManager.current
+    val contentFocus = remember { FocusRequester() }
+    val continueFocus = remember { FocusRequester() }
+    val focus = remember { RevealFocus() }
+    val blocking = state.activeKey != null && !state.landed
+    LaunchedEffect(blocking) {
+        when {
+            blocking -> {
+                focus.overlay = false
+                if (focus.content && !continueFocus.requestFocus()) focusManager.clearFocus(force = true)
+            }
+
+            focus.overlay -> contentFocus.requestFocus()
+        }
+    }
     Box(modifier.onPlaced { state.host = it }) {
         Box(
             propagateMinConstraints = true,
-            modifier = Modifier.graphicsLayer {
-                val radius = BACKDROP_BLUR.toPx() * state.scrim.value
-                renderEffect = if (radius >= 1f) BlurEffect(radius, radius, TileMode.Clamp) else null
-            }
+            modifier = Modifier
+                .graphicsLayer {
+                    val radius = BACKDROP_BLUR.toPx() * state.scrim.value
+                    renderEffect = if (radius >= 1f) BlurEffect(radius, radius, TileMode.Clamp) else null
+                }
+                .onFocusChanged { focus.content = it.hasFocus }
+                .focusRequester(contentFocus)
+                .focusProperties { if (blocking) onEnter = { cancelFocusChange() } }
+                .focusGroup()
+                .then(if (blocking) Modifier.clearAndSetSemantics {} else Modifier)
         ) {
             content()
         }
         val key = state.activeKey
         val revealContent = state.content
         if (key != null && revealContent != null) {
-            RevealOverlay(state = state, key = key, content = revealContent)
+            RevealOverlay(
+                state = state,
+                key = key,
+                content = revealContent,
+                continueFocus = continueFocus,
+                modifier = Modifier.onFocusChanged { focus.overlay = it.hasFocus }
+            )
         }
     }
 }
 
+private class RevealFocus {
+    var content = false
+    var overlay = false
+}
+
 fun Modifier.claimRevealSource(state: ClaimRevealState, key: Any): Modifier = this
-    .onGloballyPositioned { state.registerSource(key, it) }
+    .then(ClaimRevealSourceElement(state, key))
     .graphicsLayer { alpha = if (state.isFlying(key)) 1f - state.fade.value else 1f }
 
+private data class ClaimRevealSourceElement(val state: ClaimRevealState, val key: Any) :
+    ModifierNodeElement<ClaimRevealSourceNode>() {
+    override fun create() = ClaimRevealSourceNode(state, key)
+
+    override fun update(node: ClaimRevealSourceNode) = node.update(state, key)
+
+    override fun InspectorInfo.inspectableProperties() {
+        name = "claimRevealSource"
+        properties["key"] = key
+    }
+}
+
+private class ClaimRevealSourceNode(private var state: ClaimRevealState, private var key: Any) :
+    Modifier.Node(),
+    LayoutAwareModifierNode {
+    private var coordinates: LayoutCoordinates? = null
+
+    override fun onPlaced(coordinates: LayoutCoordinates) {
+        if (coordinates === this.coordinates) return
+        unregister()
+        this.coordinates = coordinates
+        state.registerSource(key, coordinates)
+    }
+
+    override fun onDetach() {
+        unregister()
+        coordinates = null
+    }
+
+    fun update(state: ClaimRevealState, key: Any) {
+        if (state === this.state && key == this.key) return
+        unregister()
+        this.state = state
+        this.key = key
+        coordinates?.let { state.registerSource(key, it) }
+    }
+
+    private fun unregister() {
+        coordinates?.let { state.unregisterSource(key, it) }
+    }
+}
+
 @Composable
-private fun RevealOverlay(state: ClaimRevealState, key: Any, content: RevealContent) {
-    val gem = rememberDecodedBitmap(content.gem, mipmap = true).value ?: return
+private fun rememberRevealImage(@DrawableRes id: Int): ImageBitmap? =
+    rememberOpalBitmap(id, software = true, mipmap = true)
+
+@Composable
+private fun RevealOverlay(
+    state: ClaimRevealState,
+    key: Any,
+    content: RevealContent,
+    continueFocus: FocusRequester,
+    modifier: Modifier = Modifier
+) {
+    val gem = rememberRevealImage(content.gem)
+    SideEffect { state.gemReady = gem != null }
+    LaunchedEffect(continueFocus) {
+        snapshotFlow { state.items.last().value >= CLICKABLE_VISIBILITY }.first { it }
+        continueFocus.requestFocus()
+    }
     val scrimColor = OpalTheme.colors.background
     val scrimTint = OpalTheme.colors.fillSubtle
     val colors = OpalTheme.colors
@@ -129,7 +237,7 @@ private fun RevealOverlay(state: ClaimRevealState, key: Any, content: RevealCont
             throw e
         }
     }
-    Box(Modifier.fillMaxSize()) {
+    Box(modifier.fillMaxSize()) {
         Spacer(
             Modifier
                 .fillMaxSize()
@@ -139,53 +247,57 @@ private fun RevealOverlay(state: ClaimRevealState, key: Any, content: RevealCont
                     drawRect(scrimTint, alpha = state.scrim.value)
                 }
         )
-        Spacer(
-            Modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    alpha = state.glow.value * AMBIENT_ALPHA
-                    val radius = AMBIENT_BLUR.toPx()
-                    renderEffect = BlurEffect(radius, radius, TileMode.Clamp)
-                }
-                .drawBehind {
-                    val frame = state.gemFrame(key) ?: return@drawBehind
-                    drawAmbient(gem, frame, state.glow.value)
-                }
-        )
-        Spacer(
-            Modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    val frame = state.gemFrame(key)
-                    alpha = state.glow.value * GLOW_ALPHA
-                    val radius = (frame?.width ?: 0f) * GLOW_BLUR
-                    renderEffect = if (radius >= 1f) BlurEffect(radius, radius, TileMode.Decal) else null
-                }
-                .drawBehind {
-                    val frame = state.gemFrame(key) ?: return@drawBehind
-                    drawGlow(gem, frame, lerp(GLOW_START_SCALE, GLOW_END_SCALE, state.glow.value))
-                }
-        )
+        if (gem != null) {
+            Spacer(
+                Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        alpha = state.glow.value * AMBIENT_ALPHA
+                        val radius = AMBIENT_BLUR.toPx()
+                        renderEffect = BlurEffect(radius, radius, TileMode.Clamp)
+                    }
+                    .drawBehind {
+                        val frame = state.gemFrame(key) ?: return@drawBehind
+                        drawAmbient(gem, frame, state.glow.value)
+                    }
+            )
+            Spacer(
+                Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        val frame = state.gemFrame(key)
+                        alpha = state.glow.value * GLOW_ALPHA
+                        val radius = (frame?.width ?: 0f) * GLOW_BLUR
+                        renderEffect = if (radius >= 1f) BlurEffect(radius, radius, TileMode.Decal) else null
+                    }
+                    .drawBehind {
+                        val frame = state.gemFrame(key) ?: return@drawBehind
+                        drawGlow(gem, frame, lerp(GLOW_START_SCALE, GLOW_END_SCALE, state.glow.value))
+                    }
+            )
+        }
         Spacer(
             Modifier
                 .fillMaxSize()
                 .drawBehind { drawRect(GrainBrush, alpha = GRAIN_ALPHA * state.scrim.value) }
         )
-        RevealLayout(state = state, title = content.title)
-        Spacer(
-            Modifier
-                .fillMaxSize()
-                .drawBehind {
-                    if (state.landed) return@drawBehind
-                    val frame = state.gemFrame(key) ?: return@drawBehind
-                    scale(state.press.value, pivot = frame.gemCenter()) { drawGem(state, gem, frame, colors) }
-                }
-        )
+        RevealLayout(state = state, title = stringResource(content.title), continueFocus = continueFocus)
+        if (gem != null) {
+            Spacer(
+                Modifier
+                    .fillMaxSize()
+                    .drawBehind {
+                        if (state.landed) return@drawBehind
+                        val frame = state.gemFrame(key) ?: return@drawBehind
+                        scale(state.press.value, pivot = frame.gemCenter()) { drawGem(state, gem, frame, colors) }
+                    }
+            )
+        }
     }
 }
 
 @Composable
-private fun RevealLayout(state: ClaimRevealState, title: String) {
+private fun RevealLayout(state: ClaimRevealState, title: String, continueFocus: FocusRequester) {
     val wide = currentWindowAdaptiveInfoV2().windowSizeClass
         .isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
     val paneTitle = stringResource(R.string.claim_reveal_pane)
@@ -208,6 +320,7 @@ private fun RevealLayout(state: ClaimRevealState, title: String) {
                     WideReveal(
                         state = state,
                         title = title,
+                        continueFocus = continueFocus,
                         gemSize = wideGem,
                         modifier = Modifier.heightIn(min = minHeight)
                     )
@@ -215,6 +328,7 @@ private fun RevealLayout(state: ClaimRevealState, title: String) {
                     CompactReveal(
                         state = state,
                         title = title,
+                        continueFocus = continueFocus,
                         gemSize = compactGem,
                         modifier = Modifier.heightIn(min = minHeight)
                     )
@@ -225,7 +339,13 @@ private fun RevealLayout(state: ClaimRevealState, title: String) {
 }
 
 @Composable
-private fun CompactReveal(state: ClaimRevealState, title: String, gemSize: Dp, modifier: Modifier = Modifier) {
+private fun CompactReveal(
+    state: ClaimRevealState,
+    title: String,
+    continueFocus: FocusRequester,
+    gemSize: Dp,
+    modifier: Modifier = Modifier
+) {
     Column(
         verticalArrangement = Arrangement.SpaceBetween,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -245,12 +365,19 @@ private fun CompactReveal(state: ClaimRevealState, title: String, gemSize: Dp, m
                 .padding(top = OpalTheme.spacing.xLarge)
                 .widthIn(max = MAX_TEXT_WIDTH)
                 .fillMaxWidth()
+                .focusRequester(continueFocus)
         )
     }
 }
 
 @Composable
-private fun WideReveal(state: ClaimRevealState, title: String, gemSize: Dp, modifier: Modifier = Modifier) {
+private fun WideReveal(
+    state: ClaimRevealState,
+    title: String,
+    continueFocus: FocusRequester,
+    gemSize: Dp,
+    modifier: Modifier = Modifier
+) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xLarge * 2, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
@@ -266,6 +393,7 @@ private fun WideReveal(state: ClaimRevealState, title: String, gemSize: Dp, modi
                 modifier = Modifier
                     .padding(top = OpalTheme.spacing.xLarge)
                     .fillMaxWidth()
+                    .focusRequester(continueFocus)
             )
         }
     }
