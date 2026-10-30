@@ -4,7 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import java.text.NumberFormat
-import java.util.Currency
+import java.util.Locale
 import vadiole.opaltest.R
 import vadiole.opaltest.domain.referral.MilestoneStone
 import vadiole.opaltest.domain.referral.Money
@@ -55,11 +55,13 @@ internal fun Reward.description(): String = when (this) {
     Reward.Mystery -> stringResource(R.string.referral_mystery_description)
 }
 
-private fun Money.format(): String {
-    val currency = Currency.getInstance(currencyCode)
+internal fun Money.format(locale: Locale = Locale.getDefault(Locale.Category.FORMAT)): String {
     val amount = amountMinor.toBigDecimal().movePointLeft(currency.defaultFractionDigits)
-    return NumberFormat.getCurrencyInstance().apply {
-        this.currency = currency
+    return NumberFormat.getCurrencyInstance(locale).apply {
+        currency = this@format.currency
         if (amount.stripTrailingZeros().scale() <= 0) maximumFractionDigits = 0
     }.format(amount)
 }
+
+internal fun Int.formatCount(locale: Locale = Locale.getDefault(Locale.Category.FORMAT)): String =
+    NumberFormat.getIntegerInstance(locale).format(this)

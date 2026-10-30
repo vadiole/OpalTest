@@ -11,8 +11,8 @@
     <string name="referral_referred">You referred %1$s to Opal. Great job!</string>
     <string name="referral_referred_none">Invite friends to Opal and earn rewards.</string>
     <plurals name="referral_friends">
-        <item quantity="one">%d friend</item>
-        <item quantity="other">%d friends</item>
+        <item quantity="one">%1$s friend</item>
+        <item quantity="other">%1$s friends</item>
     </plurals>
     <string name="referral_code_title">Your Opal code</string>
     <string name="referral_code_description">Your Opal code: %1$s</string>
@@ -23,8 +23,12 @@
         <item quantity="other">Join me on Opal with my code %1$s and get %2$d days of Opal Pro for free: %3$s</item>
     </plurals>
     <plurals name="referral_tier_friends">
-        <item quantity="one">%d Friend</item>
-        <item quantity="other">%d Friends</item>
+        <item quantity="one">%1$s Friend</item>
+        <item quantity="other">%1$s Friends</item>
+    </plurals>
+    <plurals name="referral_tier_progress">
+        <item quantity="one">%1$s of %2$s friend</item>
+        <item quantity="other">%1$s of %2$s friends</item>
     </plurals>
     <string name="referral_claimed">Claimed</string>
     <string name="referral_claim">Claim</string>
@@ -48,34 +52,33 @@
     <string name="referral_claim_failed">Couldn’t claim this reward.</string>
     <string name="console_open_referrals">Open Invitations &amp; Rewards</string>
     <string name="console_title">Referral demo</string>
-    <string name="console_plan_free">Free plan</string>
-    <string name="console_plan_pro">Pro plan</string>
     <plurals name="console_friends">
-        <item quantity="one">%d friend</item>
-        <item quantity="other">%d friends</item>
+        <item quantity="one">%s friend</item>
+        <item quantity="other">%s friends</item>
     </plurals>
-    <string name="console_status">%1$s · %2$s</string>
-    <plurals name="console_next_reward">
-        <item quantity="one">Next reward at %d friend.</item>
-        <item quantity="other">Next reward at %d friends.</item>
-    </plurals>
-    <string name="console_all_rewards_reached">Every reward is unlocked.</string>
+    <string name="console_no_rewards_claimed">No rewards claimed yet.</string>
     <plurals name="console_claimed">
-        <item quantity="one">%d reward claimed.</item>
-        <item quantity="other">%d rewards claimed.</item>
+        <item quantity="one">%s reward claimed.</item>
+        <item quantity="other">%s rewards claimed.</item>
     </plurals>
     <string name="console_label_plan">Plan</string>
+    <string name="console_label_friends">Friends</string>
     <string name="console_label_delay">Delay</string>
     <string name="console_label_fail">Fail</string>
     <string name="console_free">Free</string>
     <string name="console_pro">Pro</string>
     <string name="console_delay_none">None</string>
-    <string name="console_delay_normal">Normal</string>
-    <string name="console_delay_slow">Slow</string>
+    <string name="console_delay_seconds">%s s</string>
     <string name="console_fail_next_load">Next load</string>
-    <string name="console_reset">Reset</string>
-    <string name="console_add_friend">+1 friend</string>
-    <string name="console_next_tier">Next reward</string>
+    <string name="console_fail_next_claim">Next claim</string>
+    <string name="console_reset">Reset demo</string>
+    <string name="console_add_friend">+1</string>
+    <string name="console_add_friend_description">Add a friend</string>
+    <plurals name="console_reach_friends">
+        <item quantity="one">Reach %s friend</item>
+        <item quantity="other">Reach %s friends</item>
+    </plurals>
+    <string name="console_all_unlocked">All unlocked</string>
     <string name="opal_button_loading">Loading</string>
     <string name="console_loading">Loading demo state</string>
     <string name="console_load_error">Couldn’t load the demo state.</string>

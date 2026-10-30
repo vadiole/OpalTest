@@ -8,13 +8,16 @@ adb shell am start -n vadiole.opaltest.debug/vadiole.opaltest.feature.claimrevea
 
 ## Plugging it into a screen
 
-1. Wrap the screen content in `ClaimRevealHost(state = rememberClaimRevealState())`.
-2. Add `Modifier.claimRevealSource(state, key)` to the gem thumbnail, and `ClaimedGemGlow` behind it for the claimed glow.
+1. Wrap the screen content in `ClaimRevealHost(state = rememberClaimRevealState())`. While a reveal is open, the host hides the content from accessibility and keyboard focus, and moves focus to Continue.
+2. Add `Modifier.claimRevealSource(state, key)` to the gem thumbnail, and `ClaimedGemGlow` behind it for the claimed glow. Sources unregister when their thumbnail leaves composition; if the source is gone when the reveal closes, the gem fades out toward its last known position.
 3. Keys must be saveable in a `Bundle` (an enum or a string), so a reveal survives rotation and process death.
-4. When a claim succeeds, call `state.open(key, RevealContent(gem = stone.revealImage, title = name))`. Show the card as claimed while `!state.isHolding(key)`.
+4. When a claim starts, call `state.prefetch(stone.revealImage)` so the large image is decoded before the reveal opens. Without it the reveal still works: the scrim and back handling start at once, and the flight waits up to a second for the image.
+5. When a claim succeeds, call `state.open(key, RevealContent(gem = stone.revealImage, title = R.string.…))`. The title is a string resource, resolved at render time. Show the card as claimed while `!state.isHolding(key)`.
+
+## Decided
+
+- Each reveal plays a random `RevealSound` from the five `claim_reveal_shine_*` files, on purpose. All five load into a `SoundPool` when the host enters composition (about 216 KB).
 
 ## Before shipping
 
-- Each reveal plays a random `RevealSound`; pick one and delete the other `claim_reveal_shine_*` files, or keep the set and load them lazily.
 - Move the glow and blur constants into the design system if other screens need them.
-- Drop sources when their thumbnail leaves composition (needed for lazy lists).

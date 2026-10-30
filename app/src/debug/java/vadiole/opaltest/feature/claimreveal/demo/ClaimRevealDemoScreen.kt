@@ -80,7 +80,8 @@ fun ClaimRevealDemoScreen(modifier: Modifier = Modifier) {
     fun open(stone: MilestoneStone) {
         last = stone
         claimed = claimed + stone
-        reveal.open(stone, RevealContent(gem = stone.revealImage, title = names.getValue(stone)))
+        val title = demoTiers.first { it.stone == stone }.name
+        reveal.open(stone, RevealContent(gem = stone.revealImage, title = title))
     }
     fun replay() {
         val stone = last ?: return

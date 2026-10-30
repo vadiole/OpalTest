@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowSizeClass
 import vadiole.opaltest.R
 import vadiole.opaltest.domain.referral.ReferralProgram
+import vadiole.opaltest.domain.referral.Reward
 import vadiole.opaltest.domain.referral.TierStatus
 import vadiole.opaltest.feature.claimreveal.ClaimRevealState
 import vadiole.opaltest.ui.common.OpalButton
@@ -236,11 +237,13 @@ private fun LazyListScope.tiers(
             TierCard(
                 tier = tier,
                 successfulReferrals = program.successfulReferrals,
-                claiming = tier.id == claimingTierId,
-                claimable = claimingTierId == null || tier.id == claimingTierId,
+                claimAction = claimAction(tier.id, claimingTierId),
                 active = tier.id == activeTierId,
                 reveal = reveal,
-                onClaim = { onIntent(ReferralIntent.Claim(tier.id)) }
+                onClaim = {
+                    (tier.reward as? Reward.Milestone)?.let { reveal.prefetch(it.stone.revealImage) }
+                    onIntent(ReferralIntent.Claim(tier.id))
+                }
             )
         }
     }
@@ -324,7 +327,7 @@ private val LazyListState.position: ScrollPosition
 @Composable
 private fun ReferralShortTwoPanePreview() {
     OpalTheme {
-        ReferralContent(state = ReferralState(program = previewProgram()), onIntent = {}, onBack = {})
+        ReferralContent(state = ReferralState.Ready(previewProgram()), onIntent = {}, onBack = {})
     }
 }
 
@@ -332,7 +335,7 @@ private fun ReferralShortTwoPanePreview() {
 @Composable
 private fun ReferralShortTwoPaneLoadingPreview() {
     OpalTheme {
-        ReferralContent(state = ReferralState(), onIntent = {}, onBack = {})
+        ReferralContent(state = ReferralState.Loading, onIntent = {}, onBack = {})
     }
 }
 
@@ -340,6 +343,6 @@ private fun ReferralShortTwoPaneLoadingPreview() {
 @Composable
 private fun ReferralTwoPaneLoadingPreview() {
     OpalTheme {
-        ReferralContent(state = ReferralState(), onIntent = {}, onBack = {})
+        ReferralContent(state = ReferralState.Loading, onIntent = {}, onBack = {})
     }
 }

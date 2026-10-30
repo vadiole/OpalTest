@@ -17,7 +17,7 @@ private fun geist(weight: FontWeight) = Font(
     variationSettings = FontVariation.Settings(FontVariation.weight(weight.weight))
 )
 
-val Geist = FontFamily(
+private val Geist = FontFamily(
     geist(FontWeight.Normal),
     geist(FontWeight.Medium),
     geist(FontWeight.SemiBold),

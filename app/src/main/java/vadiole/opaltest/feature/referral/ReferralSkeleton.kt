@@ -112,7 +112,7 @@ private fun CodeSkeleton() {
 
 @Composable
 private fun ShareSkeleton() {
-    SkeletonBlock(paneItemModifier.height(OpalTheme.layout.buttonHeightLarge), OpalTheme.shapes.pill)
+    SkeletonBlock(paneItemModifier.height(OpalTheme.layout.controlHeight), OpalTheme.shapes.pill)
 }
 
 @Composable

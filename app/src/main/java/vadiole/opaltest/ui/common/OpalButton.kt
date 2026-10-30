@@ -1,9 +1,8 @@
 package vadiole.opaltest.ui.common
 
 import androidx.annotation.DrawableRes
-import androidx.compose.foundation.background
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,20 +10,22 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -33,13 +34,17 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.lerp
 import vadiole.opaltest.R
+import vadiole.opaltest.ui.theme.OpalMotion
 import vadiole.opaltest.ui.theme.OpalTheme
 
-enum class OpalButtonStyle { Accent, Primary }
+enum class OpalButtonStyle { Accent, Primary, Outlined }
 
 enum class OpalButtonSize { Large, Small }
 
@@ -56,14 +61,29 @@ fun OpalButton(
 ) {
     val colors = OpalTheme.colors
     val metrics = size.metrics()
+    val outlined = style == OpalButtonStyle.Outlined
     val background: Brush = when (style) {
         OpalButtonStyle.Accent -> colors.accent
         OpalButtonStyle.Primary -> SolidColor(colors.content)
+        OpalButtonStyle.Outlined -> SolidColor(Color.Transparent)
+    }
+    val contentColor = if (outlined) colors.content else colors.onAccent
+    val ripple = if (outlined) {
+        opalRipple(colors.content, OpalTheme.alpha.rippleOnFill)
+    } else {
+        opalRipple(colors.onAccent, OpalTheme.alpha.rippleOnLight)
     }
     val busyDescription = stringResource(R.string.opal_button_loading)
     val interactionSource = remember { MutableInteractionSource() }
     val indicationSource = remember { MutableInteractionSource() }
     val interactive = enabled && !loading
+    val alpha = animateEnabledAlpha(enabled)
+    val busy = animateFloatAsState(
+        targetValue = if (loading) 1f else 0f,
+        animationSpec = OpalMotion.StateSpring,
+        label = "buttonBusy"
+    )
+    val spinnerVisible by remember { derivedStateOf { busy.value > 0f } }
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
@@ -73,12 +93,17 @@ fun OpalButton(
                     stateDescription = busyDescription
                 }
             }
-            .height(metrics.height)
-            .pressFeedback(interactionSource, indicationSource, interactive)
-            .alpha(if (enabled) 1f else OpalTheme.alpha.disabled)
-            .clip(OpalTheme.shapes.pill)
-            .background(background)
-            .indication(indicationSource, opalRipple(colors.onAccent, OpalTheme.alpha.rippleOnLight))
+            .heightIn(min = metrics.height)
+            .pressableSurface(
+                interactionSource = interactionSource,
+                indicationSource = indicationSource,
+                shape = OpalTheme.shapes.pill,
+                background = background,
+                ripple = ripple,
+                enabled = interactive,
+                alpha = { alpha.value }
+            )
+            .then(if (outlined) Modifier.outlineBorder(1.dp, colors.border, OpalTheme.shapes.pill) else Modifier)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -91,40 +116,61 @@ fun OpalButton(
         Row(
             horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall),
             verticalAlignment = Alignment.CenterVertically,
-            modifier = if (loading) Modifier.alpha(0f).clearAndSetSemantics {} else Modifier
+            modifier = Modifier
+                .graphicsLayer { this.alpha = 1f - busy.value }
+                .then(if (loading) Modifier.clearAndSetSemantics {} else Modifier)
         ) {
             if (leadingIcon != null) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.size(metrics.iconSize)) {
-                    Icon(painter = painterResource(leadingIcon), contentDescription = null, tint = colors.onAccent)
+                    Icon(painter = painterResource(leadingIcon), contentDescription = null, tint = contentColor)
                 }
             }
-            Text(text = text, style = metrics.textStyle, color = colors.onAccent, maxLines = 1)
+            OpalLabel(text = text, style = metrics.textStyle, color = contentColor)
         }
-        if (loading) {
+        if (loading || spinnerVisible) {
             CircularProgressIndicator(
-                color = colors.onAccent,
+                color = contentColor,
                 strokeWidth = 2.dp,
                 modifier = Modifier
                     .size(metrics.iconSize)
+                    .graphicsLayer {
+                        val fraction = busy.value
+                        val scale = lerp(OpalMotion.SPINNER_START_SCALE, 1f, fraction)
+                        this.alpha = fraction
+                        scaleX = scale
+                        scaleY = scale
+                    }
                     .clearAndSetSemantics {}
             )
         }
     }
 }
 
+@Composable
+internal fun OpalLabel(text: String, style: TextStyle, color: Color) {
+    Text(
+        text = text,
+        style = style,
+        color = color,
+        textAlign = TextAlign.Center,
+        overflow = TextOverflow.Ellipsis,
+        maxLines = 2
+    )
+}
+
 private class ButtonMetrics(val height: Dp, val padding: PaddingValues, val iconSize: Dp, val textStyle: TextStyle)
 
 private fun OpalButtonSize.metrics(): ButtonMetrics = when (this) {
     OpalButtonSize.Large -> ButtonMetrics(
-        height = OpalTheme.layout.buttonHeightLarge,
-        padding = PaddingValues(horizontal = OpalTheme.spacing.mediumLarge),
+        height = OpalTheme.layout.controlHeight,
+        padding = PaddingValues(horizontal = OpalTheme.spacing.mediumLarge, vertical = OpalTheme.spacing.xSmall),
         iconSize = OpalTheme.iconSize.medium,
         textStyle = OpalTheme.typography.body
     )
 
     OpalButtonSize.Small -> ButtonMetrics(
-        height = OpalTheme.layout.buttonHeightSmall,
-        padding = PaddingValues(horizontal = OpalTheme.spacing.small),
+        height = OpalTheme.layout.controlHeightSmall,
+        padding = PaddingValues(horizontal = OpalTheme.spacing.small, vertical = OpalTheme.spacing.xxSmall),
         iconSize = OpalTheme.iconSize.small,
         textStyle = OpalTheme.typography.calloutMedium
     )
@@ -158,6 +204,23 @@ private fun OpalButtonPreview() {
                     text = "Claim",
                     onClick = {},
                     style = OpalButtonStyle.Primary,
+                    size = OpalButtonSize.Small,
+                    enabled = false
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small)) {
+                OpalButton(text = "+1", onClick = {}, style = OpalButtonStyle.Outlined, size = OpalButtonSize.Small)
+                OpalButton(
+                    text = "Reset",
+                    onClick = {},
+                    style = OpalButtonStyle.Outlined,
+                    size = OpalButtonSize.Small,
+                    loading = true
+                )
+                OpalButton(
+                    text = "All unlocked",
+                    onClick = {},
+                    style = OpalButtonStyle.Outlined,
                     size = OpalButtonSize.Small,
                     enabled = false
                 )

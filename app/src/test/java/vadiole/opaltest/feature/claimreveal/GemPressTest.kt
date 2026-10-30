@@ -44,7 +44,10 @@ class GemPressTest {
         compose.waitForIdle()
         compose.mainClock.autoAdvance = false
         compose.runOnIdle {
-            state.open(KEY, RevealContent(gem = R.drawable.img_milestone_loyal_large, title = "Loyal"))
+            state.open(
+                KEY,
+                RevealContent(gem = R.drawable.img_milestone_loyal_large, title = R.string.referral_milestone_loyal)
+            )
         }
     }
 
@@ -57,7 +60,7 @@ class GemPressTest {
 
     private fun awaitTarget() {
         val deadline = System.currentTimeMillis() + 10_000
-        while (state.target == null) {
+        while (state.target == null || !state.gemReady) {
             check(System.currentTimeMillis() < deadline) { "gem never decoded" }
             Thread.sleep(10)
             frame()

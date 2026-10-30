@@ -1,15 +1,20 @@
 package vadiole.opaltest.feature.console
 
-import vadiole.opaltest.data.fake.ReferralDebugState
-import vadiole.opaltest.data.fake.SimulatedLatency
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+import vadiole.opaltest.data.debug.ReferralDebugState
+import vadiole.opaltest.data.debug.SimulatedLatency
 import vadiole.opaltest.domain.referral.Plan
 
-data class ConsoleState(
-    val debug: ReferralDebugState? = null,
-    val isLoading: Boolean = true,
-    val loadFailed: Boolean = false,
-    val isConfirmingReset: Boolean = false
-)
+data class ConsoleState(val load: ConsoleLoad = ConsoleLoad.Loading)
+
+sealed interface ConsoleLoad {
+    data object Loading : ConsoleLoad
+
+    data object Failed : ConsoleLoad
+
+    data class Ready(val debug: ReferralDebugState, val isConfirmingReset: Boolean = false) : ConsoleLoad
+}
 
 sealed interface ConsoleIntent {
     data object AddFriend : ConsoleIntent
@@ -17,7 +22,8 @@ sealed interface ConsoleIntent {
     data class SetPlan(val plan: Plan) : ConsoleIntent
     data class SetLatency(val latency: SimulatedLatency) : ConsoleIntent
     data object ToggleFailNextLoad : ConsoleIntent
-    data object Reset : ConsoleIntent
+    data object ToggleFailNextClaim : ConsoleIntent
+    data class Reset(val confirmTimeout: Duration = RESET_CONFIRM_TIMEOUT) : ConsoleIntent
     data object CancelReset : ConsoleIntent
     data object OpenReferrals : ConsoleIntent
     data object Retry : ConsoleIntent
@@ -30,3 +36,5 @@ sealed interface ConsoleEffect {
     data object TierReached : ConsoleEffect
     data object OpenReferrals : ConsoleEffect
 }
+
+val RESET_CONFIRM_TIMEOUT = 4.seconds

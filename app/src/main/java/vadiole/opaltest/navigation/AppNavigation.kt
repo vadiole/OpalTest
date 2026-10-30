@@ -12,7 +12,6 @@ import androidx.navigation3.ui.NavDisplay
 import kotlinx.serialization.Serializable
 import vadiole.opaltest.feature.console.ConsoleScreen
 import vadiole.opaltest.feature.referral.ReferralScreen
-import vadiole.opaltest.ui.common.rememberStackTransitions
 import vadiole.opaltest.ui.theme.OpalTheme
 
 @Serializable

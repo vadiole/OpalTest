@@ -3,6 +3,9 @@ package vadiole.opaltest.data.fake
 import androidx.datastore.core.DataStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import vadiole.opaltest.data.debug.ReferralDebugControls
+import vadiole.opaltest.data.debug.ReferralDebugState
+import vadiole.opaltest.data.debug.SimulatedLatency
 import vadiole.opaltest.data.referral.ReferralProgramDto
 import vadiole.opaltest.domain.referral.Plan
 
@@ -11,6 +14,7 @@ class FakeReferralBackend(private val store: DataStore<FakeServerState>) : Refer
         ReferralDebugState(
             plan = state.plan.toPlan(),
             successfulReferrals = state.successfulReferrals,
+            maxReferrals = FakeReferralRules.MAX_REFERRALS,
             claimedTiers = state.claimedTierIds.size,
             nextTierAt = FakeReferralRules.nextTierAt(state),
             latency = state.latency,

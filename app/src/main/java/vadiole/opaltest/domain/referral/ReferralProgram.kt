@@ -1,5 +1,7 @@
 package vadiole.opaltest.domain.referral
 
+import java.util.Currency
+
 data class ReferralProgram(
     val code: String,
     val shareUrl: String,
@@ -30,7 +32,7 @@ enum class ProTerm { OneYear, TwoYears, Lifetime }
 
 enum class Fulfillment { Instant, ContactSupport }
 
-data class Money(val amountMinor: Long, val currencyCode: String)
+data class Money(val amountMinor: Long, val currency: Currency)
 
 enum class ReferralError { Network, NotEligible, AlreadyClaimed, Unknown }
 

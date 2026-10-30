@@ -43,11 +43,16 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
@@ -83,8 +88,9 @@ fun ReferralScreen(
     val haptics = LocalHapticFeedback.current
     val clipboard = LocalClipboard.current
     val reveal = rememberClaimRevealState()
-    LaunchedEffect(viewModel) {
-        viewModel.effects.collect { effect ->
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(viewModel, lifecycle) {
+        viewModel.effects.flowWithLifecycle(lifecycle).collect { effect ->
             when (effect) {
                 is ReferralEffect.Share -> {
                     val message = resources.inviteMessage(effect.invite)
@@ -100,10 +106,7 @@ fun ReferralScreen(
                 is ReferralEffect.ClaimSucceeded -> {
                     val reward = effect.reward
                     if (reward is Reward.Milestone) {
-                        val content = RevealContent(
-                            gem = reward.stone.revealImage,
-                            title = resources.getString(reward.stone.title)
-                        )
+                        val content = RevealContent(gem = reward.stone.revealImage, title = reward.stone.title)
                         reveal.open(reward.stone, content)
                     } else {
                         haptics.performHapticFeedback(HapticFeedbackType.Confirm)
@@ -153,7 +156,6 @@ fun ReferralContent(
     val tiersBlur by rememberTopBlurVisibility(tiersState)
     val skeletonListState = rememberScrollState()
     val skeletonHeaderState = rememberScrollState()
-    val program = state.program
     ClaimRevealHost(
         state = reveal,
         modifier = modifier
@@ -169,10 +171,10 @@ fun ReferralContent(
             ) {
                 OpalGlow(Modifier.fillMaxWidth())
                 val body = rememberBody(
-                    when {
-                        program != null -> Body.Program
-                        state.loadError != null -> Body.Error
-                        else -> Body.Loading
+                    when (state) {
+                        is ReferralState.Ready -> Body.Program
+                        is ReferralState.Failed -> Body.Error
+                        ReferralState.Loading -> Body.Loading
                     }
                 )
                 LaunchedEffect(body) {
@@ -205,10 +207,10 @@ fun ReferralContent(
                     label = "body"
                 ) {
                     when (it) {
-                        Body.Program -> program?.let { program ->
+                        Body.Program -> (state as? ReferralState.Ready)?.let { ready ->
                             Program(
-                                program = program,
-                                claimingTierId = state.claimingTierId,
+                                program = ready.program,
+                                claimingTierId = ready.claimingTierId,
                                 reveal = reveal,
                                 onIntent = onIntent,
                                 layout = layout,
@@ -218,7 +220,10 @@ fun ReferralContent(
                             )
                         }
 
-                        Body.Error -> LoadError(onRetry = { onIntent(ReferralIntent.Retry) })
+                        Body.Error -> LoadError(
+                            retrying = state == ReferralState.Loading,
+                            onRetry = { onIntent(ReferralIntent.Retry) }
+                        )
 
                         Body.Loading -> Loading(headerState = skeletonHeaderState, listState = skeletonListState)
 
@@ -230,7 +235,7 @@ fun ReferralContent(
                 state = hazeState,
                 visibility = {
                     when {
-                        program == null -> 0f
+                        state !is ReferralState.Ready -> 0f
                         layout == PaneLayout.Single -> listBlur
                         else -> maxOf(headerBlur, tiersBlur)
                     }
@@ -242,6 +247,7 @@ fun ReferralContent(
                 contentDescription = stringResource(R.string.referral_back),
                 onClick = onBack,
                 modifier = Modifier
+                    .semantics { traversalIndex = -1f }
                     .safeDrawingPadding()
                     .padding(horizontal = OpalTheme.spacing.mediumLarge, vertical = OpalTheme.spacing.small)
             )
@@ -250,7 +256,7 @@ fun ReferralContent(
 }
 
 @Composable
-private fun LoadError(onRetry: () -> Unit) {
+private fun LoadError(retrying: Boolean, onRetry: () -> Unit) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -261,6 +267,7 @@ private fun LoadError(onRetry: () -> Unit) {
                 .heightIn(min = maxHeight)
                 .safeDrawingPadding()
                 .padding(OpalTheme.spacing.mediumLarge)
+                .semantics { liveRegion = LiveRegionMode.Polite }
         ) {
             Text(
                 text = stringResource(R.string.referral_load_failed),
@@ -271,7 +278,8 @@ private fun LoadError(onRetry: () -> Unit) {
                 text = stringResource(R.string.referral_retry),
                 onClick = onRetry,
                 style = OpalButtonStyle.Primary,
-                size = OpalButtonSize.Small
+                size = OpalButtonSize.Small,
+                loading = retrying
             )
         }
     }
@@ -310,7 +318,7 @@ private fun rememberBody(target: Body): Body {
 private fun ReferralContentFigmaPreview() {
     OpalTheme {
         ReferralContent(
-            state = ReferralState(program = previewProgram()),
+            state = ReferralState.Ready(previewProgram()),
             onIntent = {},
             onBack = {}
         )
@@ -322,9 +330,7 @@ private fun ReferralContentFigmaPreview() {
 private fun ReferralContentProPreview() {
     OpalTheme {
         ReferralContent(
-            state = ReferralState(
-                program = previewProgram(plan = Plan.Pro, referrals = 0)
-            ),
+            state = ReferralState.Ready(previewProgram(plan = Plan.Pro, referrals = 0)),
             onIntent = {},
             onBack = {}
         )
@@ -336,7 +342,7 @@ private fun ReferralContentProPreview() {
 private fun ReferralContentLandscapePreview() {
     OpalTheme {
         ReferralContent(
-            state = ReferralState(program = previewProgram(), claimingTierId = "soulful"),
+            state = ReferralState.Ready(previewProgram(), claimingTierId = "soulful"),
             onIntent = {},
             onBack = {}
         )
@@ -348,7 +354,7 @@ private fun ReferralContentLandscapePreview() {
 private fun ReferralContentTabletPreview() {
     OpalTheme {
         ReferralContent(
-            state = ReferralState(program = previewProgram(referrals = 12)),
+            state = ReferralState.Ready(previewProgram(referrals = 12)),
             onIntent = {},
             onBack = {}
         )
@@ -359,7 +365,7 @@ private fun ReferralContentTabletPreview() {
 @Composable
 private fun ReferralContentLoadingPreview() {
     OpalTheme {
-        ReferralContent(state = ReferralState(), onIntent = {}, onBack = {})
+        ReferralContent(state = ReferralState.Loading, onIntent = {}, onBack = {})
     }
 }
 
@@ -367,7 +373,7 @@ private fun ReferralContentLoadingPreview() {
 @Composable
 private fun ReferralContentLoadingLandscapePreview() {
     OpalTheme {
-        ReferralContent(state = ReferralState(), onIntent = {}, onBack = {})
+        ReferralContent(state = ReferralState.Loading, onIntent = {}, onBack = {})
     }
 }
 
@@ -376,7 +382,7 @@ private fun ReferralContentLoadingLandscapePreview() {
 private fun ReferralContentErrorPreview() {
     OpalTheme {
         ReferralContent(
-            state = ReferralState(loadError = ReferralError.Network),
+            state = ReferralState.Failed(ReferralError.Network),
             onIntent = {},
             onBack = {}
         )

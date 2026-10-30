@@ -11,7 +11,6 @@ import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.dp
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.min
@@ -55,8 +54,6 @@ class SquircleShape(
     override fun copy(topStart: CornerSize, topEnd: CornerSize, bottomEnd: CornerSize, bottomStart: CornerSize) =
         SquircleShape(topStart, topEnd, bottomEnd, bottomStart, smoothing)
 
-    fun copy(smoothing: Float) = SquircleShape(topStart, topEnd, bottomEnd, bottomStart, smoothing)
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is SquircleShape) return false
@@ -76,47 +73,12 @@ class SquircleShape(
         "SquircleShape(topStart = $topStart, topEnd = $topEnd, bottomEnd = $bottomEnd, bottomStart = $bottomStart, smoothing = $smoothing)"
 }
 
-fun SquircleShape(corner: CornerSize, smoothing: Float = 0.6f) =
-    SquircleShape(corner, corner, corner, corner, smoothing)
+fun SquircleShape(size: Dp, smoothing: Float = 0.6f): SquircleShape {
+    val corner = CornerSize(size)
+    return SquircleShape(corner, corner, corner, corner, smoothing)
+}
 
-fun SquircleShape(size: Dp, smoothing: Float = 0.6f) = SquircleShape(CornerSize(size), smoothing)
-
-fun SquircleShape(size: Float, smoothing: Float = 0.6f) = SquircleShape(CornerSize(size), smoothing)
-
-fun SquircleShape(percent: Int, smoothing: Float = 0.6f) = SquircleShape(CornerSize(percent), smoothing)
-
-fun SquircleShape(
-    topStart: Dp = 0.dp,
-    topEnd: Dp = 0.dp,
-    bottomEnd: Dp = 0.dp,
-    bottomStart: Dp = 0.dp,
-    smoothing: Float = 0.6f
-) = SquircleShape(CornerSize(topStart), CornerSize(topEnd), CornerSize(bottomEnd), CornerSize(bottomStart), smoothing)
-
-fun SquircleShape(
-    topStart: Float = 0f,
-    topEnd: Float = 0f,
-    bottomEnd: Float = 0f,
-    bottomStart: Float = 0f,
-    smoothing: Float = 0.6f
-) = SquircleShape(CornerSize(topStart), CornerSize(topEnd), CornerSize(bottomEnd), CornerSize(bottomStart), smoothing)
-
-fun SquircleShape(
-    topStartPercent: Int = 0,
-    topEndPercent: Int = 0,
-    bottomEndPercent: Int = 0,
-    bottomStartPercent: Int = 0,
-    smoothing: Float = 0.6f
-) = SquircleShape(
-    CornerSize(topStartPercent),
-    CornerSize(topEndPercent),
-    CornerSize(bottomEndPercent),
-    CornerSize(bottomStartPercent),
-    smoothing
-)
-
-fun Path.addSquircle(roundRect: RoundRect, smoothing: Float = 0.6f) {
-    require(smoothing in 0f..1f) { "smoothing must be from 0 to 1" }
+private fun Path.addSquircle(roundRect: RoundRect, smoothing: Float) {
     val width = roundRect.width
     val height = roundRect.height
     if (width <= 0f || height <= 0f) return

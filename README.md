@@ -27,6 +27,7 @@ Install the prebuilt release: [opal-referrals.apk](opal-referrals.apk). Or build
 - Pro users don't see the free year of Pro, since only Free users can get it. A user who claimed it while on Free still sees it as claimed.
 - Claiming the free year upgrades the user to Pro right away.
 - A claimed reward stays claimed, even if the referral count later drops.
+- If the refresh after a successful claim fails, the app shows no error. The claim already went through and the screen is correct, and the next load fetches fresh data.
 - The first milestone unlocks at 1 friend. The design doesn't show its threshold.
 - The app opens on a demo console. From there you can switch between Free and Pro, change the number of friends, make the network slow or fail, and reset everything. Progress is kept between launches.
 - On tablets and other wide screens, the code and Share button sit on the left and the rewards list on the right.

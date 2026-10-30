@@ -89,7 +89,7 @@ class ReferralLayoutScrollTest {
             OpalTheme {
                 Box(Modifier.fillMaxSize()) {
                     ReferralContent(
-                        state = ReferralState(program = previewProgram()),
+                        state = ReferralState.Ready(previewProgram()),
                         onIntent = {},
                         onBack = {},
                         modifier = Modifier.size(window)
