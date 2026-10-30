@@ -13,7 +13,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import vadiole.opaltest.ui.theme.OpalMotion
 import vadiole.opaltest.ui.theme.OpalTheme
 
@@ -30,7 +29,7 @@ fun OpalCard(modifier: Modifier = Modifier, highlighted: Boolean = false, conten
         modifier = modifier
             .clip(shape)
             .drawBehind { if (highlight.value > 0f) drawRect(fill, alpha = highlight.value) }
-            .outlineBorder(1.dp, OpalTheme.colors.border, shape)
+            .outlineBorder(OpalTheme.layout.borderWidth, OpalTheme.colors.border, shape)
             .padding(OpalTheme.spacing.small),
         content = content
     )

@@ -51,6 +51,7 @@ import vadiole.opaltest.ui.common.ImageSource
 import vadiole.opaltest.ui.common.OpalButton
 import vadiole.opaltest.ui.common.OpalImage
 import vadiole.opaltest.ui.common.OpalImageCache
+import vadiole.opaltest.ui.common.evictOpalBitmap
 import vadiole.opaltest.ui.common.imageSource
 import vadiole.opaltest.ui.common.rememberOpalBitmap
 import vadiole.opaltest.ui.theme.OpalTheme
@@ -246,10 +247,10 @@ class ClaimRevealHostTest {
     @Test
     fun `prefetch decodes the reveal image before the reveal opens`() {
         setButtonContent()
+        RuntimeEnvironment.getApplication().resources.evictOpalBitmap(PREFETCHED, software = true, mipmap = true)
+        assertNull(cached(PREFETCHED, large = true))
         compose.runOnIdle { state.prefetch(PREFETCHED) }
-        frame()
-        frame()
-        Thread.sleep(PREFETCH_BUDGET_MS)
+        awaitCached(PREFETCHED, large = true)
         open(gem = PREFETCHED)
         frame()
         assertTrue(state.gemReady)
@@ -435,7 +436,6 @@ class ClaimRevealHostTest {
         val GEM = R.drawable.img_milestone_loyal_large
         val THUMBNAIL = R.drawable.img_milestone_loyal
         val PREFETCHED = R.drawable.img_milestone_soulful_large
-        const val PREFETCH_BUDGET_MS = 2_000L
         const val UNDERNEATH = "Underneath"
         const val SECOND = "Second"
     }
