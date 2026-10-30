@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">OpalTest</string>
+    <string name="app_name" translatable="false">Opal Referrals</string>
     <string name="referral_title">Invitations &amp; Rewards</string>
     <string name="referral_back">Back</string>
     <string name="referral_opal_logo">Opal</string>
