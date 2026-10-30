@@ -32,4 +32,10 @@
     <string name="console_reset">Reset</string>
     <string name="console_add_friend">+1 friend</string>
     <string name="console_next_tier">Next reward</string>
+    <string name="opal_button_loading">Loading</string>
+    <string name="console_loading">Loading demo state</string>
+    <string name="console_load_error">Couldn’t load the demo state.</string>
+    <string name="console_retry">Retry</string>
+    <string name="console_reset_confirm">Tap again to reset</string>
+    <string name="console_reset_confirm_state">Waiting for confirmation</string>
 </resources>

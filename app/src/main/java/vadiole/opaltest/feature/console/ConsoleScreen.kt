@@ -2,6 +2,7 @@ package vadiole.opaltest.feature.console
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,11 +27,18 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import vadiole.opaltest.R
@@ -38,9 +47,11 @@ import vadiole.opaltest.data.fake.ReferralDebugState
 import vadiole.opaltest.data.fake.SimulatedLatency
 import vadiole.opaltest.domain.referral.Plan
 import vadiole.opaltest.ui.common.OpalButton
+import vadiole.opaltest.ui.common.OpalButtonSize
 import vadiole.opaltest.ui.common.OpalButtonStyle
 import vadiole.opaltest.ui.common.OpalCard
 import vadiole.opaltest.ui.common.OpalChip
+import vadiole.opaltest.ui.common.OpalToggleChip
 import vadiole.opaltest.ui.theme.OpalTheme
 
 @Composable
@@ -82,13 +93,20 @@ fun ConsoleContent(state: ConsoleState, onIntent: (ConsoleIntent) -> Unit, modif
                 .safeDrawingPadding()
                 .padding(horizontal = OpalTheme.spacing.mediumLarge, vertical = OpalTheme.spacing.large)
                 .wrapContentWidth()
-                .widthIn(max = 480.dp)
+                .widthIn(max = OpalTheme.layout.maxContentWidth)
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.large)) {
                 Text(stringResource(R.string.console_title), style = OpalTheme.typography.largeTitle)
-                state.debug?.let {
-                    Status(it)
-                    Controls(it, onIntent)
+                val debug = state.debug
+                when {
+                    state.loadFailed -> LoadError(onRetry = { onIntent(ConsoleIntent.Retry) })
+
+                    debug != null -> {
+                        Status(debug)
+                        Controls(debug, state.isConfirmingReset, onIntent)
+                    }
+
+                    else -> Loading()
                 }
             }
             Actions(
@@ -96,6 +114,35 @@ fun ConsoleContent(state: ConsoleState, onIntent: (ConsoleIntent) -> Unit, modif
                 nextTierEnabled = state.debug?.nextTierAt != null,
                 onIntent = onIntent,
                 modifier = Modifier.padding(top = OpalTheme.spacing.xLarge)
+            )
+        }
+    }
+}
+
+@Composable
+private fun Loading(modifier: Modifier = Modifier) {
+    val description = stringResource(R.string.console_loading)
+    Box(contentAlignment = Alignment.Center, modifier = modifier.fillMaxWidth()) {
+        CircularProgressIndicator(
+            color = OpalTheme.colors.content,
+            modifier = Modifier.semantics { contentDescription = description }
+        )
+    }
+}
+
+@Composable
+private fun LoadError(onRetry: () -> Unit, modifier: Modifier = Modifier) {
+    OpalCard(modifier = modifier.fillMaxWidth()) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small),
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+        ) {
+            Text(stringResource(R.string.console_load_error), style = OpalTheme.typography.body)
+            OpalButton(
+                text = stringResource(R.string.console_retry),
+                onClick = onRetry,
+                style = OpalButtonStyle.Primary,
+                size = OpalButtonSize.Small
             )
         }
     }
@@ -130,10 +177,25 @@ private fun Status(debug: ReferralDebugState, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun Controls(debug: ReferralDebugState, onIntent: (ConsoleIntent) -> Unit, modifier: Modifier = Modifier) {
+private fun Controls(
+    debug: ReferralDebugState,
+    isConfirmingReset: Boolean,
+    onIntent: (ConsoleIntent) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val labels = listOf(
+        stringResource(R.string.console_label_plan),
+        stringResource(R.string.console_label_delay),
+        stringResource(R.string.console_label_fail)
+    )
+    val labelStyle = OpalTheme.typography.caption
+    val textMeasurer = rememberTextMeasurer()
+    val labelWidth = with(LocalDensity.current) {
+        labels.maxOf { textMeasurer.measure(it, labelStyle, softWrap = false).size.width }.toDp()
+    }
     OpalCard(modifier = modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall)) {
-            ControlRow(stringResource(R.string.console_label_plan)) {
+            ControlRow(labels[0], labelWidth) {
                 OpalChip(
                     text = stringResource(R.string.console_free),
                     selected = debug.plan == Plan.Free,
@@ -145,7 +207,7 @@ private fun Controls(debug: ReferralDebugState, onIntent: (ConsoleIntent) -> Uni
                     onClick = { onIntent(ConsoleIntent.SetPlan(Plan.Pro)) }
                 )
             }
-            ControlRow(stringResource(R.string.console_label_delay)) {
+            ControlRow(labels[1], labelWidth) {
                 SimulatedLatency.entries.forEach { latency ->
                     OpalChip(
                         text = stringResource(latency.label()),
@@ -154,34 +216,50 @@ private fun Controls(debug: ReferralDebugState, onIntent: (ConsoleIntent) -> Uni
                     )
                 }
             }
-            ControlRow(stringResource(R.string.console_label_fail)) {
-                OpalChip(
+            ControlRow(labels[2], labelWidth) {
+                OpalToggleChip(
                     text = stringResource(R.string.console_fail_next_load),
-                    selected = debug.failNextLoad,
-                    onClick = { onIntent(ConsoleIntent.ToggleFailNextLoad) }
+                    checked = debug.failNextLoad,
+                    onCheckedChange = { onIntent(ConsoleIntent.ToggleFailNextLoad) }
                 )
             }
-            OpalChip(
-                text = stringResource(R.string.console_reset),
-                selected = false,
-                onClick = { onIntent(ConsoleIntent.Reset) }
-            )
+            ResetButton(isConfirming = isConfirmingReset, onClick = { onIntent(ConsoleIntent.Reset) })
         }
     }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ControlRow(label: String, modifier: Modifier = Modifier, chips: @Composable () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
+private fun ControlRow(label: String, labelWidth: Dp, modifier: Modifier = Modifier, chips: @Composable () -> Unit) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+    ) {
         Text(
             text = label,
             style = OpalTheme.typography.caption,
             color = OpalTheme.colors.contentSecondary,
-            modifier = Modifier.width(56.dp)
+            softWrap = false,
+            modifier = Modifier.width(labelWidth)
         )
         FlowRow(horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall)) { chips() }
     }
+}
+
+@Composable
+private fun ResetButton(isConfirming: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val confirmDescription = stringResource(R.string.console_reset_confirm_state)
+    OpalButton(
+        text = stringResource(if (isConfirming) R.string.console_reset_confirm else R.string.console_reset),
+        onClick = onClick,
+        style = if (isConfirming) OpalButtonStyle.Accent else OpalButtonStyle.Primary,
+        size = OpalButtonSize.Small,
+        modifier = modifier.semantics {
+            liveRegion = LiveRegionMode.Polite
+            if (isConfirming) stateDescription = confirmDescription
+        }
+    )
 }
 
 private fun SimulatedLatency.label(): Int = when (this) {
@@ -235,13 +313,15 @@ private val previewDebug = ReferralDebugState(
 @Preview(name = "Phone", widthDp = 402, heightDp = 874)
 @Composable
 private fun ConsolePhonePreview() {
-    OpalTheme { ConsoleContent(state = ConsoleState(previewDebug), onIntent = {}) }
+    OpalTheme { ConsoleContent(state = ConsoleState(previewDebug, isLoading = false), onIntent = {}) }
 }
 
 @Preview(name = "Landscape", widthDp = 874, heightDp = 402)
 @Composable
 private fun ConsoleLandscapePreview() {
-    OpalTheme { ConsoleContent(state = ConsoleState(previewDebug.copy(plan = Plan.Pro)), onIntent = {}) }
+    OpalTheme {
+        ConsoleContent(state = ConsoleState(previewDebug.copy(plan = Plan.Pro), isLoading = false), onIntent = {})
+    }
 }
 
 @Preview(name = "Tablet", widthDp = 1280, heightDp = 800)
@@ -250,7 +330,8 @@ private fun ConsoleTabletPreview() {
     OpalTheme {
         ConsoleContent(
             state = ConsoleState(
-                previewDebug.copy(successfulReferrals = 100, nextTierAt = null)
+                previewDebug.copy(successfulReferrals = 100, nextTierAt = null),
+                isLoading = false
             ),
             onIntent = {}
         )
@@ -261,4 +342,24 @@ private fun ConsoleTabletPreview() {
 @Composable
 private fun ConsoleLoadingPreview() {
     OpalTheme { ConsoleContent(state = ConsoleState(), onIntent = {}) }
+}
+
+@Preview(name = "Load error", widthDp = 402, heightDp = 874)
+@Composable
+private fun ConsoleLoadErrorPreview() {
+    OpalTheme { ConsoleContent(state = ConsoleState(isLoading = false, loadFailed = true), onIntent = {}) }
+}
+
+@Preview(name = "Confirm reset", widthDp = 402, heightDp = 874)
+@Composable
+private fun ConsoleConfirmResetPreview() {
+    OpalTheme {
+        ConsoleContent(state = ConsoleState(previewDebug, isLoading = false, isConfirmingReset = true), onIntent = {})
+    }
+}
+
+@Preview(name = "Large font", widthDp = 402, heightDp = 874, fontScale = 2f)
+@Composable
+private fun ConsoleLargeFontPreview() {
+    OpalTheme { ConsoleContent(state = ConsoleState(previewDebug, isLoading = false), onIntent = {}) }
 }
