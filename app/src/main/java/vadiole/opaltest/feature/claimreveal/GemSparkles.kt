@@ -17,6 +17,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
+import kotlin.math.cos
 import kotlinx.coroutines.flow.collectLatest
 import vadiole.opaltest.ui.theme.OpalTheme
 
@@ -49,7 +50,9 @@ internal fun GemSparkles(state: ClaimRevealState, frame: () -> Rect?, modifier: 
                 if (visible <= 0f) return@drawBehind
                 val gem = frame() ?: return@drawBehind
                 val center = gem.gemCenter()
-                val reach = gem.width * SPARKLE_END_RADIUS + SPARKLE_MAX_SIZE.toPx()
+                val star = SPARKLE_MAX_SIZE.toPx()
+                val reach = gem.width * SPARKLE_END_RADIUS + star
+                val drop = gem.width * SPARKLE_END_RADIUS * cos(SPARKLE_BOTTOM_GAP / 2f) + star
                 shader.setFloatUniform("center", center.x, center.y)
                 shader.setFloatUniform("unit", gem.width)
                 shader.setFloatUniform("density", density)
@@ -59,7 +62,7 @@ internal fun GemSparkles(state: ClaimRevealState, frame: () -> Rect?, modifier: 
                 drawRect(
                     brush = brush,
                     topLeft = center - Offset(reach, reach),
-                    size = Size(reach * 2f, reach * 2f),
+                    size = Size(reach * 2f, reach + drop),
                     alpha = visible * SPARKLE_ALPHA
                 )
             }
@@ -70,7 +73,8 @@ private const val SPARKLE_COUNT = 22
 private const val SPARKLE_LIFE_S = 4.6f
 private const val SPARKLE_LIFE_VARIANCE = 0.3f
 private const val SPARKLE_START_RADIUS = 0.18f
-private const val SPARKLE_END_RADIUS = 0.62f
+private const val SPARKLE_END_RADIUS = 0.8f
+private const val SPARKLE_BOTTOM_GAP = 1.9f
 private const val SPARKLE_FADE_IN = 0.18f
 private const val SPARKLE_FADE_OUT = 0.5f
 private const val SPARKLE_MIN_SIZE_DP = 4f
@@ -100,6 +104,7 @@ private val SparkleShader = """
 
     half4 main(float2 position) {
         float2 offset = position - center;
+        float away = length(offset);
         float light = 0.0;
         float heat = 0.0;
         for (int i = 0; i < $SPARKLE_COUNT; i++) {
@@ -109,11 +114,12 @@ private val SparkleShader = """
             if (age < 0.0) continue;
             float cycle = floor(age / life);
             float progress = age / life - cycle;
-            float angle = 6.2831853 * hash(seed * 5.3 + cycle * 11.7);
             float radius = unit * mix($SPARKLE_START_RADIUS, $SPARKLE_END_RADIUS, progress);
             float grain = hash(seed * 7.9 + cycle * 2.3);
             float size = density * mix($SPARKLE_MIN_SIZE_DP, $SPARKLE_MAX_SIZE_DP, grain);
-            float2 q = (offset - float2(cos(angle), sin(angle)) * radius) / size;
+            if (abs(away - radius) >= size) continue;
+            float angle = $SPARKLE_BOTTOM_GAP * 0.5 + (6.2831853 - $SPARKLE_BOTTOM_GAP) * hash(seed * 5.3 + cycle * 11.7);
+            float2 q = (offset - float2(sin(angle), cos(angle)) * radius) / size;
             float d2 = dot(q, q);
             if (d2 >= 1.0) continue;
             float fade = smoothstep(0.0, $SPARKLE_FADE_IN, progress) * (1.0 - smoothstep($SPARKLE_FADE_OUT, 1.0, progress));

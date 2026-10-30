@@ -5,12 +5,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.MotionDurationScale
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import java.io.File
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -45,6 +47,32 @@ class GemSparklesTest {
         assertEquals(1f, reveal.state.sparkle.value, 0f)
         reveal.advance(2000)
         reveal.capture("claim_reveal_sparkles")
+    }
+
+    @Test
+    fun `stars drift beyond the gem slot but stay above the title`() {
+        val reveal = SparkleReveal(compose)
+        reveal.awaitRevealed()
+        reveal.advance(3000)
+        val sparkling = reveal.capture("claim_reveal_sparkles_on")
+        compose.runOnIdle { runBlocking { reveal.state.sparkle.snapTo(0f) } }
+        reveal.frame()
+        val plain = reveal.capture("claim_reveal_sparkles_off")
+        val slot = reveal.state.target!!
+        var beyond = 0
+        var below = 0
+        for (y in 0 until plain.height) {
+            for (x in 0 until plain.width) {
+                if (sparkling.getPixel(x, y) == plain.getPixel(x, y)) continue
+                if (y >= slot.bottom) {
+                    below++
+                } else if (!slot.contains(Offset(x + 0.5f, y + 0.5f))) {
+                    beyond++
+                }
+            }
+        }
+        assertTrue("no stars outside the gem slot", beyond > 0)
+        assertEquals("stars reached the title", 0, below)
     }
 
     @Test
@@ -159,9 +187,10 @@ private class SparkleReveal(private val compose: ComposeContentTestRule) {
         error("reveal never settled")
     }
 
-    fun capture(name: String) {
+    fun capture(name: String): Bitmap {
         val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
         val output = File("build/screenshots/$name.png").apply { parentFile?.mkdirs() }
         output.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        return bitmap
     }
 }
