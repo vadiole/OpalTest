@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -28,6 +29,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -38,6 +43,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
@@ -50,11 +56,14 @@ import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.delay
 import vadiole.opaltest.R
 import vadiole.opaltest.container
+import vadiole.opaltest.domain.referral.MilestoneStone
 import vadiole.opaltest.domain.referral.Plan
 import vadiole.opaltest.domain.referral.ReferralError
 import vadiole.opaltest.domain.referral.Reward
+import vadiole.opaltest.domain.referral.TierStatus
 import vadiole.opaltest.feature.claimreveal.ClaimRevealHost
 import vadiole.opaltest.feature.claimreveal.ClaimRevealState
 import vadiole.opaltest.feature.claimreveal.RevealContent
@@ -151,105 +160,146 @@ fun ReferralContent(
     val tiersBlur by rememberTopBlurVisibility(tiersState)
     val skeletonListState = rememberScrollState()
     val skeletonHeaderState = rememberScrollState()
-    ClaimRevealHost(
-        state = reveal,
-        modifier = modifier
+    Box(
+        modifier
             .fillMaxSize()
             .semantics { paneTitle = title }
     ) {
-        Box(Modifier.fillMaxSize()) {
-            Box(
-                Modifier
-                    .matchParentSize()
-                    .hazeSource(hazeState)
-                    .background(OpalTheme.colors.background)
-            ) {
-                OpalGlow(Modifier.fillMaxWidth())
-                val body = rememberPacedPhase(
-                    target = when (state) {
-                        is ReferralState.Ready -> Body.Program
-                        is ReferralState.Failed -> Body.Error
-                        ReferralState.Loading -> Body.Loading
-                    },
-                    loading = Body.Loading
-                )
-                LaunchedEffect(body) {
-                    when (body) {
-                        Body.Loading -> {
-                            skeletonListState.scrollTo(0)
-                            skeletonHeaderState.scrollTo(0)
-                        }
-
-                        Body.Program -> if (layout == PaneLayout.Single) {
-                            listState.scrollBy(skeletonListState.value.toFloat())
-                        } else {
-                            tiersState.scrollBy(skeletonListState.value.toFloat())
-                            headerState.scrollBy(skeletonHeaderState.value.toFloat())
-                        }
-
-                        else -> Unit
-                    }
-                }
-                AnimatedContent(
-                    targetState = body,
-                    transitionSpec = {
-                        if (initialState == null) {
-                            EnterTransition.None togetherWith ExitTransition.None using null
-                        } else {
-                            fadeIn(OpalMotion.CrossFade) togetherWith fadeOut(OpalMotion.CrossFade) using null
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize(),
-                    label = "body"
+        ClaimRevealHost(state = reveal, modifier = Modifier.fillMaxSize()) {
+            Box(Modifier.fillMaxSize()) {
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .hazeSource(hazeState)
+                        .background(OpalTheme.colors.background)
                 ) {
-                    when (it) {
-                        Body.Program -> (state as? ReferralState.Ready)?.let { ready ->
-                            Program(
-                                program = ready.program,
-                                claimingTierId = ready.claimingTierId,
-                                reveal = reveal,
-                                onIntent = onIntent,
-                                layout = layout,
-                                listState = listState,
-                                headerState = headerState,
-                                tiersState = tiersState
-                            )
+                    OpalGlow(Modifier.fillMaxWidth())
+                    val body = rememberPacedPhase(
+                        target = when (state) {
+                            is ReferralState.Ready -> Body.Program
+                            is ReferralState.Failed -> Body.Error
+                            ReferralState.Loading -> Body.Loading
+                        },
+                        loading = Body.Loading
+                    )
+                    LaunchedEffect(body) {
+                        when (body) {
+                            Body.Loading -> {
+                                skeletonListState.scrollTo(0)
+                                skeletonHeaderState.scrollTo(0)
+                            }
+
+                            Body.Program -> if (layout == PaneLayout.Single) {
+                                listState.scrollBy(skeletonListState.value.toFloat())
+                            } else {
+                                tiersState.scrollBy(skeletonListState.value.toFloat())
+                                headerState.scrollBy(skeletonHeaderState.value.toFloat())
+                            }
+
+                            else -> Unit
                         }
+                    }
+                    AnimatedContent(
+                        targetState = body,
+                        transitionSpec = {
+                            if (initialState == null) {
+                                EnterTransition.None togetherWith ExitTransition.None using null
+                            } else {
+                                fadeIn(OpalMotion.CrossFade) togetherWith fadeOut(OpalMotion.CrossFade) using null
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize(),
+                        label = "body"
+                    ) {
+                        when (it) {
+                            Body.Program -> (state as? ReferralState.Ready)?.let { ready ->
+                                Program(
+                                    program = ready.program,
+                                    claimingTierId = ready.claimingTierId,
+                                    reveal = reveal,
+                                    onIntent = onIntent,
+                                    layout = layout,
+                                    listState = listState,
+                                    headerState = headerState,
+                                    tiersState = tiersState
+                                )
+                            }
 
-                        Body.Error -> LoadError(
-                            retrying = state == ReferralState.Loading,
-                            onRetry = { onIntent(ReferralIntent.Retry) }
-                        )
+                            Body.Error -> LoadError(
+                                retrying = state == ReferralState.Loading,
+                                onRetry = { onIntent(ReferralIntent.Retry) }
+                            )
 
-                        Body.Loading -> Loading(headerState = skeletonHeaderState, listState = skeletonListState)
+                            Body.Loading -> Loading(headerState = skeletonHeaderState, listState = skeletonListState)
 
-                        null -> Unit
+                            null -> Unit
+                        }
                     }
                 }
+                OpalTopBlur(
+                    state = hazeState,
+                    visibility = {
+                        when {
+                            state !is ReferralState.Ready -> 0f
+                            layout == PaneLayout.Single -> listBlur
+                            else -> maxOf(headerBlur, tiersBlur)
+                        }
+                    },
+                    height = OpalTheme.layout.topBarHeight
+                )
+                OpalIconButton(
+                    icon = R.drawable.ic_arrow_back,
+                    contentDescription = stringResource(R.string.referral_back),
+                    onClick = onBack,
+                    modifier = Modifier
+                        .semantics { traversalIndex = -1f }
+                        .safeDrawingPadding()
+                        .padding(horizontal = OpalTheme.spacing.mediumLarge, vertical = OpalTheme.spacing.small)
+                )
             }
-            OpalTopBlur(
-                state = hazeState,
-                visibility = {
-                    when {
-                        state !is ReferralState.Ready -> 0f
-                        layout == PaneLayout.Single -> listBlur
-                        else -> maxOf(headerBlur, tiersBlur)
-                    }
-                },
-                height = OpalTheme.layout.topBarHeight
-            )
-            OpalIconButton(
-                icon = R.drawable.ic_arrow_back,
-                contentDescription = stringResource(R.string.referral_back),
-                onClick = onBack,
-                modifier = Modifier
-                    .semantics { traversalIndex = -1f }
-                    .safeDrawingPadding()
-                    .padding(horizontal = OpalTheme.spacing.mediumLarge, vertical = OpalTheme.spacing.small)
-            )
         }
+        ClaimAnnouncement(state = state, reveal = reveal)
     }
 }
+
+@Composable
+private fun ClaimAnnouncement(state: ReferralState, reveal: ClaimRevealState) {
+    var claimed by remember { mutableStateOf<Reward?>(null) }
+    val instantClaims = (state as? ReferralState.Ready)?.program?.tiers
+        ?.filter { it.reward !is Reward.Milestone && it.status == TierStatus.Claimed }
+        ?.map { it.reward }
+    var seen by remember { mutableStateOf(instantClaims) }
+    LaunchedEffect(instantClaims) {
+        if (instantClaims == null) return@LaunchedEffect
+        seen?.let { old -> instantClaims.lastOrNull { it !in old }?.let { claimed = it } }
+        seen = instantClaims
+    }
+    LaunchedEffect(reveal) {
+        var held: MilestoneStone? = null
+        snapshotFlow { (reveal.activeKey as? MilestoneStone)?.takeUnless { reveal.landed } }.collect { stone ->
+            if (stone == null) held?.let { claimed = Reward.Milestone(it) }
+            held = stone
+        }
+    }
+    LaunchedEffect(claimed) {
+        if (claimed == null) return@LaunchedEffect
+        delay(ANNOUNCEMENT_HOLD_MS)
+        claimed = null
+    }
+    val announcement = claimed?.takeUnless { reveal.activeKey != null && !reveal.landed }
+        ?.let { stringResource(R.string.referral_claimed_announcement, it.title()) }
+    Box(
+        Modifier
+            .size(ReferralDimens.announcementSize)
+            .semantics {
+                liveRegion = LiveRegionMode.Polite
+                traversalIndex = 1f
+                if (announcement != null) contentDescription = announcement
+            }
+    )
+}
+
+private const val ANNOUNCEMENT_HOLD_MS = 5_000L
 
 @Composable
 private fun LoadError(retrying: Boolean, onRetry: () -> Unit) {

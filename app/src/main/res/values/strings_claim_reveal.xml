@@ -3,6 +3,4 @@
     <string name="claim_reveal_title">%1$s\nis yours</string>
     <string name="claim_reveal_message">Thanks for helping your friends find their focus.</string>
     <string name="claim_reveal_continue">Continue</string>
-    <!-- Screen reader title of the reveal overlay. -->
-    <string name="claim_reveal_pane">Reward claimed</string>
 </resources>

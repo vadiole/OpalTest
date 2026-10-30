@@ -35,6 +35,7 @@
     </plurals>
     <string name="referral_claimed">Reclamado</string>
     <string name="referral_claim">Reclamar</string>
+    <string name="referral_claimed_announcement">Recompensa reclamada: %1$s</string>
     <string name="referral_milestone_loyal">MileStone Leal</string>
     <string name="referral_milestone_soulful">MileStone Profundo</string>
     <string name="referral_milestone_popular">MileStone Popular</string>

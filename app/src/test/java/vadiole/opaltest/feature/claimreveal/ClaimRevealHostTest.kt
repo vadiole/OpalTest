@@ -171,7 +171,7 @@ class ClaimRevealHostTest {
 
     private fun useKeyboard() = compose.runOnIdle { inputMode.requestInputMode(InputMode.Keyboard) }
 
-    private fun paneTitle() = SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "Reward claimed")
+    private fun paneTitle() = SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "Loyal MileStone is yours")
 
     @Test
     fun `content underneath is hidden from accessibility while the reveal is open`() {

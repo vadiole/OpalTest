@@ -7,16 +7,28 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.input.InputMode
+import androidx.compose.ui.input.InputModeManager
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalInputModeManager
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -30,7 +42,9 @@ import org.robolectric.annotation.GraphicsMode
 import vadiole.opaltest.R
 import vadiole.opaltest.domain.referral.MilestoneStone
 import vadiole.opaltest.domain.referral.ReferralError
+import vadiole.opaltest.domain.referral.ReferralProgram
 import vadiole.opaltest.domain.referral.RewardTier
+import vadiole.opaltest.domain.referral.TierStatus
 import vadiole.opaltest.feature.claimreveal.ClaimRevealState
 import vadiole.opaltest.feature.claimreveal.RevealContent
 import vadiole.opaltest.feature.claimreveal.RevealPhase
@@ -46,16 +60,21 @@ class ReferralContentTest {
 
     private var state: ReferralState by mutableStateOf(ReferralState.Loading)
     private lateinit var reveal: ClaimRevealState
+    private val intents = mutableListOf<ReferralIntent>()
+    private lateinit var focusManager: FocusManager
+    private lateinit var inputMode: InputModeManager
 
     private fun setContent(initial: ReferralState, probe: RewardTier? = null) {
         state = initial
         compose.setContent {
             reveal = rememberClaimRevealState()
+            focusManager = LocalFocusManager.current
+            inputMode = LocalInputModeManager.current
             OpalTheme {
                 Column {
                     ReferralContent(
                         state = state,
-                        onIntent = {},
+                        onIntent = { intents += it },
                         onBack = {},
                         modifier = Modifier.weight(1f),
                         reveal = reveal
@@ -125,6 +144,69 @@ class ReferralContentTest {
             }
         }
         error("reveal never closed")
+    }
+
+    private fun liveRegions() =
+        compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.LiveRegion)).fetchSemanticsNodes()
+
+    private fun announcement(): String? =
+        liveRegions().single().config.getOrNull(SemanticsProperties.ContentDescription)?.single()
+
+    private fun claim(program: ReferralProgram, tierId: String) = program.copy(
+        tiers = program.tiers.map { if (it.id == tierId) it.copy(status = TierStatus.Claimed) else it }
+    )
+
+    @Test
+    fun `claiming the free year announces it once through one status node that then clears`() {
+        val program = previewProgram(referrals = 5)
+        setContent(ReferralState.Ready(program, claimingTierId = "year"))
+        assertEquals(null, announcement())
+
+        compose.runOnIdle { state = ReferralState.Ready(claim(program, "year")) }
+        compose.waitForIdle()
+
+        assertEquals(1, liveRegions().size)
+        assertEquals("1 Year of Opal Pro claimed", announcement())
+
+        compose.mainClock.advanceTimeBy(5_000)
+        assertEquals(null, announcement())
+    }
+
+    @Test
+    fun `rewards already claimed on first show are not announced`() {
+        setContent(ReferralState.Ready(claim(previewProgram(referrals = 5), "year")))
+
+        assertEquals(null, announcement())
+    }
+
+    @Test
+    fun `a milestone is announced when its gem lands`() {
+        val program = previewProgram()
+        setContent(ReferralState.Ready(program))
+        compose.mainClock.autoAdvance = false
+        compose.runOnIdle {
+            reveal.open(
+                MilestoneStone.Soulful,
+                RevealContent(gem = R.drawable.img_milestone_soulful_large, title = R.string.referral_milestone_soulful)
+            )
+            state = ReferralState.Ready(claim(program, "soulful"))
+        }
+        val deadline = System.currentTimeMillis() + 20_000
+        while (reveal.phase != RevealPhase.Revealed) {
+            check(System.currentTimeMillis() < deadline) { "reveal never settled" }
+            Thread.sleep(5)
+            frame()
+        }
+        assertEquals(null, announcement())
+
+        compose.runOnIdle { reveal.close() }
+        while (reveal.phase != RevealPhase.Landed) {
+            check(System.currentTimeMillis() < deadline) { "reveal never landed" }
+            frame()
+            if (reveal.phase != RevealPhase.Landed) assertEquals(null, announcement())
+        }
+        frame()
+        assertEquals("Soulful MileStone claimed", announcement())
     }
 
     @Test
@@ -240,6 +322,38 @@ class ReferralContentTest {
         }
         assertEquals("Back", spoken.first())
     }
+
+    @Test
+    fun `code exposes one copy action and still copies on tap and long press`() {
+        setContent(ReferralState.Ready(previewProgram()))
+        val code = compose.onNode(hasContentDescription("Your Opal code", substring = true))
+        val config = code.fetchSemanticsNode().config
+
+        assertEquals("Copy invite", config[SemanticsActions.OnClick].label)
+        assertFalse(config.contains(SemanticsActions.OnLongClick))
+        code.performClick()
+        code.performTouchInput { longClick() }
+        assertEquals(listOf(ReferralIntent.CopyInvite, ReferralIntent.CopyInvite), intents)
+    }
+
+    private fun assertTabReachesBackFirst() {
+        setContent(ReferralState.Ready(previewProgram()))
+        compose.runOnIdle { inputMode.requestInputMode(InputMode.Keyboard) }
+        compose.onNodeWithContentDescription("Back").assertIsFocused()
+        compose.runOnIdle { focusManager.moveFocus(FocusDirection.Next) }
+        compose.onNodeWithContentDescription("Your Opal code", substring = true).assertIsFocused()
+    }
+
+    @Test
+    fun `back is the first keyboard tab stop`() = assertTabReachesBackFirst()
+
+    @Test
+    @Config(qualifiers = "w732dp-h412dp-xxhdpi")
+    fun `back is the first keyboard tab stop in the short two-pane layout`() = assertTabReachesBackFirst()
+
+    @Test
+    @Config(qualifiers = "w1280dp-h800dp-xhdpi")
+    fun `back is the first keyboard tab stop on a tablet`() = assertTabReachesBackFirst()
 
     private fun SemanticsNodeInteraction.stateDescription(): String? =
         fetchSemanticsNode().config.getOrNull(SemanticsProperties.StateDescription)
