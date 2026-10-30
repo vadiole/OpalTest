@@ -5,6 +5,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,14 +21,23 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -37,7 +47,9 @@ import vadiole.opaltest.R
 import vadiole.opaltest.domain.referral.MilestoneStone
 import vadiole.opaltest.feature.claimreveal.ClaimRevealHost
 import vadiole.opaltest.feature.claimreveal.ClaimRevealState
+import vadiole.opaltest.feature.claimreveal.ClaimedGemGlow
 import vadiole.opaltest.feature.claimreveal.RevealContent
+import vadiole.opaltest.feature.claimreveal.RevealSound
 import vadiole.opaltest.feature.claimreveal.claimRevealSource
 import vadiole.opaltest.feature.claimreveal.pressScale
 import vadiole.opaltest.feature.claimreveal.rememberClaimRevealState
@@ -47,6 +59,7 @@ import vadiole.opaltest.ui.common.OpalButton
 import vadiole.opaltest.ui.common.OpalButtonSize
 import vadiole.opaltest.ui.common.OpalButtonStyle
 import vadiole.opaltest.ui.common.OpalCard
+import vadiole.opaltest.ui.common.OpalChip
 import vadiole.opaltest.ui.common.OpalProgressBar
 import vadiole.opaltest.ui.theme.OpalTheme
 
@@ -62,11 +75,37 @@ private val demoTiers = listOf(
 fun ClaimRevealDemoScreen(modifier: Modifier = Modifier) {
     val reveal = rememberClaimRevealState()
     var claimed by rememberSaveable { mutableStateOf(emptyList<MilestoneStone>()) }
+    var last by rememberSaveable { mutableStateOf<MilestoneStone?>(null) }
+    val names = demoTiers.associate { it.stone to stringResource(it.name) }
+    fun open(stone: MilestoneStone) {
+        last = stone
+        claimed = claimed + stone
+        reveal.open(stone, RevealContent(gem = stone.revealImage, title = names.getValue(stone)))
+    }
+    fun replay() {
+        val stone = last ?: return
+        if (reveal.isHolding(stone)) reveal.replay() else open(stone)
+    }
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { focus.requestFocus() }
     ClaimRevealHost(
         state = reveal,
         modifier = modifier
             .fillMaxSize()
             .background(OpalTheme.colors.background)
+            .onPreviewKeyEvent { event ->
+                if (event.type != KeyEventType.KeyUp) return@onPreviewKeyEvent false
+                val sound = soundKeys[event.key]
+                when {
+                    sound != null -> reveal.sound = sound
+                    event.key == Key.S -> reveal.timeScale = if (reveal.timeScale == 1f) SLOW_MOTION else 1f
+                    event.key == Key.R -> replay()
+                    else -> return@onPreviewKeyEvent false
+                }
+                true
+            }
+            .focusRequester(focus)
+            .focusable()
     ) {
         Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
             Column(
@@ -79,18 +118,15 @@ fun ClaimRevealDemoScreen(modifier: Modifier = Modifier) {
             ) {
                 Text(stringResource(R.string.claim_reveal_demo_title), style = OpalTheme.typography.headline)
                 demoTiers.forEach { tier ->
-                    val name = stringResource(tier.name)
                     DemoTierCard(
                         tier = tier,
-                        name = name,
+                        name = names.getValue(tier.stone),
                         claimed = tier.stone in claimed && !reveal.isHolding(tier.stone),
                         reveal = reveal,
-                        onClaim = {
-                            claimed = claimed + tier.stone
-                            reveal.open(tier.stone, RevealContent(gem = tier.stone.revealImage, title = name))
-                        }
+                        onClaim = { open(tier.stone) }
                     )
                 }
+                DemoPanel(reveal = reveal, onReplay = ::replay)
                 OpalButton(
                     text = stringResource(R.string.claim_reveal_demo_reset),
                     onClick = { claimed = emptyList() },
@@ -127,6 +163,7 @@ private fun DemoTierCard(
                     .clip(OpalTheme.shapes.medium)
                     .background(OpalTheme.colors.fillSubtle)
             ) {
+                ClaimedGemGlow(gem = tier.stone.thumbnail, visible = claimed, modifier = Modifier.fillMaxSize())
                 Image(
                     painter = painterResource(tier.stone.thumbnail),
                     contentDescription = null,
@@ -186,7 +223,52 @@ private fun DemoTierCard(
     }
 }
 
+@Composable
+private fun DemoPanel(reveal: ClaimRevealState, onReplay: () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall)) {
+        Text(
+            text = stringResource(R.string.claim_reveal_demo_sound),
+            style = OpalTheme.typography.caption,
+            color = OpalTheme.colors.contentSecondary
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall)) {
+            soundKeys.values.forEach { sound ->
+                OpalChip(
+                    text = sound.name.takeLast(1),
+                    selected = reveal.sound == sound,
+                    onClick = { reveal.sound = sound }
+                )
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall)) {
+            OpalChip(
+                text = stringResource(R.string.claim_reveal_demo_slow),
+                selected = reveal.timeScale != 1f,
+                onClick = { reveal.timeScale = if (reveal.timeScale == 1f) SLOW_MOTION else 1f }
+            )
+            OpalChip(text = stringResource(R.string.claim_reveal_demo_replay), selected = false, onClick = onReplay)
+        }
+        Text(
+            text = stringResource(R.string.claim_reveal_demo_hint),
+            style = OpalTheme.typography.caption,
+            color = OpalTheme.colors.contentSecondary
+        )
+    }
+}
+
+private val soundKeys = linkedMapOf(
+    Key.One to RevealSound.Shine1,
+    Key.Two to RevealSound.Shine2,
+    Key.Three to RevealSound.Shine3,
+    Key.Five to RevealSound.Shine5,
+    Key.Six to RevealSound.Shine6
+)
+
+private const val SLOW_MOTION = 4f
+
 @Preview(widthDp = 402, heightDp = 874)
+@Preview(widthDp = 874, heightDp = 402)
+@Preview(widthDp = 1280, heightDp = 800)
 @Composable
 private fun ClaimRevealDemoScreenPreview() {
     OpalTheme {
