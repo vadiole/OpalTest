@@ -144,6 +144,23 @@ class DesignSystemScreenshotTest {
                     enabled = false
                 )
             }
+            Row(horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small)) {
+                OpalButton(text = "+1", onClick = {}, style = OpalButtonStyle.Outlined, size = OpalButtonSize.Small)
+                OpalButton(
+                    text = "Reset",
+                    onClick = {},
+                    style = OpalButtonStyle.Outlined,
+                    size = OpalButtonSize.Small,
+                    loading = true
+                )
+                OpalButton(
+                    text = "All unlocked",
+                    onClick = {},
+                    style = OpalButtonStyle.Outlined,
+                    size = OpalButtonSize.Small,
+                    enabled = false
+                )
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall)) {
                 OpalChip(text = "Free", selected = true, onClick = {})
                 OpalChip(text = "Pro", selected = false, onClick = {})
@@ -169,6 +186,13 @@ class DesignSystemScreenshotTest {
                     text = "Nächste Belohnung",
                     onClick = {},
                     style = OpalButtonStyle.Primary,
+                    modifier = Modifier.weight(1f)
+                )
+                OpalButton(
+                    text = "Demo zurücksetzen",
+                    onClick = {},
+                    style = OpalButtonStyle.Outlined,
+                    size = OpalButtonSize.Small,
                     modifier = Modifier.weight(1f)
                 )
                 OpalButton(

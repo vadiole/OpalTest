@@ -413,7 +413,7 @@ private fun Controls(
                 OpalButton(
                     text = stringResource(R.string.console_add_friend),
                     onClick = { onIntent(ConsoleIntent.AddFriend) },
-                    style = OpalButtonStyle.Primary,
+                    style = OpalButtonStyle.Outlined,
                     size = OpalButtonSize.Small,
                     modifier = Modifier.semantics { contentDescription = addDescription }
                 )
@@ -424,7 +424,7 @@ private fun Controls(
                         stringResource(R.string.console_all_unlocked)
                     },
                     onClick = { onIntent(ConsoleIntent.AdvanceToNextTier) },
-                    style = OpalButtonStyle.Primary,
+                    style = OpalButtonStyle.Outlined,
                     size = OpalButtonSize.Small,
                     enabled = next != null
                 )
@@ -545,7 +545,7 @@ private fun ResetButton(isConfirming: Boolean, onIntent: (ConsoleIntent) -> Unit
         OpalButton(
             text = stringResource(if (confirming) R.string.console_reset_confirm else R.string.console_reset),
             onClick = reset,
-            style = if (confirming) OpalButtonStyle.Accent else OpalButtonStyle.Primary,
+            style = if (confirming) OpalButtonStyle.Accent else OpalButtonStyle.Outlined,
             size = OpalButtonSize.Small
         )
     }
