@@ -33,7 +33,7 @@ fun OpalIconButton(
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .size(44.dp)
+            .size(OpalTheme.layout.iconButtonSize)
             .pressFeedback(interactionSource, indicationSource)
             .clip(OpalTheme.shapes.pill)
             .background(OpalTheme.colors.fill)

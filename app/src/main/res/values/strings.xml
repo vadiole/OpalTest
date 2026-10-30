@@ -15,7 +15,9 @@
         <item quantity="other">%d friends</item>
     </plurals>
     <string name="referral_code_title">Your Opal code</string>
+    <string name="referral_code_description">Your Opal code: %1$s</string>
     <string name="referral_share">Share invite</string>
+    <string name="referral_copy_invite">Copy invite</string>
     <plurals name="referral_share_message">
         <item quantity="one">Join me on Opal with my code %1$s and get %2$d day of Opal Pro for free: %3$s</item>
         <item quantity="other">Join me on Opal with my code %1$s and get %2$d days of Opal Pro for free: %3$s</item>

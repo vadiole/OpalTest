@@ -1,7 +1,6 @@
 package vadiole.opaltest.ui.common
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -24,7 +23,7 @@ fun OpalCard(modifier: Modifier = Modifier, highlighted: Boolean = false, conten
         modifier = modifier
             .clip(shape)
             .background(if (highlighted) OpalTheme.colors.fillSubtle else Color.Transparent)
-            .border(1.dp, OpalTheme.colors.border, shape)
+            .outlineBorder(1.dp, OpalTheme.colors.border, shape)
             .padding(OpalTheme.spacing.small),
         content = content
     )

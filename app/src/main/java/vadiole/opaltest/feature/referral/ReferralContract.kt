@@ -14,11 +14,17 @@ sealed interface ReferralIntent {
 
     data object Share : ReferralIntent
 
+    data object CopyInvite : ReferralIntent
+
     data class Claim(val tierId: String) : ReferralIntent
 }
 
+data class Invite(val code: String, val url: String, val trialDays: Int)
+
 sealed interface ReferralEffect {
-    data class Share(val code: String, val url: String, val trialDays: Int) : ReferralEffect
+    data class Share(val invite: Invite) : ReferralEffect
+
+    data class CopyInvite(val invite: Invite) : ReferralEffect
 
     data object ClaimSucceeded : ReferralEffect
 

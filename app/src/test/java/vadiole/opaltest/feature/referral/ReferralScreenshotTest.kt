@@ -50,6 +50,10 @@ class ReferralScreenshotTest {
     fun landscape() = capture("referral_landscape", ReferralState(program = previewProgram()))
 
     @Test
+    @Config(qualifiers = "w874dp-h402dp-xxhdpi")
+    fun loadingLandscape() = capture("referral_loading_landscape", ReferralState())
+
+    @Test
     @Config(qualifiers = "w1280dp-h800dp-xhdpi")
     fun tablet() = capture(
         "referral_tablet",
