@@ -26,7 +26,10 @@ fun AppNavigation(modifier: Modifier = Modifier) {
     NavDisplay(
         backStack = backStack,
         modifier = modifier,
-        onBack = { backStack.removeLastOrNull() },
+        onBack = {
+            transitions.onBackCompleted()
+            backStack.removeLastOrNull()
+        },
         entryDecorators = listOf(
             rememberSaveableStateHolderNavEntryDecorator(),
             rememberViewModelStoreNavEntryDecorator(),
