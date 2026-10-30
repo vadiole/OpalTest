@@ -28,6 +28,7 @@ Android test task for Opal: a referral rewards screen. Single `:app` module, Jet
 
 - Blur with Haze: one `HazeState` per blurred backdrop, `hazeSource` on content, `hazeEffect` on the overlay; keep the source and effect in the same window.
 - Organize reusable compose code into a design system with tokens, components and helpers (for ripple/gradients/etc); no hardcoded colors or text styles in feature code.
+- Adaptive layouts: screens work in portrait, landscape, tablets, foldables and freeform windows of any size. Pick the layout from the available window width (`currentWindowAdaptiveInfo()` size classes), not from device type or orientation. Wide windows get a two-pane layout or a centered column with a max content width, never stretched full-width rows. Nothing may be clipped in short windows, so content must scroll. Keep state across resizes, and preview at phone, landscape and tablet sizes.
 - Every `Content` has `@Preview`s for its key states.
 - User-visible text in `strings.xml` (plurals for counts); icons get `contentDescription`, `null` when decorative.
 

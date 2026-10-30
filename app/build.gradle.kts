@@ -64,6 +64,7 @@ dependencies {
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.material3.adaptive)
     implementation(libs.haze)
     implementation(libs.androidx.datastore.preferences)
     lintChecks(libs.compose.lint.checks)
