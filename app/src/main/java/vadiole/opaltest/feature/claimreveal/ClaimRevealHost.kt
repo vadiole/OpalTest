@@ -1,5 +1,6 @@
 package vadiole.opaltest.feature.claimreveal
 
+import android.content.res.Resources
 import android.graphics.Bitmap
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.annotation.DrawableRes
@@ -36,12 +37,14 @@ import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.random.Random
 import kotlinx.coroutines.flow.first
+import vadiole.opaltest.ui.common.evictOpalBitmap
 import vadiole.opaltest.ui.common.rememberOpalBitmap
 import vadiole.opaltest.ui.theme.OpalTheme
 
@@ -55,6 +58,11 @@ fun ClaimRevealHost(state: ClaimRevealState, modifier: Modifier = Modifier, cont
             state.feedback = null
             feedback.release()
         }
+    }
+    val resources = LocalResources.current
+    DisposableEffect(state, resources) {
+        state.releaseImage = { resources.evictRevealImage(it) }
+        onDispose { state.releaseImage = null }
     }
     state.prefetchedGem?.let { rememberRevealImage(it) }
     val focusManager = LocalFocusManager.current
@@ -155,6 +163,8 @@ private class ClaimRevealSourceNode(private var state: ClaimRevealState, private
 @Composable
 private fun rememberRevealImage(@DrawableRes id: Int): ImageBitmap? =
     rememberOpalBitmap(id, software = true, mipmap = true)
+
+private fun Resources.evictRevealImage(@DrawableRes id: Int) = evictOpalBitmap(id, software = true, mipmap = true)
 
 @Composable
 private fun RevealOverlay(

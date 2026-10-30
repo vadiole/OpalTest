@@ -63,7 +63,7 @@ internal fun Resources.imageSource(@DrawableRes id: Int): ImageSource? {
     }
 }
 
-private object OpalImageCache {
+internal object OpalImageCache {
     private val trimRegistered = AtomicBoolean()
 
     val bitmaps = DecodeCache<ImageKey, ImageBitmap>(
@@ -120,6 +120,11 @@ private fun rememberCachedBitmap(source: ImageSource.Bitmap, key: ImageKey): Sta
 fun rememberOpalBitmap(@DrawableRes id: Int, software: Boolean = false, mipmap: Boolean = false): ImageBitmap? {
     val source = rememberImageSource(id) as? ImageSource.Bitmap ?: return null
     return rememberCachedBitmap(source, source.key.copy(software = software, mipmap = mipmap)).value
+}
+
+fun Resources.evictOpalBitmap(@DrawableRes id: Int, software: Boolean = false, mipmap: Boolean = false) {
+    val source = imageSource(id) as? ImageSource.Bitmap ?: return
+    OpalImageCache.bitmaps.remove(source.key.copy(software = software, mipmap = mipmap))
 }
 
 @Composable
