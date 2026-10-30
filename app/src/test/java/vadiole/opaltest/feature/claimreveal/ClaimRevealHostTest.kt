@@ -283,6 +283,22 @@ class ClaimRevealHostTest {
         assertNotNull(cached(GEM, large = true))
     }
 
+    @Test
+    fun `a claim started while the gem lands keeps its prefetch after the reveal finishes`() {
+        setListContent()
+        open()
+        awaitGem()
+        awaitButton()
+        compose.runOnIdle { state.close() }
+        repeat(600) { if (!state.landed) frame() }
+        assertTrue(state.landed)
+        compose.runOnIdle { state.prefetch(PREFETCHED) }
+        awaitFinished()
+        assertEquals(PREFETCHED, state.prefetchedGem)
+        awaitCached(PREFETCHED, large = true)
+        assertNull(cached(GEM, large = true))
+    }
+
     private fun cached(id: Int, large: Boolean): ImageBitmap? {
         val source = RuntimeEnvironment.getApplication().resources.imageSource(id) as ImageSource.Bitmap
         return OpalImageCache.bitmaps[source.key.copy(software = large, mipmap = large)]

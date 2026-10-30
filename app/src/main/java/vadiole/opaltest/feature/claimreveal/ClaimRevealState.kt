@@ -287,11 +287,12 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
     }
 
     private suspend fun finish() {
-        setOfNotNull(active?.content?.gem, prefetchedGem).forEach { releaseImage?.invoke(it) }
+        val gem = active?.content?.gem
+        gem?.let { releaseImage?.invoke(it) }
+        if (prefetchedGem == gem) prefetchedGem = null
         active = null
         target = null
         gemReady = false
-        prefetchedGem = null
         reset()
     }
 
