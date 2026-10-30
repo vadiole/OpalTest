@@ -43,11 +43,15 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import vadiole.opaltest.R
+import vadiole.opaltest.ui.common.ImageSource
 import vadiole.opaltest.ui.common.OpalButton
 import vadiole.opaltest.ui.common.OpalImage
+import vadiole.opaltest.ui.common.OpalImageCache
+import vadiole.opaltest.ui.common.imageSource
 import vadiole.opaltest.ui.common.rememberOpalBitmap
 import vadiole.opaltest.ui.theme.OpalTheme
 
@@ -102,7 +106,7 @@ class ClaimRevealHostTest {
                     LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
                         item(contentType = sourceType) {
                             OpalImage(
-                                id = R.drawable.img_milestone_loyal,
+                                id = THUMBNAIL,
                                 contentDescription = null,
                                 modifier = Modifier
                                     .size(100.dp)
@@ -255,10 +259,58 @@ class ClaimRevealHostTest {
     fun `clearing the prefetch releases the reveal image`() {
         setButtonContent()
         compose.runOnIdle { state.prefetch(PREFETCHED) }
-        frame()
+        awaitCached(PREFETCHED, large = true)
         compose.runOnIdle { state.clearPrefetch() }
         frame()
         assertNull(state.prefetchedGem)
+        assertNull(cached(PREFETCHED, large = true))
+    }
+
+    @Test
+    fun `finished reveal evicts only the large image and decodes it again for the next reveal`() {
+        setListContent()
+        awaitCached(THUMBNAIL, large = false)
+        open()
+        awaitGem()
+        awaitButton()
+        assertNotNull(cached(GEM, large = true))
+        compose.runOnIdle { state.close() }
+        awaitFinished()
+        assertNull(cached(GEM, large = true))
+        assertNotNull(cached(THUMBNAIL, large = false))
+        open()
+        awaitGem()
+        assertNotNull(cached(GEM, large = true))
+    }
+
+    @Test
+    fun `a claim started while the gem lands keeps its prefetch after the reveal finishes`() {
+        setListContent()
+        open()
+        awaitGem()
+        awaitButton()
+        compose.runOnIdle { state.close() }
+        repeat(600) { if (!state.landed) frame() }
+        assertTrue(state.landed)
+        compose.runOnIdle { state.prefetch(PREFETCHED) }
+        awaitFinished()
+        assertEquals(PREFETCHED, state.prefetchedGem)
+        awaitCached(PREFETCHED, large = true)
+        assertNull(cached(GEM, large = true))
+    }
+
+    private fun cached(id: Int, large: Boolean): ImageBitmap? {
+        val source = RuntimeEnvironment.getApplication().resources.imageSource(id) as ImageSource.Bitmap
+        return OpalImageCache.bitmaps[source.key.copy(software = large, mipmap = large)]
+    }
+
+    private fun awaitCached(id: Int, large: Boolean) {
+        val deadline = System.currentTimeMillis() + 10_000
+        while (cached(id, large) == null) {
+            check(System.currentTimeMillis() < deadline) { "image never cached" }
+            Thread.sleep(10)
+            frame()
+        }
     }
 
     @Test
@@ -333,6 +385,7 @@ class ClaimRevealHostTest {
     private companion object {
         const val KEY = "gem"
         val GEM = R.drawable.img_milestone_loyal_large
+        val THUMBNAIL = R.drawable.img_milestone_loyal
         val PREFETCHED = R.drawable.img_milestone_soulful_large
         const val PREFETCH_BUDGET_MS = 2_000L
         const val UNDERNEATH = "Underneath"
