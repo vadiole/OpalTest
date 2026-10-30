@@ -5,6 +5,9 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.TileMode
@@ -17,7 +20,8 @@ fun ClaimedGemGlow(@DrawableRes gem: Int, visible: Boolean, modifier: Modifier =
         targetValue = if (visible) CLAIMED_GLOW_ALPHA else 0f,
         animationSpec = tween(CLAIMED_GLOW_MS, easing = StrongEaseOut)
     )
-    if (!visible && alpha.value == 0f) return
+    val faded by remember { derivedStateOf { alpha.value == 0f } }
+    if (!visible && faded) return
     val bitmap = rememberOpalBitmap(gem) ?: return
     Image(
         bitmap = bitmap,

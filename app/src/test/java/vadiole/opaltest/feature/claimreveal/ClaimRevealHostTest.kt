@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -91,7 +92,7 @@ class ClaimRevealHostTest {
         awaitWarm()
     }
 
-    private fun setListContent() {
+    private fun setListContent(sourceType: Any? = null) {
         compose.setContent {
             state = rememberClaimRevealState()
             warm = rememberOpalBitmap(GEM, software = true, mipmap = true)
@@ -99,7 +100,7 @@ class ClaimRevealHostTest {
             OpalTheme {
                 ClaimRevealHost(state = state, modifier = Modifier.fillMaxSize()) {
                     LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
-                        item {
+                        item(contentType = sourceType) {
                             OpalImage(
                                 id = R.drawable.img_milestone_loyal,
                                 contentDescription = null,
@@ -283,6 +284,33 @@ class ClaimRevealHostTest {
         assertTrue("gem should fade, fade ${state.fade.value}", state.fade.value < 0.9f)
         awaitFinished()
         assertNull(state.activeKey)
+    }
+
+    @Test
+    fun `gem fades out when the source waits in the lazy reuse pool`() {
+        setListContent(sourceType = "source")
+        open()
+        awaitGem()
+        awaitButton()
+        compose.runOnIdle { listState.requestScrollToItem(30) }
+        advance(100)
+        compose.runOnIdle { state.close() }
+        advance(500)
+        assertTrue("gem should fade, fade ${state.fade.value}", state.fade.value < 0.9f)
+        awaitFinished()
+    }
+
+    @Test
+    fun `continue does not take focus in touch mode`() {
+        setButtonContent()
+        open()
+        awaitGem()
+        awaitButton()
+        frame()
+        compose.onNodeWithText("Continue").assertIsNotFocused()
+        compose.runOnIdle { state.close() }
+        awaitFinished()
+        compose.onNodeWithText(UNDERNEATH).assertIsNotFocused()
     }
 
     private fun capture(name: String): Bitmap {
