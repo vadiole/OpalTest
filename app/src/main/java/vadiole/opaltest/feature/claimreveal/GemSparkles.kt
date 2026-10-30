@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
@@ -33,15 +32,13 @@ internal fun GemSparkles(state: ClaimRevealState, frame: () -> Rect?, modifier: 
     val bounds = remember { MutableRect(0f, 0f, 0f, 0f) }
     val core = colors.content.toArgb()
     val tint = colors.glow.toArgb()
-    val time = remember { mutableFloatStateOf(0f) }
     LaunchedEffect(state) {
         snapshotFlow { state.sparkle.value > 0f }.collectLatest { active ->
             if (!active) return@collectLatest
-            time.floatValue = 0f
             var last = withFrameNanos { it }
             while (true) {
                 withFrameNanos { now ->
-                    time.floatValue += (now - last) / NANOS_PER_SECOND / state.timeScale
+                    state.sparkleTime += (now - last) / NANOS_PER_SECOND / state.timeScale
                     last = now
                 }
             }
@@ -54,7 +51,7 @@ internal fun GemSparkles(state: ClaimRevealState, frame: () -> Rect?, modifier: 
                 val visible = state.sparkle.value * (1f - state.back.value)
                 if (visible <= 0f) return@drawBehind
                 val gem = frame() ?: return@drawBehind
-                if (!placeSparkles(time.floatValue, gem.width, density, motes, bounds)) return@drawBehind
+                if (!placeSparkles(state.sparkleTime, gem.width, density, motes, bounds)) return@drawBehind
                 val center = gem.gemCenter()
                 shader.setFloatUniform("center", center.x, center.y)
                 shader.setFloatUniform("motes", motes)

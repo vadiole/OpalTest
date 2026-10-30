@@ -3,6 +3,12 @@ package vadiole.opaltest.feature.claimreveal
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.LocalSaveableStateRegistry
+import androidx.compose.runtime.saveable.SaveableStateRegistry
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.geometry.MutableRect
@@ -20,6 +26,7 @@ import kotlin.math.atan2
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -112,6 +119,63 @@ class GemSparklesTest {
         reveal.frame()
         val after = reveal.state.sparkle.value
         assertTrue("jumped from $before to $after", after <= before && before - after < 0.2f)
+    }
+}
+
+@RunWith(RobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(sdk = [35], qualifiers = "w402dp-h874dp-xxhdpi")
+class GemSparklesRestorationTest {
+    @get:Rule
+    val compose = createComposeRule()
+
+    @Test
+    fun `motes carry on from where they were when the screen is recreated`() {
+        val reveal = SparkleReveal(compose)
+        reveal.awaitRevealed()
+        reveal.advance(10_000)
+        val before = reveal.state
+        val elapsed = before.sparkleTime
+        assertTrue("elapsed $elapsed", elapsed > 9f)
+        assertEquals(1f, before.sweep.value, 0f)
+        val sparkling = reveal.capture("claim_reveal_sparkles_before_restore")
+
+        reveal.recreate()
+        val restored = reveal.state
+        assertNotSame(before, restored)
+        assertEquals(RevealPhase.Revealed, restored.phase)
+        assertEquals(1f, restored.sparkle.value, 0f)
+        assertEquals(1f, restored.sweep.value, 0f)
+        assertEquals(elapsed, restored.sparkleTime, 0.02f)
+        val resumed = reveal.capture("claim_reveal_sparkles_after_restore")
+
+        var last = restored.sparkleTime
+        repeat(120) {
+            reveal.frame()
+            val now = restored.sparkleTime
+            assertTrue("clock went from $last to $now", now >= last && now - last < 0.05f)
+            assertEquals(1f, restored.sparkle.value, 0f)
+            assertEquals(1f, restored.sweep.value, 0f)
+            last = now
+        }
+
+        assertEquals(elapsed + 120 * 0.016f, last, 0.05f)
+        compose.runOnIdle { runBlocking { restored.sparkle.snapTo(0f) } }
+        reveal.frame()
+        val plain = reveal.capture("claim_reveal_sparkles_restore_off")
+        val moved = sparkling.diff(resumed)
+        val motes = sparkling.diff(plain)
+        assertTrue("motes $motes, moved $moved", motes > 200 && moved * 10 < motes)
+    }
+
+    private fun Bitmap.diff(other: Bitmap): Int {
+        var count = 0
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                if (getPixel(x, y) != other.getPixel(x, y)) count++
+            }
+        }
+        return count
     }
 }
 
@@ -211,13 +275,19 @@ class SparkleFieldTest {
 
 private class SparkleReveal(private val compose: ComposeContentTestRule) {
     lateinit var state: ClaimRevealState
+    private var registry by mutableStateOf(SaveableStateRegistry(null) { true })
+    private var shown by mutableStateOf(true)
 
     init {
         compose.setContent {
-            state = rememberClaimRevealState()
-            OpalTheme {
-                ClaimRevealHost(state = state, modifier = Modifier.fillMaxSize()) {
-                    Box(Modifier.fillMaxSize())
+            if (shown) {
+                CompositionLocalProvider(LocalSaveableStateRegistry provides registry) {
+                    state = rememberClaimRevealState()
+                    OpalTheme {
+                        ClaimRevealHost(state = state, modifier = Modifier.fillMaxSize()) {
+                            Box(Modifier.fillMaxSize())
+                        }
+                    }
                 }
             }
         }
@@ -229,6 +299,18 @@ private class SparkleReveal(private val compose: ComposeContentTestRule) {
                 RevealContent(gem = R.drawable.img_milestone_loyal_large, title = R.string.referral_milestone_loyal)
             )
         }
+    }
+
+    fun recreate() {
+        val saved = compose.runOnIdle { registry.performSave() }
+        compose.runOnIdle { shown = false }
+        frame()
+        compose.runOnIdle {
+            registry = SaveableStateRegistry(saved) { true }
+            shown = true
+        }
+        frame()
+        frame()
     }
 
     fun frame() {

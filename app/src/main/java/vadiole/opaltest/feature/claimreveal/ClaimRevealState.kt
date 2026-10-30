@@ -61,6 +61,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
     internal val items = List(ITEM_STARTS_MS.size) { Animatable(0f) }
     internal val back = Animatable(0f)
     internal val sparkle = Animatable(0f)
+    internal var sparkleTime by mutableFloatStateOf(0f)
     internal val press = Animatable(1f, visibilityThreshold = PRESS_THRESHOLD)
 
     internal var target: Rect? by mutableStateOf(null)
@@ -140,14 +141,16 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         revealItems()
     }
 
-    private fun restore(reveal: ActiveReveal) {
+    private fun restore(reveal: ActiveReveal, elapsed: Float) {
         active = reveal
         run {
             reset()
-            listOf(flight, scrim, glow).forEach { it.snapTo(1f) }
+            listOf(flight, scrim, glow, sweep).forEach { it.snapTo(1f) }
             items.forEach { it.snapTo(1f) }
             phase = RevealPhase.Revealed
-            if (!reducedMotion) sparkle.snapTo(1f)
+            if (reducedMotion) return@run
+            sparkleTime = elapsed
+            sparkle.snapTo(1f)
         }
     }
 
@@ -263,6 +266,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         listOf(flight, scrim, glow, charge, sweep, back, sparkle).forEach { it.snapTo(0f) }
         items.forEach { it.snapTo(0f) }
         listOf(fade, sweepFade, press).forEach { it.snapTo(1f) }
+        sparkleTime = 0f
         phase = RevealPhase.Opening
     }
 
@@ -297,7 +301,8 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
                     state.timeScale,
                     active?.key,
                     active?.content?.gem,
-                    active?.content?.title
+                    active?.content?.title,
+                    active?.let { state.sparkleTime }
                 )
             },
             restore = { saved ->
@@ -305,7 +310,8 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
                     sound = (saved[0] as Int?)?.let { RevealSound.entries[it] }
                     timeScale = saved[1] as Float
                     val key = saved[2] ?: return@apply
-                    restore(ActiveReveal(key, RevealContent(gem = saved[3] as Int, title = saved[4] as Int)))
+                    val content = RevealContent(gem = saved[3] as Int, title = saved[4] as Int)
+                    restore(ActiveReveal(key, content), elapsed = saved[5] as Float)
                 }
             }
         )
