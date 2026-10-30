@@ -62,6 +62,7 @@ fun OpalButton(
     val colors = OpalTheme.colors
     val metrics = size.metrics()
     val outlined = style == OpalButtonStyle.Outlined
+    val shape = OpalTheme.shapes.pill
     val background: Brush = when (style) {
         OpalButtonStyle.Accent -> colors.accent
         OpalButtonStyle.Neutral -> SolidColor(colors.content)
@@ -97,13 +98,15 @@ fun OpalButton(
             .pressableSurface(
                 interactionSource = interactionSource,
                 indicationSource = indicationSource,
-                shape = OpalTheme.shapes.pill,
+                shape = shape,
                 background = background,
                 ripple = ripple,
                 enabled = interactive,
                 alpha = { alpha.value }
             )
-            .then(if (outlined) Modifier.outlineBorder(1.dp, colors.border, OpalTheme.shapes.pill) else Modifier)
+            .then(
+                if (outlined) Modifier.outlineBorder(OpalTheme.layout.borderWidth, colors.border, shape) else Modifier
+            )
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,

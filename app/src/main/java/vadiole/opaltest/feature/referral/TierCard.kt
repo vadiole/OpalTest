@@ -40,7 +40,6 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import vadiole.opaltest.R
 import vadiole.opaltest.domain.referral.Reward
 import vadiole.opaltest.domain.referral.RewardTier
@@ -93,10 +92,10 @@ internal fun TierCard(
             .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
     ) {
         BoxWithConstraints {
-            val minTextWidth = MinTierTextWidth * LocalDensity.current.fontScale
+            val minTextWidth = ReferralDimens.minTierTextWidth * LocalDensity.current.fontScale
             val spacing = OpalTheme.spacing.large
             val artworkSize = if (maxWidth - ReferralDimens.tierArtworkSize - spacing < minTextWidth) {
-                CompactTierArtworkSize
+                ReferralDimens.compactTierArtworkSize
             } else {
                 ReferralDimens.tierArtworkSize
             }
@@ -198,7 +197,7 @@ private fun TierCaption(tier: RewardTier, status: TierStatus) {
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .size(13.dp)
+                        .size(ReferralDimens.claimedIconSize)
                         .animateEnterExit(
                             enter = scaleIn(OpalMotion.PopSpring, initialScale = OpalMotion.POP_START_SCALE),
                             exit = ExitTransition.None
@@ -263,6 +262,3 @@ private fun TierArtwork(reward: Reward, claimed: Boolean, reveal: ClaimRevealSta
         }
     }
 }
-
-private val CompactTierArtworkSize = 64.dp
-private val MinTierTextWidth = 150.dp
