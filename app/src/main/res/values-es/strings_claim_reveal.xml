@@ -2,5 +2,4 @@
     <string name="claim_reveal_title">%1$s\nes tuyo</string>
     <string name="claim_reveal_message">Gracias por ayudar a tus amigos a concentrarse.</string>
     <string name="claim_reveal_continue">Continuar</string>
-    <string name="claim_reveal_pane">Recompensa reclamada</string>
 </resources>

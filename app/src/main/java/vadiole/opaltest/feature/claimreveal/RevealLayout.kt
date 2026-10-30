@@ -40,7 +40,7 @@ import vadiole.opaltest.ui.theme.OpalTheme
 internal fun RevealLayout(state: ClaimRevealState, title: String, continueFocus: FocusRequester) {
     val wide = currentWindowAdaptiveInfoV2().windowSizeClass
         .isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
-    val paneTitle = stringResource(R.string.claim_reveal_pane)
+    val paneTitle = stringResource(R.string.claim_reveal_title, title).replace('\n', ' ')
     Box(
         Modifier
             .fillMaxSize()
