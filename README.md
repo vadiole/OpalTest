@@ -31,6 +31,7 @@ Install the prebuilt release: [opal-referrals.apk](opal-referrals.apk). Or build
 - The first milestone unlocks at 1 friend. The design doesn't show its threshold.
 - The app opens on a demo console. From there you can switch between Free and Pro, change the number of friends, make the network slow or fail, and reset everything. Progress is kept between launches.
 - On tablets and other wide screens, the code and Share button sit on the left and the rewards list on the right.
+- On landscape phones and other short windows (at least 600dp wide, under 480dp tall), the code and Share button sit on the left and the invite card and rewards on the right, so Share and the first reward show without scrolling. Switching layouts keeps the item you were looking at on screen.
 
 ## With more time
 
