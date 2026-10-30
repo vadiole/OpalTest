@@ -9,10 +9,8 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -20,17 +18,14 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.addOutline
 import androidx.compose.ui.graphics.drawscope.clipPath
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -42,64 +37,15 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.dp
 import kotlin.math.ceil
 import vadiole.opaltest.R
 import vadiole.opaltest.domain.referral.ReferralProgram
-import vadiole.opaltest.ui.common.OpalImage
 import vadiole.opaltest.ui.common.opalRipple
-import vadiole.opaltest.ui.common.outlineBorder
 import vadiole.opaltest.ui.common.pressFeedback
 import vadiole.opaltest.ui.theme.OpalTheme
-
-@Composable
-internal fun InviteCard(invitedBy: String?, modifier: Modifier = Modifier) {
-    val shape = OpalTheme.shapes.large
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-            .height(ReferralDimens.inviteCardHeight)
-            .clip(shape)
-            .outlineBorder(1.dp, OpalTheme.colors.borderSubtle, shape)
-    ) {
-        OpalImage(
-            id = R.drawable.img_invite_card_background,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.matchParentSize()
-        )
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.medium),
-            modifier = Modifier.padding(horizontal = OpalTheme.spacing.medium)
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_opal_logo),
-                contentDescription = stringResource(R.string.referral_opal_logo),
-                tint = OpalTheme.colors.content
-            )
-            OpalImage(
-                id = R.drawable.img_avatar_placeholder,
-                contentDescription = null,
-                modifier = Modifier.size(ReferralDimens.avatarSize)
-            )
-            if (invitedBy != null) {
-                Text(
-                    text = stringResource(R.string.referral_invited_by, invitedBy),
-                    style = OpalTheme.typography.caption,
-                    color = OpalTheme.colors.contentHigh,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-    }
-}
 
 @Composable
 internal fun Summary(program: ReferralProgram) {
@@ -218,20 +164,6 @@ internal fun balancedCellsPerRow(length: Int, fit: Int): Int {
     if (length <= 0) return 1
     val rows = ceil(length / fit.coerceAtLeast(1).toFloat()).toInt()
     return ceil(length / rows.toFloat()).toInt()
-}
-
-@Preview(widthDp = 402, showBackground = true, backgroundColor = 0xFF000000)
-@Composable
-private fun InviteCardLongNamePreview() {
-    OpalTheme {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.medium),
-            modifier = Modifier.padding(OpalTheme.spacing.mediumLarge)
-        ) {
-            InviteCard("Kenneth", Modifier.fillMaxWidth())
-            InviteCard("Maximilian Alexander von Hohenzollern-Sigmaringen", Modifier.fillMaxWidth())
-        }
-    }
 }
 
 @Preview(widthDp = 402, showBackground = true, backgroundColor = 0xFF000000)
