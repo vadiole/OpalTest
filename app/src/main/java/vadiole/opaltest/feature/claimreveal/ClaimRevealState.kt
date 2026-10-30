@@ -19,7 +19,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.LayoutCoordinates
-import kotlin.math.abs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
@@ -77,7 +76,6 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
 
     fun replay() {
         if (activeKey == null) return
-        feedback?.claim()
         run {
             reset()
             if (reducedMotion) openReduced() else openFull()
@@ -113,18 +111,12 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         }
         delay(scaled(FLIGHT_DELAY_MS))
         launch { flight.animateTo(1f, FlightOutSpring) }
-        val ticks = travelTicks(toward = 1f)
         snapshotFlow { flight.value }.first { it >= SWEEP_THRESHOLD }
-        ticks.cancel()
         launch { sweep.animateTo(1f, tween(SWEEP_MS, easing = SweepEase)) }
         launch {
             val shine = pickSound()
             delay((SWEEP_PEAK_MS * runScale - shine.leadMs).toLong().coerceAtLeast(0))
             feedback?.shine(shine)
-        }
-        launch {
-            delay(scaled(SWEEP_PEAK_MS))
-            feedback?.peak()
         }
         snapshotFlow { flight.value }.first { it >= SETTLE_THRESHOLD }
         phase = RevealPhase.Revealed
@@ -163,7 +155,6 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         launch { glow.animateTo(1f, tween(REDUCED_FADE_MS)) }
         fade.animateTo(1f, tween(REDUCED_FADE_MS))
         feedback?.shine(pickSound())
-        feedback?.peak()
         phase = RevealPhase.Revealed
         revealItems()
     }
@@ -174,6 +165,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
             items.forEachIndexed { index, item ->
                 launch {
                     delay(scaled(ITEM_STARTS_MS[index]))
+                    if (index == items.lastIndex) feedback?.buttonAppear()
                     item.animateTo(1f, tween(ITEM_ENTER_MS, easing = EnterEase))
                 }
             }
@@ -190,9 +182,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
             scrim.animateTo(0f, tween(SCRIM_OUT_MS, easing = StrongEaseInOut))
         }
         delay(scaled(FLIGHT_BACK_DELAY_MS))
-        val ticks = travelTicks(toward = 0f)
         flight.animateTo(0f, tween(FLIGHT_BACK_MS, easing = StrongEaseInOut))
-        ticks.cancel()
         land()
     }
 
@@ -203,22 +193,11 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         land()
     }
 
-    private fun CoroutineScope.travelTicks(toward: Float): Job = launch {
-        var last = (flight.value * TRAVEL_TICKS).toInt()
-        snapshotFlow { (flight.value * TRAVEL_TICKS).toInt() }.collect { step ->
-            if (step == last) return@collect
-            last = step
-            val closeness = 1f - abs(toward - step / TRAVEL_TICKS.toFloat())
-            if (closeness < 1f) feedback?.travel(closeness)
-        }
-    }
-
     private fun pickSound(): RevealSound = sound ?: RevealSound.entries.random()
 
     private suspend fun land() {
         flight.snapTo(0f)
         landed = true
-        feedback?.arrive()
     }
 
     internal suspend fun onBackProgress(progress: Float) = back.snapTo(progress)
@@ -334,7 +313,6 @@ private const val FLIGHT_BACK_DELAY_MS = 90
 private const val FLIGHT_BACK_MS = 750
 private const val REDUCED_FADE_MS = 250
 private const val SWEEP_THRESHOLD = 0.88f
-private const val TRAVEL_TICKS = 9
 private const val SETTLE_THRESHOLD = 0.96f
 private const val BACK_SHRINK = 0.18f
 private val ITEM_STARTS_MS = intArrayOf(0, 320, 1200)
