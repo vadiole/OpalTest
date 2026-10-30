@@ -21,20 +21,21 @@ data object ReferralRoute : NavKey
 @Composable
 fun AppNavigation(modifier: Modifier = Modifier) {
     val backStack = rememberNavBackStack(ConsoleRoute)
+    val navigateBack = { if (backStack.size > 1) backStack.removeAt(backStack.lastIndex) }
     NavDisplay(
         backStack = backStack,
         modifier = modifier,
-        onBack = { backStack.removeLastOrNull() },
+        onBack = navigateBack,
         entryDecorators = listOf(
             rememberSaveableStateHolderNavEntryDecorator(),
             rememberViewModelStoreNavEntryDecorator()
         ),
         entryProvider = entryProvider {
             entry<ConsoleRoute> {
-                ConsoleScreen(onOpenReferrals = { backStack.add(ReferralRoute) })
+                ConsoleScreen(onOpenReferrals = { if (backStack.last() != ReferralRoute) backStack.add(ReferralRoute) })
             }
             entry<ReferralRoute> {
-                ReferralScreen()
+                ReferralScreen(onBack = navigateBack)
             }
         }
     )

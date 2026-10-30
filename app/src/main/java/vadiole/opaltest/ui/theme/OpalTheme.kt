@@ -1,15 +1,37 @@
 package vadiole.opaltest.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+
+object OpalTheme {
+    val colors = DarkOpalColors
+    val typography = DefaultOpalTypography
+    val spacing = OpalSpacing
+    val shapes = OpalShapes
+    val iconSize = OpalIconSize
+}
 
 @Composable
 fun OpalTheme(content: @Composable () -> Unit) {
+    val colors = OpalTheme.colors
     MaterialTheme(
-        colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme(),
-        content = content
-    )
+        colorScheme = darkColorScheme(
+            primary = colors.accentStart,
+            onPrimary = colors.onAccent,
+            background = colors.background,
+            onBackground = colors.content,
+            surface = colors.background,
+            onSurface = colors.content
+        )
+    ) {
+        CompositionLocalProvider(
+            LocalContentColor provides colors.content,
+            LocalTextStyle provides OpalTheme.typography.callout,
+            content = content
+        )
+    }
 }

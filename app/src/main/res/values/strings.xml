@@ -1,5 +1,35 @@
 <resources>
     <string name="app_name">OpalTest</string>
-    <string name="console_open_referrals">Open Invitations &amp; Rewards</string>
     <string name="referral_title">Invitations &amp; Rewards</string>
+    <string name="referral_back">Back</string>
+    <string name="console_open_referrals">Open Invitations &amp; Rewards</string>
+    <string name="console_title">Referral demo</string>
+    <string name="console_plan_free">Free plan</string>
+    <string name="console_plan_pro">Pro plan</string>
+    <plurals name="console_friends">
+        <item quantity="one">%d friend</item>
+        <item quantity="other">%d friends</item>
+    </plurals>
+    <string name="console_status">%1$s · %2$s</string>
+    <plurals name="console_next_reward">
+        <item quantity="one">Next reward at %d friend.</item>
+        <item quantity="other">Next reward at %d friends.</item>
+    </plurals>
+    <string name="console_all_rewards_reached">Every reward is unlocked.</string>
+    <plurals name="console_claimed">
+        <item quantity="one">%d reward claimed.</item>
+        <item quantity="other">%d rewards claimed.</item>
+    </plurals>
+    <string name="console_label_plan">Plan</string>
+    <string name="console_label_delay">Delay</string>
+    <string name="console_label_fail">Fail</string>
+    <string name="console_free">Free</string>
+    <string name="console_pro">Pro</string>
+    <string name="console_delay_none">None</string>
+    <string name="console_delay_normal">Normal</string>
+    <string name="console_delay_slow">Slow</string>
+    <string name="console_fail_next_load">Next load</string>
+    <string name="console_reset">Reset</string>
+    <string name="console_add_friend">+1 friend</string>
+    <string name="console_next_tier">Next reward</string>
 </resources>
