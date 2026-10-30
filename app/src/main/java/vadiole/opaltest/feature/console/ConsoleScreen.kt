@@ -2,7 +2,6 @@ package vadiole.opaltest.feature.console
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -13,12 +12,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,13 +31,13 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import vadiole.opaltest.R
@@ -51,7 +50,10 @@ import vadiole.opaltest.ui.common.OpalButtonSize
 import vadiole.opaltest.ui.common.OpalButtonStyle
 import vadiole.opaltest.ui.common.OpalCard
 import vadiole.opaltest.ui.common.OpalChip
+import vadiole.opaltest.ui.common.OpalSkeleton
 import vadiole.opaltest.ui.common.OpalToggleChip
+import vadiole.opaltest.ui.common.SkeletonBlock
+import vadiole.opaltest.ui.common.SkeletonLine
 import vadiole.opaltest.ui.theme.OpalTheme
 
 @Composable
@@ -121,12 +123,35 @@ fun ConsoleContent(state: ConsoleState, onIntent: (ConsoleIntent) -> Unit, modif
 
 @Composable
 private fun Loading(modifier: Modifier = Modifier) {
-    val description = stringResource(R.string.console_loading)
-    Box(contentAlignment = Alignment.Center, modifier = modifier.fillMaxWidth()) {
-        CircularProgressIndicator(
-            color = OpalTheme.colors.content,
-            modifier = Modifier.semantics { contentDescription = description }
-        )
+    OpalSkeleton(description = stringResource(R.string.console_loading), modifier = modifier.fillMaxWidth()) {
+        Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.large)) {
+            Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xxSmall)) {
+                SkeletonLine(OpalTheme.typography.body, 180.dp)
+                SkeletonLine(OpalTheme.typography.callout, 150.dp)
+                SkeletonLine(OpalTheme.typography.callout, 120.dp)
+            }
+            OpalCard(modifier = Modifier.fillMaxWidth()) {
+                Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall)) {
+                    ControlRowSkeleton(chipWidths = listOf(56.dp, 52.dp))
+                    ControlRowSkeleton(chipWidths = listOf(64.dp, 80.dp, 56.dp))
+                    ControlRowSkeleton(chipWidths = listOf(96.dp))
+                    SkeletonBlock(Modifier.size(width = 88.dp, height = 40.dp), OpalTheme.shapes.pill)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ControlRowSkeleton(chipWidths: List<Dp>) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        SkeletonLine(OpalTheme.typography.caption, 32.dp)
+        Row(horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall)) {
+            chipWidths.forEach { SkeletonBlock(Modifier.size(width = it, height = 40.dp), OpalTheme.shapes.pill) }
+        }
     }
 }
 
@@ -341,6 +366,12 @@ private fun ConsoleTabletPreview() {
 @Preview(name = "Loading", widthDp = 402, heightDp = 874)
 @Composable
 private fun ConsoleLoadingPreview() {
+    OpalTheme { ConsoleContent(state = ConsoleState(), onIntent = {}) }
+}
+
+@Preview(name = "Loading landscape", widthDp = 874, heightDp = 402)
+@Composable
+private fun ConsoleLoadingLandscapePreview() {
     OpalTheme { ConsoleContent(state = ConsoleState(), onIntent = {}) }
 }
 
