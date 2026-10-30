@@ -1,5 +1,6 @@
 package vadiole.opaltest.data.referral
 
+import java.util.Currency
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import vadiole.opaltest.data.fake.FakeReferralRules
@@ -33,8 +34,16 @@ class ReferralMapperTest {
                 Reward.Milestone(MilestoneStone.Soulful),
                 Reward.ProAccess(ProTerm.OneYear, Fulfillment.Instant, null),
                 Reward.Milestone(MilestoneStone.Popular),
-                Reward.ProAccess(ProTerm.TwoYears, Fulfillment.ContactSupport, Money(19900, "USD")),
-                Reward.ProAccess(ProTerm.Lifetime, Fulfillment.ContactSupport, Money(39900, "USD")),
+                Reward.ProAccess(
+                    ProTerm.TwoYears,
+                    Fulfillment.ContactSupport,
+                    Money(19900, Currency.getInstance("USD"))
+                ),
+                Reward.ProAccess(
+                    ProTerm.Lifetime,
+                    Fulfillment.ContactSupport,
+                    Money(39900, Currency.getInstance("USD"))
+                ),
                 Reward.Mystery
             ),
             program.tiers.map { it.reward }
@@ -81,5 +90,25 @@ class ReferralMapperTest {
         ).toDomain()
 
         assertEquals(Fulfillment.ContactSupport, (program.tiers.single().reward as Reward.ProAccess).fulfillment)
+    }
+
+    @Test
+    fun `invalid currency drops the value but keeps the tier`() {
+        val codes = listOf("usd", "XYZ", "", "XXX", "EUR")
+        val program = program(
+            *codes.mapIndexed { index, code ->
+                RewardTierDto(
+                    id = code.ifEmpty { "empty" },
+                    requiredReferrals = index + 1,
+                    status = "locked",
+                    reward = RewardDto(type = "pro_access", term = "lifetime", value = MoneyDto(39900, code))
+                )
+            }.toTypedArray()
+        ).toDomain()
+
+        assertEquals(
+            listOf(null, null, null, null, Money(39900, Currency.getInstance("EUR"))),
+            program.tiers.map { (it.reward as Reward.ProAccess).value }
+        )
     }
 }

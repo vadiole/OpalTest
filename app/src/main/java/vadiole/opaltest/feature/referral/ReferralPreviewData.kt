@@ -1,5 +1,6 @@
 package vadiole.opaltest.feature.referral
 
+import java.util.Currency
 import vadiole.opaltest.domain.referral.Fulfillment
 import vadiole.opaltest.domain.referral.MilestoneStone
 import vadiole.opaltest.domain.referral.Money
@@ -34,8 +35,24 @@ internal fun previewProgram(plan: Plan = Plan.Free, referrals: Int = 3): Referra
             tier("year", 5, Reward.ProAccess(ProTerm.OneYear, Fulfillment.Instant, null))
                 .takeIf { plan == Plan.Free },
             tier("popular", 10, Reward.Milestone(MilestoneStone.Popular)),
-            tier("two_years", 20, Reward.ProAccess(ProTerm.TwoYears, Fulfillment.ContactSupport, Money(19900, "USD"))),
-            tier("lifetime", 50, Reward.ProAccess(ProTerm.Lifetime, Fulfillment.ContactSupport, Money(39900, "USD"))),
+            tier(
+                "two_years",
+                20,
+                Reward.ProAccess(
+                    ProTerm.TwoYears,
+                    Fulfillment.ContactSupport,
+                    Money(19900, Currency.getInstance("USD"))
+                )
+            ),
+            tier(
+                "lifetime",
+                50,
+                Reward.ProAccess(
+                    ProTerm.Lifetime,
+                    Fulfillment.ContactSupport,
+                    Money(39900, Currency.getInstance("USD"))
+                )
+            ),
             tier("mystery", 100, Reward.Mystery)
         )
     )
