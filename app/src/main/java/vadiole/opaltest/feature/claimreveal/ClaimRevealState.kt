@@ -1,6 +1,7 @@
 package vadiole.opaltest.feature.claimreveal
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.LinearEasing
@@ -26,14 +27,15 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
-data class RevealContent(@DrawableRes val gem: Int, val title: String)
+data class RevealContent(@DrawableRes val gem: Int, @StringRes val title: Int)
 
 internal enum class RevealPhase { Opening, Revealed, Closing }
 
 @Stable
 class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
-    var activeKey: Any? by mutableStateOf(null)
+    internal var activeKey: Any? by mutableStateOf(null)
         private set
     internal var content: RevealContent? by mutableStateOf(null)
         private set
@@ -43,9 +45,12 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         private set
     internal var reducedMotion by mutableStateOf(false)
         private set
-    var timeScale by mutableFloatStateOf(1f)
-    var sound: RevealSound? by mutableStateOf(null)
-    var pathBend by mutableFloatStateOf(DEFAULT_PATH_BEND)
+    internal var timeScale by mutableFloatStateOf(1f)
+    internal var sound: RevealSound? by mutableStateOf(null)
+    internal var pathBend by mutableFloatStateOf(DEFAULT_PATH_BEND)
+    internal var gemReady by mutableStateOf(false)
+    internal var prefetchedGem: Int? by mutableStateOf(null)
+        private set
 
     internal val flight = Animatable(0f, visibilityThreshold = 0.0005f)
     internal val scrim = Animatable(0f)
@@ -67,7 +72,11 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
 
     fun isHolding(key: Any): Boolean = activeKey == key && !landed
 
-    internal fun isFlying(key: Any): Boolean = isHolding(key) && target != null
+    internal fun isFlying(key: Any): Boolean = isHolding(key) && target != null && gemReady
+
+    fun prefetch(@DrawableRes gem: Int) {
+        prefetchedGem = gem
+    }
 
     fun open(key: Any, content: RevealContent) {
         if (activeKey != null && !landed) return
@@ -76,7 +85,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         replay()
     }
 
-    fun replay() {
+    internal fun replay() {
         if (activeKey == null) return
         run {
             reset()
@@ -112,6 +121,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
             glow.animateTo(1f, tween(GLOW_IN_MS, easing = StrongEaseOut))
         }
         delay(scaled(FLIGHT_DELAY_MS))
+        awaitGem()
         launch { flight.animateTo(1f, FlightOutSpring) }
         snapshotFlow { flight.value }.first { it >= SWEEP_THRESHOLD }
         launch { sweep.animateTo(1f, tween(SWEEP_MS, easing = SweepEase)) }
@@ -155,6 +165,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         fade.snapTo(0f)
         launch { scrim.animateTo(1f, tween(REDUCED_FADE_MS)) }
         launch { glow.animateTo(1f, tween(REDUCED_FADE_MS)) }
+        awaitGem()
         fade.animateTo(1f, tween(REDUCED_FADE_MS))
         feedback?.shine(pickSound())
         phase = RevealPhase.Revealed
@@ -174,7 +185,15 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         }
     }
 
+    private suspend fun awaitGem() {
+        withTimeoutOrNull(GEM_WAIT_MS) { snapshotFlow { gemReady }.first { it } }
+    }
+
     private suspend fun CoroutineScope.closeFull() {
+        val key = activeKey
+        if (key == null || !hasLiveSource(key)) {
+            launch { fade.animateTo(0f, tween(FLIGHT_BACK_DELAY_MS + FLIGHT_BACK_MS, easing = StrongEaseInOut)) }
+        }
         launch {
             delay(scaled(GLOW_OUT_DELAY_MS))
             glow.animateTo(0f, tween(GLOW_OUT_MS, easing = StrongEaseInOut))
@@ -234,6 +253,14 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         sources[key] = coordinates
     }
 
+    internal fun unregisterSource(key: Any, coordinates: LayoutCoordinates) {
+        if (sources[key] !== coordinates) return
+        sourceRect(key)
+        sources.remove(key)
+    }
+
+    private fun hasLiveSource(key: Any): Boolean = host?.isAttached == true && sources[key]?.isAttached == true
+
     internal fun sourceRect(key: Any): Rect? {
         val hostCoordinates = host?.takeIf { it.isAttached } ?: return lastSourceRects[key]
         val source = sources[key]?.takeIf { it.isAttached } ?: return lastSourceRects[key]
@@ -253,6 +280,8 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         activeKey = null
         content = null
         target = null
+        gemReady = false
+        prefetchedGem = null
         reset()
     }
 
@@ -285,7 +314,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
                     sound = (saved[0] as Int?)?.let { RevealSound.entries[it] }
                     timeScale = saved[1] as Float
                     val key = saved[2]
-                    if (key != null) restore(key, RevealContent(gem = saved[3] as Int, title = saved[4] as String))
+                    if (key != null) restore(key, RevealContent(gem = saved[3] as Int, title = saved[4] as Int))
                 }
             }
         )
@@ -323,6 +352,7 @@ private const val CHARGE_OUT_MS = 900
 private const val GLOW_DELAY_MS = 120
 private const val GLOW_IN_MS = 1100
 private const val FLIGHT_DELAY_MS = 200
+private const val GEM_WAIT_MS = 1000L
 private const val DEFAULT_PATH_BEND = 0.75f
 private const val SWEEP_MS = 2800
 private const val SWEEP_REPEAT_MS = 10_000

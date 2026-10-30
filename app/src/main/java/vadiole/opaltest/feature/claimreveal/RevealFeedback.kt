@@ -11,7 +11,7 @@ import android.os.VibratorManager
 import androidx.annotation.RawRes
 import vadiole.opaltest.R
 
-enum class RevealSound(@RawRes val res: Int, private val peakMs: Int) {
+internal enum class RevealSound(@RawRes val res: Int, private val peakMs: Int) {
     Shine1(R.raw.claim_reveal_shine_1, 240),
     Shine2(R.raw.claim_reveal_shine_2, 240),
     Shine3(R.raw.claim_reveal_shine_3, 240),

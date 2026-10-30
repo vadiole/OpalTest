@@ -13,8 +13,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
@@ -33,7 +34,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import vadiole.opaltest.ui.theme.OpalMotion
 
-internal data class ImageKey(val path: String, val assetCookie: Int, val densityDpi: Int)
+internal data class ImageKey(
+    val path: String,
+    val assetCookie: Int,
+    val densityDpi: Int,
+    val software: Boolean = false,
+    val mipmap: Boolean = false
+)
 
 internal sealed interface ImageSource {
     data class Bitmap(val id: Int, val key: ImageKey) : ImageSource
@@ -81,8 +88,39 @@ private object OpalImageCache {
     }
 }
 
-private fun Resources.decode(id: Int): ImageBitmap =
-    ImageDecoder.decodeBitmap(ImageDecoder.createSource(this, id)).asImageBitmap()
+private fun Resources.decode(id: Int, key: ImageKey): ImageBitmap =
+    ImageDecoder.decodeBitmap(ImageDecoder.createSource(this, id)) { decoder, _, _ ->
+        if (key.software) decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+    }.apply { if (key.mipmap) setHasMipMap(true) }.asImageBitmap()
+
+@Composable
+private fun rememberImageSource(@DrawableRes id: Int): ImageSource? {
+    val resources = LocalResources.current
+    val configuration = LocalConfiguration.current
+    return remember(id, resources, configuration) { resources.imageSource(id) }
+}
+
+@Composable
+private fun rememberCachedBitmap(source: ImageSource.Bitmap, key: ImageKey): State<ImageBitmap?> {
+    val resources = LocalResources.current
+    val context = LocalContext.current
+    val sync = LocalInspectionMode.current
+    val cache = OpalImageCache.bitmaps
+    val bitmap = remember(key) {
+        mutableStateOf(cache[key] ?: if (sync) cache.getBlocking(key) { resources.decode(source.id, key) } else null)
+    }
+    LaunchedEffect(key) {
+        OpalImageCache.registerTrim(context)
+        if (bitmap.value == null) bitmap.value = cache.getOrDecode(key) { resources.decode(source.id, key) }
+    }
+    return bitmap
+}
+
+@Composable
+fun rememberOpalBitmap(@DrawableRes id: Int, software: Boolean = false, mipmap: Boolean = false): ImageBitmap? {
+    val source = rememberImageSource(id) as? ImageSource.Bitmap ?: return null
+    return rememberCachedBitmap(source, source.key.copy(software = software, mipmap = mipmap)).value
+}
 
 @Composable
 fun OpalImage(
@@ -91,10 +129,8 @@ fun OpalImage(
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Fit
 ) {
-    val resources = LocalResources.current
-    val configuration = LocalConfiguration.current
-    when (val source = remember(id, resources, configuration) { resources.imageSource(id) }) {
-        is ImageSource.Bitmap -> BitmapImage(source, resources, contentDescription, contentScale, modifier)
+    when (val source = rememberImageSource(id)) {
+        is ImageSource.Bitmap -> BitmapImage(source, contentDescription, contentScale, modifier)
 
         is ImageSource.Vector -> Image(
             painter = painterResource(source.id),
@@ -110,22 +146,12 @@ fun OpalImage(
 @Composable
 private fun BitmapImage(
     source: ImageSource.Bitmap,
-    resources: Resources,
     contentDescription: String?,
     contentScale: ContentScale,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val sync = LocalInspectionMode.current
-    val cache = OpalImageCache.bitmaps
-    val cached = remember(source) {
-        cache[source.key] ?: if (sync) cache.getBlocking(source.key) { resources.decode(source.id) } else null
-    }
-    val bitmap by produceState(cached, source) {
-        OpalImageCache.registerTrim(context)
-        value = cached ?: cache.getOrDecode(source.key) { resources.decode(source.id) }
-    }
-    val alpha = remember(source) { Animatable(if (cached != null) 1f else 0f) }
+    val bitmap by rememberCachedBitmap(source, source.key)
+    val alpha = remember(source) { Animatable(if (bitmap != null) 1f else 0f) }
     LaunchedEffect(bitmap) {
         if (bitmap != null) alpha.animateTo(1f, OpalMotion.FadeIn)
     }

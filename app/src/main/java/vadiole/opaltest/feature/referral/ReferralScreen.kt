@@ -100,10 +100,7 @@ fun ReferralScreen(
                 is ReferralEffect.ClaimSucceeded -> {
                     val reward = effect.reward
                     if (reward is Reward.Milestone) {
-                        val content = RevealContent(
-                            gem = reward.stone.revealImage,
-                            title = resources.getString(reward.stone.title)
-                        )
+                        val content = RevealContent(gem = reward.stone.revealImage, title = reward.stone.title)
                         reveal.open(reward.stone, content)
                     } else {
                         haptics.performHapticFeedback(HapticFeedbackType.Confirm)
