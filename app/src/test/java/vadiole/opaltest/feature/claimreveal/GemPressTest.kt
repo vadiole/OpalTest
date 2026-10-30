@@ -3,9 +3,13 @@ package vadiole.opaltest.feature.claimreveal
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
@@ -32,12 +36,16 @@ class GemPressTest {
 
     private lateinit var state: ClaimRevealState
 
+    private val haptics = RecordingHaptics()
+
     private fun setContent() {
         compose.setContent {
             state = rememberClaimRevealState()
-            OpalTheme {
-                ClaimRevealHost(state = state, modifier = Modifier.fillMaxSize()) {
-                    Box(Modifier.fillMaxSize())
+            CompositionLocalProvider(LocalHapticFeedback provides haptics) {
+                OpalTheme {
+                    ClaimRevealHost(state = state, modifier = Modifier.fillMaxSize()) {
+                        Box(Modifier.fillMaxSize())
+                    }
                 }
             }
         }
@@ -83,6 +91,8 @@ class GemPressTest {
     private fun down(position: Offset) = compose.onRoot().performTouchInput { down(position) }
 
     private fun up() = compose.onRoot().performTouchInput { up() }
+
+    private fun dp(value: Float) = value * compose.density.density
 
     @Test
     fun `press shrinks the gem and release bounces back past rest`() {
@@ -151,6 +161,55 @@ class GemPressTest {
     }
 
     @Test
+    fun `press just outside the gem bounds still squishes`() {
+        setContent()
+        awaitRevealed()
+        val target = state.target!!
+        down(Offset(target.center.x, target.top - dp(12f)))
+        advance(300)
+        assertEquals(PRESSED, scale(), 0.002f)
+        up()
+        advance(1000)
+        down(Offset(target.center.x, target.bottom + dp(12f)))
+        advance(300)
+        assertEquals(PRESSED, scale(), 0.002f)
+        up()
+        advance(1000)
+        down(Offset(target.center.x, target.top - dp(24f)))
+        advance(300)
+        assertEquals(1f, scale(), 0f)
+        up()
+    }
+
+    @Test
+    fun `press and release each tick once`() {
+        setContent()
+        awaitRevealed()
+        down(gemCenter())
+        frame()
+        assertEquals(listOf(HapticFeedbackType.SegmentTick), haptics.performed)
+        up()
+        frame()
+        assertEquals(List(2) { HapticFeedbackType.SegmentTick }, haptics.performed)
+    }
+
+    @Test
+    fun `dragging away ticks only on press and ignored presses stay silent`() {
+        setContent()
+        awaitRevealed()
+        val target = state.target!!
+        down(Offset(target.left + target.width * 0.05f, target.center.y))
+        up()
+        frame()
+        assertEquals(emptyList<HapticFeedbackType>(), haptics.performed)
+        down(gemCenter())
+        compose.onRoot().performTouchInput { moveBy(Offset(0f, -viewConfiguration.touchSlop * 3)) }
+        up()
+        frame()
+        assertEquals(listOf(HapticFeedbackType.SegmentTick), haptics.performed)
+    }
+
+    @Test
     fun `closing while pressed restores the gem`() {
         setContent()
         awaitRevealed()
@@ -193,6 +252,14 @@ class GemPressTest {
         val output = File("build/screenshots/$name.png").apply { parentFile?.mkdirs() }
         output.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
         return bitmap
+    }
+
+    private class RecordingHaptics : HapticFeedback {
+        val performed = mutableListOf<HapticFeedbackType>()
+
+        override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
+            performed += hapticFeedbackType
+        }
     }
 
     private companion object {

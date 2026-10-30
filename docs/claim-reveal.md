@@ -17,6 +17,7 @@ adb shell am start -n vadiole.opaltest.debug/vadiole.opaltest.feature.claimrevea
 ## Decided
 
 - Each reveal plays a random `RevealSound` from the five `claim_reveal_shine_*` files, on purpose. All five load into a `SoundPool` when the host enters composition (about 216 KB).
+- Once revealed, the gem reacts to a press 16dp beyond the stone's edges. It ticks (`SegmentTick`) on press and on lift, but not when a drag or scroll cancels the press. Reduced motion turns off the squish but keeps the ticks.
 
 ## Before shipping
 
