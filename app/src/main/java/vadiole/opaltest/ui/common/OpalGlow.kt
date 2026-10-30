@@ -1,11 +1,12 @@
 package vadiole.opaltest.ui.common
 
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -25,23 +26,23 @@ private val glowStops = Array(GLOW_STEPS + 1) { step ->
 
 @Composable
 fun OpalGlow(modifier: Modifier = Modifier) {
-    Canvas(
+    Spacer(
         modifier = modifier
             .height(168.dp)
             .clipToBounds()
-    ) {
-        val center = Offset(size.width / 2, (-6.72).dp.toPx())
-        val radiusY = 174.72.dp.toPx()
-        val radiusX = 738.34.dp.toPx()
-        scale(scaleX = radiusX / radiusY, scaleY = 1f, pivot = center) {
-            drawCircle(
-                brush = Brush.radialGradient(*glowStops, center = center, radius = radiusY * GLOW_EXTENT),
-                radius = radiusY * GLOW_EXTENT,
-                center = center,
-                alpha = 0.5f
-            )
-        }
-    }
+            .drawWithCache {
+                val center = Offset(size.width / 2, (-6.72).dp.toPx())
+                val radiusY = 174.72.dp.toPx()
+                val radius = radiusY * GLOW_EXTENT
+                val brush = Brush.radialGradient(*glowStops, center = center, radius = radius)
+                val scaleX = 738.34.dp.toPx() / radiusY
+                onDrawBehind {
+                    scale(scaleX = scaleX, scaleY = 1f, pivot = center) {
+                        drawCircle(brush = brush, radius = radius, center = center, alpha = 0.5f)
+                    }
+                }
+            }
+    )
 }
 
 @Preview(showBackground = true, backgroundColor = 0xFF000000, widthDp = 402)

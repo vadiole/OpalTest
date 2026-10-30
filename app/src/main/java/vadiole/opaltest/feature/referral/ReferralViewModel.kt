@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import vadiole.opaltest.data.referral.ReferralRepository
 import vadiole.opaltest.domain.Outcome
+import vadiole.opaltest.domain.referral.ReferralError
 
 class ReferralViewModel(private val repository: ReferralRepository) : ViewModel() {
     private val mutableState = MutableStateFlow(ReferralState())
@@ -63,6 +64,11 @@ class ReferralViewModel(private val repository: ReferralRepository) : ViewModel(
                 is Outcome.Failure -> {
                     mutableState.update { it.copy(claimingTierId = null) }
                     effectChannel.send(ReferralEffect.ClaimFailed(outcome.error))
+                    if (outcome.error == ReferralError.AlreadyClaimed ||
+                        outcome.error == ReferralError.NotEligible
+                    ) {
+                        load()
+                    }
                 }
             }
         }

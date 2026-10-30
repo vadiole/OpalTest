@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -274,7 +275,10 @@ private fun Code(code: String) {
         modifier = Modifier.clearAndSetSemantics { contentDescription = "$title: ${code.toList().joinToString(" ")}" }
     ) {
         Text(text = title, style = OpalTheme.typography.headline)
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
             code.forEach { char ->
                 Box(
                     contentAlignment = Alignment.Center,
@@ -492,6 +496,7 @@ private fun LoadError(onRetry: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.medium, Alignment.CenterVertically),
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .safeDrawingPadding()
             .padding(OpalTheme.spacing.mediumLarge)
     ) {

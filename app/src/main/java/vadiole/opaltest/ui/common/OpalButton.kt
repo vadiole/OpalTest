@@ -26,6 +26,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
@@ -60,7 +61,12 @@ fun OpalButton(
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .semantics { if (loading) stateDescription = busyDescription }
+            .semantics {
+                if (loading) {
+                    contentDescription = text
+                    stateDescription = busyDescription
+                }
+            }
             .height(metrics.height)
             .alpha(if (enabled) 1f else DISABLED_ALPHA)
             .clip(OpalTheme.shapes.pill)
