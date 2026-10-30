@@ -11,7 +11,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.MutableRect
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.toArgb
@@ -30,6 +30,7 @@ internal fun GemSparkles(state: ClaimRevealState, frame: () -> Rect?, modifier: 
     val shader = remember { RuntimeShader(SparkleShader) }
     val brush = remember(shader) { ShaderBrush(shader) }
     val motes = remember { FloatArray(SPARKLE_COUNT * MOTE_STRIDE) }
+    val bounds = remember { MutableRect(0f, 0f, 0f, 0f) }
     val core = colors.content.toArgb()
     val tint = colors.glow.toArgb()
     val time = remember { mutableFloatStateOf(0f) }
@@ -53,7 +54,7 @@ internal fun GemSparkles(state: ClaimRevealState, frame: () -> Rect?, modifier: 
                 val visible = state.sparkle.value * (1f - state.back.value)
                 if (visible <= 0f) return@drawBehind
                 val gem = frame() ?: return@drawBehind
-                val bounds = placeSparkles(time.floatValue, gem.width, density, motes) ?: return@drawBehind
+                if (!placeSparkles(time.floatValue, gem.width, density, motes, bounds)) return@drawBehind
                 val center = gem.gemCenter()
                 shader.setFloatUniform("center", center.x, center.y)
                 shader.setFloatUniform("motes", motes)
@@ -69,7 +70,7 @@ internal fun GemSparkles(state: ClaimRevealState, frame: () -> Rect?, modifier: 
     )
 }
 
-internal fun placeSparkles(time: Float, unit: Float, density: Float, motes: FloatArray): Rect? {
+internal fun placeSparkles(time: Float, unit: Float, density: Float, motes: FloatArray, bounds: MutableRect): Boolean {
     var left = Float.POSITIVE_INFINITY
     var top = Float.POSITIVE_INFINITY
     var right = Float.NEGATIVE_INFINITY
@@ -102,7 +103,8 @@ internal fun placeSparkles(time: Float, unit: Float, density: Float, motes: Floa
         right = max(right, x + size)
         bottom = max(bottom, y + size)
     }
-    return if (left < right) Rect(left, top, right, bottom) else null
+    bounds.set(left, top, right, bottom)
+    return left < right
 }
 
 private fun hash(value: Float): Float {

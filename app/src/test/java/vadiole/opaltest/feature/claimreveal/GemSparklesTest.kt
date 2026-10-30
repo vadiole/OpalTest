@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.MotionDurationScale
+import androidx.compose.ui.geometry.MutableRect
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -167,15 +168,24 @@ class GemSparklesReducedMotionTest {
 
 class SparkleFieldTest {
     private val motes = FloatArray(SPARKLE_COUNT * 4)
+    private val bounds = MutableRect(0f, 0f, 0f, 0f)
 
     @Test
-    fun `motes never travel further down than the downward reach`() {
+    fun `drawn bounds hold every mote and never reach further down than the downward reach`() {
         val limit = SPARKLE_DOWN_RADIUS * UNIT + SPARKLE_MAX_SIZE_DP
         for (step in 0..2400) {
-            placeSparkles(step * 0.05f, UNIT, 1f, motes)
+            if (!placeSparkles(step * 0.05f, UNIT, 1f, motes, bounds)) continue
+            assertTrue("bounds at ${step * 0.05f}s reached ${bounds.bottom}", bounds.bottom <= limit + 0.01f)
             for (i in 0 until SPARKLE_COUNT) {
-                val bottom = motes[i * 4 + 1] + motes[i * 4 + 2]
-                assertTrue("mote $i at ${step * 0.05f}s reached $bottom", bottom <= limit + 0.01f)
+                val size = motes[i * 4 + 2]
+                if (size == 0f) continue
+                val x = motes[i * 4]
+                val y = motes[i * 4 + 1]
+                assertTrue(
+                    "mote $i at ${step * 0.05f}s escapes the drawn bounds",
+                    x - size >= bounds.left && x + size <= bounds.right && y - size >= bounds.top &&
+                        y + size <= bounds.bottom
+                )
             }
         }
     }
@@ -184,7 +194,7 @@ class SparkleFieldTest {
     fun `live motes cover every direction around the gem`() {
         for (time in listOf(10f, 25f, 40f)) {
             val octants = IntArray(8)
-            placeSparkles(time, UNIT, 1f, motes)
+            placeSparkles(time, UNIT, 1f, motes, bounds)
             for (i in 0 until SPARKLE_COUNT) {
                 if (motes[i * 4 + 3] < 0.2f) continue
                 val angle = atan2(motes[i * 4 + 1], motes[i * 4]) + PI.toFloat()
