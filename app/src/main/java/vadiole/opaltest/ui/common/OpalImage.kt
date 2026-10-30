@@ -153,7 +153,7 @@ private fun BitmapImage(
     val bitmap by rememberCachedBitmap(source, source.key)
     val alpha = remember(source) { Animatable(if (bitmap != null) 1f else 0f) }
     LaunchedEffect(bitmap) {
-        if (bitmap != null) alpha.animateTo(1f, OpalMotion.FadeIn)
+        if (bitmap != null) alpha.animateTo(1f, OpalMotion.StateSpring)
     }
     Box(modifier) {
         bitmap?.let {

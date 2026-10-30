@@ -28,6 +28,7 @@ class ConsoleViewModelTest {
     private val initial = ReferralDebugState(
         plan = Plan.Free,
         successfulReferrals = 3,
+        maxReferrals = 999,
         claimedTiers = 1,
         nextTierAt = 5,
         latency = SimulatedLatency.Normal,
@@ -39,6 +40,7 @@ class ConsoleViewModelTest {
         val data = MutableStateFlow(initial)
         var resets = 0
         val failNextClaimWrites = mutableListOf<Boolean>()
+        val referralWrites = mutableListOf<Int>()
 
         override val state: Flow<ReferralDebugState> = flow {
             if (failingReads > 0) {
@@ -50,7 +52,9 @@ class ConsoleViewModelTest {
 
         override suspend fun setPlan(plan: Plan) = Unit
 
-        override suspend fun setReferrals(count: Int) = Unit
+        override suspend fun setReferrals(count: Int) {
+            referralWrites += count
+        }
 
         override suspend fun advanceToNextTier() = Unit
 
@@ -84,6 +88,23 @@ class ConsoleViewModelTest {
 
         runCurrent()
         assertEquals(ConsoleState(ConsoleLoad.Ready(initial)), viewModel.state.value)
+    }
+
+    @Test
+    fun `add friend is a no-op at the referral cap`() = runTest {
+        val controls = FakeControls()
+        controls.data.value = initial.copy(successfulReferrals = initial.maxReferrals)
+        val viewModel = ConsoleViewModel(controls)
+        runCurrent()
+
+        viewModel.onIntent(ConsoleIntent.AddFriend)
+        runCurrent()
+        assertEquals(emptyList<Int>(), controls.referralWrites)
+
+        controls.data.value = initial
+        viewModel.onIntent(ConsoleIntent.AddFriend)
+        runCurrent()
+        assertEquals(listOf(initial.successfulReferrals + 1), controls.referralWrites)
     }
 
     @Test

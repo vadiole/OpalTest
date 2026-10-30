@@ -33,6 +33,7 @@ class ConsoleLoadingTest {
             ReferralDebugState(
                 plan = Plan.Free,
                 successfulReferrals = 3,
+                maxReferrals = 999,
                 claimedTiers = 1,
                 nextTierAt = 5,
                 latency = SimulatedLatency.None,

@@ -56,11 +56,7 @@
         <item quantity="one">%s friend</item>
         <item quantity="other">%s friends</item>
     </plurals>
-    <plurals name="console_next_reward">
-        <item quantity="one">Next reward at %s friend.</item>
-        <item quantity="other">Next reward at %s friends.</item>
-    </plurals>
-    <string name="console_all_rewards_reached">Every reward is unlocked.</string>
+    <string name="console_no_rewards_claimed">No rewards claimed yet.</string>
     <plurals name="console_claimed">
         <item quantity="one">%s reward claimed.</item>
         <item quantity="other">%s rewards claimed.</item>

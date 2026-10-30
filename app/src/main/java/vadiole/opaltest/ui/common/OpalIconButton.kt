@@ -3,7 +3,9 @@ package vadiole.opaltest.ui.common
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
@@ -24,10 +26,12 @@ fun OpalIconButton(
     @DrawableRes icon: Int,
     contentDescription: String?,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val indicationSource = remember { MutableInteractionSource() }
+    val alpha = animateEnabledAlpha(enabled)
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
@@ -37,11 +41,14 @@ fun OpalIconButton(
                 indicationSource = indicationSource,
                 shape = OpalTheme.shapes.pill,
                 background = SolidColor(OpalTheme.colors.fill),
-                ripple = opalRipple(OpalTheme.colors.content, OpalTheme.alpha.rippleOnFill)
+                ripple = opalRipple(OpalTheme.colors.content, OpalTheme.alpha.rippleOnFill),
+                enabled = enabled,
+                alpha = { alpha.value }
             )
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
+                enabled = enabled,
                 role = Role.Button,
                 onClick = onClick
             )
@@ -58,11 +65,12 @@ fun OpalIconButton(
 @Composable
 private fun OpalIconButtonPreview() {
     OpalTheme {
-        OpalIconButton(
-            icon = R.drawable.ic_arrow_back,
-            contentDescription = null,
-            onClick = {},
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small),
             modifier = Modifier.padding(OpalTheme.spacing.mediumLarge)
-        )
+        ) {
+            OpalIconButton(icon = R.drawable.ic_arrow_back, contentDescription = null, onClick = {})
+            OpalIconButton(icon = R.drawable.ic_arrow_back, contentDescription = null, onClick = {}, enabled = false)
+        }
     }
 }

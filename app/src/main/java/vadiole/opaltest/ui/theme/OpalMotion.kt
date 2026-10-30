@@ -41,7 +41,6 @@ object OpalMotion {
 
     const val LOADING_DELAY_MILLIS = 150L
     const val LOADING_MIN_MILLIS = 300L
-    val FadeIn: SpringSpec<Float> = spring(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow)
     val CrossFade: TweenSpec<Float> = tween(durationMillis = 250, easing = LinearEasing)
 
     const val POP_START_SCALE = 0.6f

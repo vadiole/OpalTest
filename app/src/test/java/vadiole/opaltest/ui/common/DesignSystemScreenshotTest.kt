@@ -144,13 +144,38 @@ class DesignSystemScreenshotTest {
                     enabled = false
                 )
             }
+            Row(horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small)) {
+                OpalButton(text = "+1", onClick = {}, style = OpalButtonStyle.Outlined, size = OpalButtonSize.Small)
+                OpalButton(
+                    text = "Reset",
+                    onClick = {},
+                    style = OpalButtonStyle.Outlined,
+                    size = OpalButtonSize.Small,
+                    loading = true
+                )
+                OpalButton(
+                    text = "All unlocked",
+                    onClick = {},
+                    style = OpalButtonStyle.Outlined,
+                    size = OpalButtonSize.Small,
+                    enabled = false
+                )
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall)) {
                 OpalChip(text = "Free", selected = true, onClick = {})
                 OpalChip(text = "Pro", selected = false, onClick = {})
                 OpalChip(text = "Off", selected = false, enabled = false, onClick = {})
                 OpalToggleChip(text = "Fail", checked = true, onCheckedChange = {})
             }
-            OpalIconButton(icon = R.drawable.ic_arrow_back, contentDescription = null, onClick = {})
+            Row(horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small)) {
+                OpalIconButton(icon = R.drawable.ic_arrow_back, contentDescription = null, onClick = {})
+                OpalIconButton(
+                    icon = R.drawable.ic_arrow_back,
+                    contentDescription = null,
+                    onClick = {},
+                    enabled = false
+                )
+            }
         }
     }
 
@@ -169,6 +194,13 @@ class DesignSystemScreenshotTest {
                     text = "Nächste Belohnung",
                     onClick = {},
                     style = OpalButtonStyle.Primary,
+                    modifier = Modifier.weight(1f)
+                )
+                OpalButton(
+                    text = "Demo zurücksetzen",
+                    onClick = {},
+                    style = OpalButtonStyle.Outlined,
+                    size = OpalButtonSize.Small,
                     modifier = Modifier.weight(1f)
                 )
                 OpalButton(

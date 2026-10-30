@@ -90,6 +90,7 @@ class ConsoleViewModel(private val controls: ReferralDebugControls) : ViewModel(
         val debug = controls.state.first()
         when (intent) {
             ConsoleIntent.AddFriend -> {
+                if (debug.successfulReferrals >= debug.maxReferrals) return
                 val count = debug.successfulReferrals + 1
                 controls.setReferrals(count)
                 val reached = debug.nextTierAt?.let { count >= it } == true

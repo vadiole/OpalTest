@@ -44,7 +44,7 @@ import vadiole.opaltest.R
 import vadiole.opaltest.ui.theme.OpalMotion
 import vadiole.opaltest.ui.theme.OpalTheme
 
-enum class OpalButtonStyle { Accent, Primary }
+enum class OpalButtonStyle { Accent, Primary, Outlined }
 
 enum class OpalButtonSize { Large, Small }
 
@@ -61,9 +61,17 @@ fun OpalButton(
 ) {
     val colors = OpalTheme.colors
     val metrics = size.metrics()
+    val outlined = style == OpalButtonStyle.Outlined
     val background: Brush = when (style) {
         OpalButtonStyle.Accent -> colors.accent
         OpalButtonStyle.Primary -> SolidColor(colors.content)
+        OpalButtonStyle.Outlined -> SolidColor(Color.Transparent)
+    }
+    val contentColor = if (outlined) colors.content else colors.onAccent
+    val ripple = if (outlined) {
+        opalRipple(colors.content, OpalTheme.alpha.rippleOnFill)
+    } else {
+        opalRipple(colors.onAccent, OpalTheme.alpha.rippleOnLight)
     }
     val busyDescription = stringResource(R.string.opal_button_loading)
     val interactionSource = remember { MutableInteractionSource() }
@@ -91,10 +99,11 @@ fun OpalButton(
                 indicationSource = indicationSource,
                 shape = OpalTheme.shapes.pill,
                 background = background,
-                ripple = opalRipple(colors.onAccent, OpalTheme.alpha.rippleOnLight),
+                ripple = ripple,
                 enabled = interactive,
                 alpha = { alpha.value }
             )
+            .then(if (outlined) Modifier.outlineBorder(1.dp, colors.border, OpalTheme.shapes.pill) else Modifier)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -113,14 +122,14 @@ fun OpalButton(
         ) {
             if (leadingIcon != null) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.size(metrics.iconSize)) {
-                    Icon(painter = painterResource(leadingIcon), contentDescription = null, tint = colors.onAccent)
+                    Icon(painter = painterResource(leadingIcon), contentDescription = null, tint = contentColor)
                 }
             }
-            OpalLabel(text = text, style = metrics.textStyle, color = colors.onAccent)
+            OpalLabel(text = text, style = metrics.textStyle, color = contentColor)
         }
         if (loading || spinnerVisible) {
             CircularProgressIndicator(
-                color = colors.onAccent,
+                color = contentColor,
                 strokeWidth = 2.dp,
                 modifier = Modifier
                     .size(metrics.iconSize)
@@ -153,14 +162,14 @@ private class ButtonMetrics(val height: Dp, val padding: PaddingValues, val icon
 
 private fun OpalButtonSize.metrics(): ButtonMetrics = when (this) {
     OpalButtonSize.Large -> ButtonMetrics(
-        height = 50.dp,
+        height = OpalTheme.layout.controlHeight,
         padding = PaddingValues(horizontal = OpalTheme.spacing.mediumLarge, vertical = OpalTheme.spacing.xSmall),
         iconSize = OpalTheme.iconSize.medium,
         textStyle = OpalTheme.typography.body
     )
 
     OpalButtonSize.Small -> ButtonMetrics(
-        height = 40.dp,
+        height = OpalTheme.layout.controlHeightSmall,
         padding = PaddingValues(horizontal = OpalTheme.spacing.small, vertical = OpalTheme.spacing.xxSmall),
         iconSize = OpalTheme.iconSize.small,
         textStyle = OpalTheme.typography.calloutMedium
@@ -195,6 +204,23 @@ private fun OpalButtonPreview() {
                     text = "Claim",
                     onClick = {},
                     style = OpalButtonStyle.Primary,
+                    size = OpalButtonSize.Small,
+                    enabled = false
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small)) {
+                OpalButton(text = "+1", onClick = {}, style = OpalButtonStyle.Outlined, size = OpalButtonSize.Small)
+                OpalButton(
+                    text = "Reset",
+                    onClick = {},
+                    style = OpalButtonStyle.Outlined,
+                    size = OpalButtonSize.Small,
+                    loading = true
+                )
+                OpalButton(
+                    text = "All unlocked",
+                    onClick = {},
+                    style = OpalButtonStyle.Outlined,
                     size = OpalButtonSize.Small,
                     enabled = false
                 )

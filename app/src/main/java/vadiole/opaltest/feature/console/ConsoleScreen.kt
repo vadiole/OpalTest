@@ -282,17 +282,17 @@ private fun OpenReferralsButton(onIntent: (ConsoleIntent) -> Unit, modifier: Mod
 private fun Loading(modifier: Modifier = Modifier) {
     OpalSkeleton(description = stringResource(R.string.console_loading), modifier = modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.large)) {
-            Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xxSmall)) {
-                SkeletonLine(OpalTheme.typography.body, 180.dp)
-                SkeletonLine(OpalTheme.typography.callout, 120.dp)
-            }
+            SkeletonLine(OpalTheme.typography.body, 160.dp)
             OpalCard(modifier = Modifier.fillMaxWidth()) {
                 Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall)) {
                     ControlRowSkeleton(chipWidths = listOf(56.dp, 52.dp))
                     ControlRowSkeleton(chipWidths = listOf(44.dp, 128.dp), valueWidth = 12.dp)
                     ControlRowSkeleton(chipWidths = listOf(64.dp, 60.dp, 48.dp))
                     ControlRowSkeleton(chipWidths = listOf(96.dp, 100.dp))
-                    SkeletonBlock(Modifier.size(width = 104.dp, height = 40.dp), OpalTheme.shapes.pill)
+                    SkeletonBlock(
+                        Modifier.size(width = 104.dp, height = OpalTheme.layout.controlHeightSmall),
+                        OpalTheme.shapes.pill
+                    )
                 }
             }
         }
@@ -317,7 +317,12 @@ private fun ControlRowSkeleton(chipWidths: List<Dp>, valueWidth: Dp? = null) {
                     Modifier.padding(horizontal = OpalTheme.spacing.xxSmall)
                 )
             }
-            chipWidths.forEach { SkeletonBlock(Modifier.size(width = it, height = 40.dp), OpalTheme.shapes.pill) }
+            chipWidths.forEach {
+                SkeletonBlock(
+                    Modifier.size(width = it, height = OpalTheme.layout.controlHeightSmall),
+                    OpalTheme.shapes.pill
+                )
+            }
         }
     }
 }
@@ -343,26 +348,16 @@ private fun LoadError(onRetry: () -> Unit, modifier: Modifier = Modifier) {
 @Composable
 private fun Status(debug: ReferralDebugState, modifier: Modifier = Modifier) {
     val format = rememberNumberFormat()
-    Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xxSmall), modifier = modifier) {
-        val next = debug.nextTierAt
-        Text(
-            text = if (next != null) {
-                pluralStringResource(R.plurals.console_next_reward, next, format.format(next))
-            } else {
-                stringResource(R.string.console_all_rewards_reached)
-            },
-            style = OpalTheme.typography.body
-        )
-        Text(
-            text = pluralStringResource(
-                R.plurals.console_claimed,
-                debug.claimedTiers,
-                format.format(debug.claimedTiers)
-            ),
-            style = OpalTheme.typography.callout,
-            color = OpalTheme.colors.contentSecondary
-        )
-    }
+    val claimed = debug.claimedTiers
+    Text(
+        text = if (claimed == 0) {
+            stringResource(R.string.console_no_rewards_claimed)
+        } else {
+            pluralStringResource(R.plurals.console_claimed, claimed, format.format(claimed))
+        },
+        style = OpalTheme.typography.body,
+        modifier = modifier
+    )
 }
 
 @Composable
@@ -405,8 +400,9 @@ private fun Controls(
                 OpalButton(
                     text = stringResource(R.string.console_add_friend),
                     onClick = { onIntent(ConsoleIntent.AddFriend) },
-                    style = OpalButtonStyle.Primary,
+                    style = OpalButtonStyle.Outlined,
                     size = OpalButtonSize.Small,
+                    enabled = debug.successfulReferrals < debug.maxReferrals,
                     modifier = Modifier.semantics { contentDescription = addDescription }
                 )
                 OpalButton(
@@ -416,7 +412,7 @@ private fun Controls(
                         stringResource(R.string.console_all_unlocked)
                     },
                     onClick = { onIntent(ConsoleIntent.AdvanceToNextTier) },
-                    style = OpalButtonStyle.Primary,
+                    style = OpalButtonStyle.Outlined,
                     size = OpalButtonSize.Small,
                     enabled = next != null
                 )
@@ -537,7 +533,7 @@ private fun ResetButton(isConfirming: Boolean, onIntent: (ConsoleIntent) -> Unit
         OpalButton(
             text = stringResource(if (confirming) R.string.console_reset_confirm else R.string.console_reset),
             onClick = reset,
-            style = if (confirming) OpalButtonStyle.Accent else OpalButtonStyle.Primary,
+            style = if (confirming) OpalButtonStyle.Accent else OpalButtonStyle.Outlined,
             size = OpalButtonSize.Small
         )
     }
@@ -565,6 +561,7 @@ private fun rememberNumberFormat(maxFractionDigits: Int = 0): NumberFormat {
 private val previewDebug = ReferralDebugState(
     plan = Plan.Free,
     successfulReferrals = 3,
+    maxReferrals = 999,
     claimedTiers = 1,
     nextTierAt = 5,
     latency = SimulatedLatency.Normal,
@@ -600,7 +597,7 @@ private fun ConsoleAllUnlockedPreview() {
     OpalTheme {
         ConsoleContent(
             state = ConsoleState(
-                ConsoleLoad.Ready(previewDebug.copy(successfulReferrals = 12_345, claimedTiers = 7, nextTierAt = null))
+                ConsoleLoad.Ready(previewDebug.copy(successfulReferrals = 999, claimedTiers = 7, nextTierAt = null))
             ),
             onIntent = {}
         )

@@ -34,6 +34,7 @@ class ConsoleScreenshotTest {
     private val debug = ReferralDebugState(
         plan = Plan.Free,
         successfulReferrals = 3,
+        maxReferrals = 999,
         claimedTiers = 1,
         nextTierAt = 5,
         latency = SimulatedLatency.Normal,
@@ -47,7 +48,7 @@ class ConsoleScreenshotTest {
     @Test
     fun allUnlocked() = capture(
         "console_all_unlocked",
-        ConsoleState(ConsoleLoad.Ready(debug.copy(successfulReferrals = 12_345, claimedTiers = 7, nextTierAt = null)))
+        ConsoleState(ConsoleLoad.Ready(debug.copy(successfulReferrals = 999, claimedTiers = 7, nextTierAt = null)))
     )
 
     @Test

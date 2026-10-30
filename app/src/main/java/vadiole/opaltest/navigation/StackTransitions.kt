@@ -1,4 +1,4 @@
-package vadiole.opaltest.ui.common
+package vadiole.opaltest.navigation
 
 import android.view.RoundedCorner
 import android.view.View

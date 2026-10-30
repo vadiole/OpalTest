@@ -26,6 +26,7 @@ interface ReferralDebugControls {
 data class ReferralDebugState(
     val plan: Plan,
     val successfulReferrals: Int,
+    val maxReferrals: Int,
     val claimedTiers: Int,
     val nextTierAt: Int?,
     val latency: SimulatedLatency,
