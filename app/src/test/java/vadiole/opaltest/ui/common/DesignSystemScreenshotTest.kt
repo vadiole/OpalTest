@@ -167,7 +167,11 @@ class DesignSystemScreenshotTest {
                 OpalChip(text = "Off", selected = false, enabled = false, onClick = {})
                 OpalToggleChip(text = "Fail", checked = true, onCheckedChange = {})
             }
-            OpalIconButton(icon = R.drawable.ic_arrow_back, contentDescription = null, onClick = {})
+            Row(horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small)) {
+                OpalIconButton(icon = R.drawable.ic_arrow_back, contentDescription = null, onClick = {})
+                OpalIconButton(icon = R.drawable.ic_arrow_back, contentDescription = null, onClick = {
+                }, enabled = false)
+            }
         }
     }
 
