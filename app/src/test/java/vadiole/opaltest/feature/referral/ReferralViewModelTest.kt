@@ -12,9 +12,13 @@ import org.junit.Test
 import vadiole.opaltest.MainDispatcherRule
 import vadiole.opaltest.data.referral.ReferralRepository
 import vadiole.opaltest.domain.Outcome
+import vadiole.opaltest.domain.referral.MilestoneStone
 import vadiole.opaltest.domain.referral.Plan
 import vadiole.opaltest.domain.referral.ReferralError
 import vadiole.opaltest.domain.referral.ReferralProgram
+import vadiole.opaltest.domain.referral.Reward
+import vadiole.opaltest.domain.referral.RewardTier
+import vadiole.opaltest.domain.referral.TierStatus
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReferralViewModelTest {
@@ -28,7 +32,9 @@ class ReferralViewModelTest {
         successfulReferrals = referrals,
         inviteeTrialDays = 14,
         invitedBy = null,
-        tiers = emptyList()
+        tiers = listOf("tier", "first", "second").map {
+            RewardTier(it, 1, Reward.Milestone(MilestoneStone.Loyal), TierStatus.Claimable)
+        }
     )
 
     private class FakeRepository : ReferralRepository {
