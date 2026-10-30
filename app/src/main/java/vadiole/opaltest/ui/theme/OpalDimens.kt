@@ -1,6 +1,7 @@
 package vadiole.opaltest.ui.theme
 
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.ripple.RippleAlpha
 import androidx.compose.ui.unit.dp
 
 object OpalSpacing {
@@ -31,6 +32,7 @@ object OpalIconSize {
 object OpalAlpha {
     val disabled = 0.4f
     val completed = 0.75f
+    val ripple = RippleAlpha(draggedAlpha = 0.08f, focusedAlpha = 0.1f, hoveredAlpha = 0.05f, pressedAlpha = 0.1f)
 }
 
 object OpalLayout {
