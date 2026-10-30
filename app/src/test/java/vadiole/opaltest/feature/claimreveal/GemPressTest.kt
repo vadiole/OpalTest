@@ -16,6 +16,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
 import java.io.File
 import kotlin.math.abs
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -226,6 +227,8 @@ class GemPressTest {
         setContent()
         awaitRevealed()
         advance(2000)
+        compose.runOnIdle { runBlocking { state.sparkle.snapTo(0f) } }
+        frame()
         val rest = capture("claim_reveal_gem_rest")
         down(gemCenter())
         advance(300)

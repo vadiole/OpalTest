@@ -18,6 +18,7 @@ adb shell am start -n vadiole.opaltest.debug/vadiole.opaltest.feature.claimrevea
 
 - Each reveal plays a random `RevealSound` from the five `claim_reveal_shine_*` files, on purpose. All five load into a `SoundPool` when the host enters composition (about 216 KB).
 - Once revealed, the gem reacts to a press 16dp beyond the stone's edges. It ticks (`SegmentTick`) on press and on lift, but not when a drag or scroll cancels the press. Reduced motion turns off the squish but keeps the ticks.
+- Once the gem settles (`RevealPhase.Revealed`), faint stars drift up and out from behind it, never down toward the title (`GemSparkles`, an AGSL `RuntimeShader`). They fade in over 1.2 s and fade out in 220 ms when the reveal closes or a back gesture commits. The frame loop runs only while `state.sparkle` is above zero. The look is tuned with the `SPARKLE_*` constants in `GemSparkles.kt`. Reduced motion hides them entirely: they are decoration, and a static sparkle adds nothing.
 - `claim_reveal_title` has a `\n` after the gem name, so translators decide where the line breaks and screen readers still read the title as one phrase. At large font sizes the name can wrap onto more lines.
 
 ## Before shipping

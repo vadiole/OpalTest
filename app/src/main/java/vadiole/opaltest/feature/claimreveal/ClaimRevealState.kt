@@ -60,6 +60,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
     internal val fade = Animatable(1f)
     internal val items = List(ITEM_STARTS_MS.size) { Animatable(0f) }
     internal val back = Animatable(0f)
+    internal val sparkle = Animatable(0f)
     internal val press = Animatable(1f, visibilityThreshold = PRESS_THRESHOLD)
 
     internal var target: Rect? by mutableStateOf(null)
@@ -104,6 +105,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
             coroutineScope {
                 items.forEach { launch { it.animateTo(0f, tween(ITEM_EXIT_MS, easing = StrongEaseOut)) } }
                 launch { charge.animateTo(0f, tween(ITEM_EXIT_MS, easing = StrongEaseOut)) }
+                launch { sparkle.animateTo(0f, tween(SPARKLE_OUT_MS, easing = StrongEaseOut)) }
                 if (sweep.value > 0f && sweep.value < 1f) {
                     val remaining = ((1f - sweep.value) * SWEEP_MS).toInt().coerceAtMost(SWEEP_EXIT_MS)
                     launch { sweep.animateTo(1f, tween(remaining, easing = LinearEasing)) }
@@ -136,6 +138,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         }
         snapshotFlow { flight.value }.first { it >= SETTLE_THRESHOLD }
         phase = RevealPhase.Revealed
+        launch { sparkle.animateTo(1f, tween(SPARKLE_IN_MS, easing = EnterEase)) }
         revealItems()
         repeatSweeps()
     }
@@ -160,7 +163,10 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
             listOf(flight, scrim, glow).forEach { it.snapTo(1f) }
             items.forEach { it.snapTo(1f) }
             phase = RevealPhase.Revealed
-            if (!reducedMotion) repeatSweeps()
+            if (!reducedMotion) {
+                sparkle.snapTo(1f)
+                repeatSweeps()
+            }
         }
     }
 
@@ -233,6 +239,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         scope.launch {
             flight.snapTo(shrink)
             items.forEach { it.snapTo(it.value * fadeOut) }
+            sparkle.snapTo(sparkle.value * fadeOut)
             back.snapTo(0f)
             close()
         }
@@ -272,7 +279,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
     }
 
     private suspend fun reset() {
-        listOf(flight, scrim, glow, charge, sweep, back).forEach { it.snapTo(0f) }
+        listOf(flight, scrim, glow, charge, sweep, back, sparkle).forEach { it.snapTo(0f) }
         items.forEach { it.snapTo(0f) }
         fade.snapTo(1f)
         press.snapTo(1f)
@@ -377,3 +384,5 @@ private val ITEM_STARTS_MS = intArrayOf(0, 320, 1200)
 private const val TEXT_DELAY_MS = 550
 private const val ITEM_ENTER_MS = 600
 private const val ITEM_EXIT_MS = 180
+private const val SPARKLE_IN_MS = 1200
+private const val SPARKLE_OUT_MS = 220
