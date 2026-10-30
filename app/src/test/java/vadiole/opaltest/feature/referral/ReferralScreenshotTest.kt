@@ -82,15 +82,15 @@ class ReferralScreenshotTest {
 
     @Test
     @Config(qualifiers = "w874dp-h330dp-xxhdpi")
-    fun landscapeBarInsets() = captureFittingStartPane("referral_landscape_bar_insets")
+    fun landscapeShortWindow() = captureFittingStartPane("referral_landscape_short_window")
 
     @Test
     @Config(qualifiers = "w915dp-h340dp-xxhdpi")
-    fun landscapeWideBarInsets() = captureFittingStartPane("referral_landscape_wide_bar_insets")
+    fun landscapeWideShortWindow() = captureFittingStartPane("referral_landscape_wide_short_window")
 
     @Test
     @Config(qualifiers = "w732dp-h340dp-xxhdpi")
-    fun landscapeNarrowBarInsets() = captureFittingStartPane("referral_landscape_narrow_bar_insets")
+    fun landscapeNarrowShortWindow() = captureFittingStartPane("referral_landscape_narrow_short_window")
 
     @Test
     @Config(qualifiers = "w1280dp-h800dp-xhdpi")
