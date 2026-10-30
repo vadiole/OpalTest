@@ -11,8 +11,8 @@ import vadiole.opaltest.domain.referral.Reward
 import vadiole.opaltest.domain.referral.RewardTier
 import vadiole.opaltest.domain.referral.TierStatus
 
-fun ReferralProgramDto.toDomain() = ReferralProgram(
-    code = referralCode,
+fun ReferralProgramDto.toDomain(): ReferralProgram? = ReferralProgram(
+    code = referralCode.trim().ifEmpty { return null },
     shareUrl = shareUrl,
     plan = if (plan == "pro") Plan.Pro else Plan.Free,
     successfulReferrals = successfulReferrals.coerceAtLeast(0),

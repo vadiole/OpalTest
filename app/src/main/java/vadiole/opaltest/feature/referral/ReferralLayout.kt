@@ -167,13 +167,13 @@ private enum class HeaderItem { Invite, Code, Share }
 
 private fun LazyListScope.invite(program: ReferralProgram, gapAfter: Dp) {
     item(key = HeaderItem.Invite) {
-        InviteCard(program.invitedBy, paneItemModifier.padding(bottom = gapAfter))
+        program.invitedBy?.let { InviteCard(it, paneItemModifier.padding(bottom = gapAfter)) }
     }
 }
 
 private fun LazyListScope.compactInvite(program: ReferralProgram, gapAfter: Dp) {
     item(key = HeaderItem.Invite) {
-        CompactInviteCard(program.invitedBy, paneItemModifier.padding(bottom = gapAfter))
+        program.invitedBy?.let { CompactInviteCard(it, paneItemModifier.padding(bottom = gapAfter)) }
     }
 }
 

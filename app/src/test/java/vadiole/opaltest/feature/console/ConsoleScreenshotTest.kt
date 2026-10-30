@@ -89,6 +89,30 @@ class ConsoleScreenshotTest {
     fun frenchLandscape() = capture("console_fr_landscape", ConsoleState(ConsoleLoad.Ready(debug)))
 
     @Test
+    @Config(qualifiers = "w600dp-h360dp-xxhdpi", fontScale = 2f)
+    fun shortWideLargeFont() = capture("console_600x360_font_2", ConsoleState(ConsoleLoad.Ready(debug)))
+
+    @Test
+    @Config(qualifiers = "w600dp-h360dp-xxhdpi", fontScale = 2f)
+    fun shortWideLargeFontError() = capture("console_600x360_font_2_error", ConsoleState(ConsoleLoad.Failed))
+
+    @Test
+    @Config(qualifiers = "es-w732dp-h412dp-xxhdpi", fontScale = 1.5f)
+    fun spanishShortWide() = capture("console_es_732x412_font_1_5", ConsoleState(ConsoleLoad.Ready(debug)))
+
+    @Test
+    @Config(qualifiers = "fr-w360dp-h800dp-xxhdpi", fontScale = 2f)
+    fun frenchLargeFont() = capture("console_fr_font_2", ConsoleState(ConsoleLoad.Ready(debug)))
+
+    @Test
+    @Config(qualifiers = "fr-w360dp-h800dp-xxhdpi", fontScale = 2f)
+    fun frenchLargeFontLoading() = capture("console_fr_font_2_loading", ConsoleState())
+
+    @Test
+    @Config(qualifiers = "ar-w402dp-h874dp-xxhdpi")
+    fun rtl() = capture("console_rtl", ConsoleState(ConsoleLoad.Ready(debug.copy(claimedTiers = 7))))
+
+    @Test
     fun friendCountRoll() {
         var state by mutableStateOf(ConsoleState(ConsoleLoad.Ready(debug)))
         compose.mainClock.autoAdvance = false

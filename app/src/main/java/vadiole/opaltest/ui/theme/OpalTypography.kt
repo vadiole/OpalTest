@@ -7,6 +7,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import vadiole.opaltest.R
@@ -42,6 +43,7 @@ val DefaultOpalTypography = OpalTypography(
     caption = TextStyle(
         fontFamily = Geist,
         lineHeightStyle = fullLineHeight,
+        textDirection = TextDirection.ContentOrLtr,
         fontWeight = FontWeight.Medium,
         fontSize = 13.sp,
         lineHeight = 18.sp,
@@ -50,6 +52,7 @@ val DefaultOpalTypography = OpalTypography(
     callout = TextStyle(
         fontFamily = Geist,
         lineHeightStyle = fullLineHeight,
+        textDirection = TextDirection.ContentOrLtr,
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
         lineHeight = 22.sp,
@@ -58,6 +61,7 @@ val DefaultOpalTypography = OpalTypography(
     calloutMedium = TextStyle(
         fontFamily = Geist,
         lineHeightStyle = fullLineHeight,
+        textDirection = TextDirection.ContentOrLtr,
         fontWeight = FontWeight.Medium,
         fontSize = 16.sp,
         lineHeight = 22.sp,
@@ -66,6 +70,7 @@ val DefaultOpalTypography = OpalTypography(
     body = TextStyle(
         fontFamily = Geist,
         lineHeightStyle = fullLineHeight,
+        textDirection = TextDirection.ContentOrLtr,
         fontWeight = FontWeight.Medium,
         fontSize = 17.sp,
         lineHeight = 22.sp,
@@ -74,6 +79,7 @@ val DefaultOpalTypography = OpalTypography(
     headline = TextStyle(
         fontFamily = Geist,
         lineHeightStyle = fullLineHeight,
+        textDirection = TextDirection.ContentOrLtr,
         fontWeight = FontWeight.Bold,
         fontSize = 17.sp,
         lineHeight = 22.sp
@@ -81,6 +87,7 @@ val DefaultOpalTypography = OpalTypography(
     largeTitle = TextStyle(
         fontFamily = Geist,
         lineHeightStyle = fullLineHeight,
+        textDirection = TextDirection.ContentOrLtr,
         fontWeight = FontWeight.SemiBold,
         fontSize = 36.sp,
         lineHeight = 44.sp,

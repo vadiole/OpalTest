@@ -144,6 +144,37 @@ class ReferralScreenshotTest {
     @Config(qualifiers = "ar-w402dp-h874dp-xxhdpi")
     fun rtl() = capture("referral_rtl", ReferralState.Ready(previewProgram()))
 
+    @Test
+    @Config(qualifiers = "ar-w732dp-h412dp-xxhdpi")
+    fun rtlLandscapeNarrow() = capture("referral_rtl_landscape_narrow", ReferralState.Ready(previewProgram()))
+
+    @Test
+    fun noInviter() = capture("referral_no_inviter", ReferralState.Ready(previewProgram().copy(invitedBy = null)))
+
+    @Test
+    @Config(qualifiers = "w732dp-h412dp-xxhdpi")
+    fun noInviterLandscapeNarrow() = capture(
+        "referral_no_inviter_landscape_narrow",
+        ReferralState.Ready(previewProgram().copy(invitedBy = null))
+    )
+
+    @Test
+    @Config(qualifiers = "w1280dp-h800dp-xhdpi")
+    fun noInviterTablet() =
+        capture("referral_no_inviter_tablet", ReferralState.Ready(previewProgram().copy(invitedBy = null)))
+
+    @Test
+    @Config(qualifiers = "w320dp-h1861dp-xxhdpi")
+    fun narrow() = capture("referral_narrow", ReferralState.Ready(previewProgram()))
+
+    @Test
+    @Config(qualifiers = "w600dp-h360dp-xxhdpi")
+    fun landscapeSmall() = capture("referral_landscape_small", ReferralState.Ready(previewProgram()))
+
+    @Test
+    @Config(qualifiers = "w600dp-h360dp-xxhdpi")
+    fun loadingLandscapeSmall() = capture("referral_loading_landscape_small", ReferralState.Loading)
+
     private fun captureFittingStartPane(name: String) {
         capture(name, ReferralState.Ready(previewProgram()))
         compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.ScrollBy)).assertCountEquals(1)

@@ -19,7 +19,7 @@ class DefaultReferralRepository(private val api: ReferralApi) : ReferralReposito
 
     private suspend fun request(block: suspend () -> ReferralProgramDto): Outcome<ReferralProgram, ReferralError> =
         try {
-            Outcome.Success(block().toDomain())
+            block().toDomain()?.let { Outcome.Success(it) } ?: Outcome.Failure(ReferralError.Unknown)
         } catch (e: CancellationException) {
             throw e
         } catch (_: IOException) {
