@@ -1,7 +1,6 @@
 package vadiole.opaltest.ui.theme
 
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 
 object OpalSpacing {
@@ -16,10 +15,10 @@ object OpalSpacing {
 }
 
 object OpalShapes {
-    val small = RoundedCornerShape(12.dp)
-    val medium = RoundedCornerShape(16.dp)
-    val large = RoundedCornerShape(24.dp)
-    val xLarge = RoundedCornerShape(28.dp)
+    val small = SquircleShape(12.dp)
+    val medium = SquircleShape(16.dp)
+    val large = SquircleShape(24.dp)
+    val xLarge = SquircleShape(28.dp)
     val pill = CircleShape
 }
 
