@@ -18,7 +18,7 @@ Maintained by the gardener agent. See [WORKFLOW.md](WORKFLOW.md).
 
 ## Active
 
-- 2026-10-30: Reviewed #4 and #6. The user approved one gardening PR: console loading and error states with retry, Reset as a small OpalButton with a confirm, a font-scale-safe label column, chip haptic and onClick only on a real change, a single max-content-width token (480dp, the console's value), and OpalButton screen-reader text while loading. Waiting for the main agent to confirm there's no overlap before dispatching. ReferralScreen previews and scrolling are left to the main agent, which is still building it.
+- 2026-10-30: Reviewed #4 and #6. The user approved one gardening PR: console loading and error states with retry, Reset as a small OpalButton with a confirm, a font-scale-safe label column, chip haptic and onClick only on a real change, a single max-content-width token (480dp, the console's value), and OpalButton screen-reader text while loading. The main agent confirmed no overlap. → PR #7 (`gardening/console-polish`), awaiting user review. It adds `OpalTheme.layout.maxContentWidth`, a new public `OpalToggleChip`, and Reset as "Tap again to reset" for 4s. ReferralScreen previews and scrolling are left to the main agent, which is still building it.
 
 ## Findings
 
@@ -32,5 +32,7 @@ Maintained by the gardener agent. See [WORKFLOW.md](WORKFLOW.md).
 - `AppContainer.referralDebugControls` exposes the fake backend through the app-wide container. A real backend would need a no-op or debug-only binding. Minor; revisit if a real API ever lands.
 
 ## Patterns
+
+- The Pixel is shared with the main agent. A sub-agent's install overwrites the main agent's build, so tell the main agent after each install.
 
 - Sub-agents must not wait on or launch emulators. The `Shared_API_37` qemu can run without being attached to adb, so a wait loop hangs forever. Use the user's phone or skip device verification and say so.
