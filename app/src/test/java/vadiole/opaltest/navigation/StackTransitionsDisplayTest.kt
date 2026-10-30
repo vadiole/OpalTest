@@ -1,4 +1,4 @@
-package vadiole.opaltest.ui.common
+package vadiole.opaltest.navigation
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.foundation.layout.Box

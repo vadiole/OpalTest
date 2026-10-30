@@ -1,4 +1,4 @@
-package vadiole.opaltest.ui.common
+package vadiole.opaltest.navigation
 
 import androidx.compose.runtime.MonotonicFrameClock
 import androidx.compose.ui.geometry.Size
