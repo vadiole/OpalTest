@@ -32,6 +32,7 @@ object OpalIconSize {
 object OpalAlpha {
     val disabled = 0.4f
     val completed = 0.75f
+    val scrim = 0.6f
     val ripple = RippleAlpha(draggedAlpha = 0.08f, focusedAlpha = 0.1f, hoveredAlpha = 0.05f, pressedAlpha = 0.1f)
     val rippleOnFill =
         RippleAlpha(draggedAlpha = 0.12f, focusedAlpha = 0.12f, hoveredAlpha = 0.06f, pressedAlpha = 0.14f)
@@ -41,4 +42,7 @@ object OpalAlpha {
 
 object OpalLayout {
     val maxContentWidth = 480.dp
+    val iconButtonSize = 44.dp
+    val topBlurRadius = 24.dp
+    val topBlurFadeDistance = 32.dp
 }

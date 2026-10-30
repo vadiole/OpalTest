@@ -31,14 +31,13 @@ class ReferralViewModel(private val repository: ReferralRepository) : ViewModel(
     fun onIntent(intent: ReferralIntent) {
         when (intent) {
             ReferralIntent.Retry -> load()
-
-            ReferralIntent.Share -> state.value.program?.let {
-                effectChannel.trySend(ReferralEffect.Share(it.code, it.shareUrl, it.inviteeTrialDays))
-            }
-
+            ReferralIntent.Share -> invite()?.let { effectChannel.trySend(ReferralEffect.Share(it)) }
+            ReferralIntent.CopyInvite -> invite()?.let { effectChannel.trySend(ReferralEffect.CopyInvite(it)) }
             is ReferralIntent.Claim -> claim(intent.tierId)
         }
     }
+
+    private fun invite(): Invite? = state.value.program?.let { Invite(it.code, it.shareUrl, it.inviteeTrialDays) }
 
     private fun load() {
         if (loadJob?.isActive == true) return

@@ -2,10 +2,16 @@ package vadiole.opaltest.ui.theme
 
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Easing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.PathEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.TweenSpec
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 
 object OpalMotion {
@@ -32,6 +38,15 @@ object OpalMotion {
     const val PRESS_SCALE = 0.988f
     val PressIn: TweenSpec<Float> = tween(durationMillis = 80, easing = Decelerate)
     val PressRelease: TweenSpec<Float> = tween(durationMillis = 180, easing = Decelerate)
+
+    const val LOADING_DELAY_MILLIS = 150L
+    val FadeIn: TweenSpec<Float> = tween(durationMillis = 150, easing = LinearEasing)
+
+    const val POP_START_SCALE = 0.6f
+    val StateSpring: SpringSpec<Float> = spring(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow)
+    val SizeSpring: SpringSpec<IntSize> = spring(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow)
+    val SlideSpring: SpringSpec<IntOffset> = spring(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow)
+    val PopSpring: SpringSpec<Float> = spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessMedium)
 
     val ScreenOffset = 96.dp
     val BackEdgeMargin = 16.dp
