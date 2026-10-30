@@ -49,4 +49,13 @@ class ReferralLayoutTest {
         assertEquals(tier, remapScroll(ShortTwoPane, TwoPane, PanePositions(end = ScrollPosition(3, 5))))
     }
 
+    @Test
+    fun codeRowsAreBalanced() {
+        assertEquals(5, balancedCellsPerRow(length = 5, fit = 7))
+        assertEquals(7, balancedCellsPerRow(length = 7, fit = 7))
+        assertEquals(4, balancedCellsPerRow(length = 8, fit = 7))
+        assertEquals(5, balancedCellsPerRow(length = 10, fit = 7))
+        assertEquals(4, balancedCellsPerRow(length = 10, fit = 4))
+        assertEquals(1, balancedCellsPerRow(length = 3, fit = 0))
+    }
 }

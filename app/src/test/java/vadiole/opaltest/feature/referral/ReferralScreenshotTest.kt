@@ -62,6 +62,30 @@ class ReferralScreenshotTest {
         ReferralState(program = previewProgram(referrals = 12))
     )
 
+    @Test
+    @Config(qualifiers = "w732dp-h412dp-xxhdpi")
+    fun landscapeNarrow() = capture("referral_landscape_narrow", ReferralState(program = previewProgram()))
+
+    @Test
+    @Config(qualifiers = "w732dp-h412dp-xxhdpi")
+    fun loadingLandscapeNarrow() = capture("referral_loading_landscape_narrow", ReferralState())
+
+    @Test
+    @Config(qualifiers = "w1280dp-h800dp-xhdpi")
+    fun loadingTablet() = capture("referral_loading_tablet", ReferralState())
+
+    @Test
+    fun longInviter() = capture(
+        "referral_long_inviter",
+        ReferralState(program = previewProgram().copy(invitedBy = LONG_INVITER))
+    )
+
+    @Test
+    fun longCode() = capture(
+        "referral_long_code",
+        ReferralState(program = previewProgram().copy(code = LONG_CODE))
+    )
+
     private fun capture(name: String, state: ReferralState) {
         compose.mainClock.autoAdvance = false
         compose.setContent {
@@ -76,5 +100,10 @@ class ReferralScreenshotTest {
         output.outputStream().use {
             compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
         }
+    }
+
+    private companion object {
+        const val LONG_INVITER = "Maximilian Alexander von Hohenzollern-Sigmaringen"
+        const val LONG_CODE = "ABCDEFGH23"
     }
 }
