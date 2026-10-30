@@ -93,7 +93,7 @@ class DesignSystemScreenshotTest {
                     OpalButton(
                         text = "Claim",
                         onClick = {},
-                        style = OpalButtonStyle.Primary,
+                        style = OpalButtonStyle.Neutral,
                         size = OpalButtonSize.Small,
                         enabled = !busy
                     )
@@ -126,20 +126,20 @@ class DesignSystemScreenshotTest {
                 modifier = Modifier.fillMaxWidth()
             )
             OpalButton(text = "Share invite", onClick = {}, loading = true, modifier = Modifier.fillMaxWidth())
-            OpalButton(text = "Next reward", onClick = {}, style = OpalButtonStyle.Primary)
+            OpalButton(text = "Next reward", onClick = {}, style = OpalButtonStyle.Neutral)
             Row(horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small)) {
-                OpalButton(text = "Claim", onClick = {}, style = OpalButtonStyle.Primary, size = OpalButtonSize.Small)
+                OpalButton(text = "Claim", onClick = {}, style = OpalButtonStyle.Neutral, size = OpalButtonSize.Small)
                 OpalButton(
                     text = "Claim",
                     onClick = {},
-                    style = OpalButtonStyle.Primary,
+                    style = OpalButtonStyle.Neutral,
                     size = OpalButtonSize.Small,
                     loading = true
                 )
                 OpalButton(
                     text = "Claim",
                     onClick = {},
-                    style = OpalButtonStyle.Primary,
+                    style = OpalButtonStyle.Neutral,
                     size = OpalButtonSize.Small,
                     enabled = false
                 )
@@ -186,14 +186,14 @@ class DesignSystemScreenshotTest {
             OpalButton(
                 text = "Zum Zurücksetzen erneut tippen",
                 onClick = {},
-                style = OpalButtonStyle.Primary,
+                style = OpalButtonStyle.Neutral,
                 modifier = Modifier.width(220.dp)
             )
             Row(horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small)) {
                 OpalButton(
                     text = "Nächste Belohnung",
                     onClick = {},
-                    style = OpalButtonStyle.Primary,
+                    style = OpalButtonStyle.Neutral,
                     modifier = Modifier.weight(1f)
                 )
                 OpalButton(
@@ -206,7 +206,7 @@ class DesignSystemScreenshotTest {
                 OpalButton(
                     text = "Jetzt einlösen",
                     onClick = {},
-                    style = OpalButtonStyle.Primary,
+                    style = OpalButtonStyle.Neutral,
                     size = OpalButtonSize.Small,
                     modifier = Modifier.weight(1f)
                 )

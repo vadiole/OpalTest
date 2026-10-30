@@ -149,7 +149,7 @@ private fun TierAction(action: ClaimAction?, progress: @Composable () -> Unit, o
             OpalButton(
                 text = stringResource(R.string.referral_claim),
                 onClick = onClaim,
-                style = OpalButtonStyle.Primary,
+                style = OpalButtonStyle.Neutral,
                 size = OpalButtonSize.Small,
                 enabled = current != ClaimAction.Disabled,
                 loading = current == ClaimAction.Busy

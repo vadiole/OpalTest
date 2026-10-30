@@ -277,7 +277,7 @@ private fun LoadError(retrying: Boolean, onRetry: () -> Unit) {
             OpalButton(
                 text = stringResource(R.string.referral_retry),
                 onClick = onRetry,
-                style = OpalButtonStyle.Primary,
+                style = OpalButtonStyle.Neutral,
                 size = OpalButtonSize.Small,
                 loading = retrying
             )

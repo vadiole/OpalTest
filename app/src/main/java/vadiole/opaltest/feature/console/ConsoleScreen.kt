@@ -338,7 +338,7 @@ private fun LoadError(onRetry: () -> Unit, modifier: Modifier = Modifier) {
             OpalButton(
                 text = stringResource(R.string.console_retry),
                 onClick = onRetry,
-                style = OpalButtonStyle.Primary,
+                style = OpalButtonStyle.Neutral,
                 size = OpalButtonSize.Small
             )
         }

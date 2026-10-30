@@ -132,7 +132,7 @@ fun ClaimRevealDemoScreen(modifier: Modifier = Modifier) {
                 OpalButton(
                     text = stringResource(R.string.claim_reveal_demo_reset),
                     onClick = { claimed = emptyList() },
-                    style = OpalButtonStyle.Primary,
+                    style = OpalButtonStyle.Neutral,
                     size = OpalButtonSize.Small
                 )
             }
@@ -214,7 +214,7 @@ private fun DemoTierCard(
                     OpalButton(
                         text = stringResource(R.string.claim_reveal_demo_claim),
                         onClick = onClaim,
-                        style = OpalButtonStyle.Primary,
+                        style = OpalButtonStyle.Neutral,
                         size = OpalButtonSize.Small
                     )
                 }

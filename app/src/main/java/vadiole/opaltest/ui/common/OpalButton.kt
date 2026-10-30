@@ -44,7 +44,7 @@ import vadiole.opaltest.R
 import vadiole.opaltest.ui.theme.OpalMotion
 import vadiole.opaltest.ui.theme.OpalTheme
 
-enum class OpalButtonStyle { Accent, Primary, Outlined }
+enum class OpalButtonStyle { Accent, Neutral, Outlined }
 
 enum class OpalButtonSize { Large, Small }
 
@@ -64,7 +64,7 @@ fun OpalButton(
     val outlined = style == OpalButtonStyle.Outlined
     val background: Brush = when (style) {
         OpalButtonStyle.Accent -> colors.accent
-        OpalButtonStyle.Primary -> SolidColor(colors.content)
+        OpalButtonStyle.Neutral -> SolidColor(colors.content)
         OpalButtonStyle.Outlined -> SolidColor(Color.Transparent)
     }
     val contentColor = if (outlined) colors.content else colors.onAccent
@@ -192,18 +192,18 @@ private fun OpalButtonPreview() {
             )
             OpalButton(text = "Share invite", onClick = {}, loading = true, modifier = Modifier.fillMaxWidth())
             Row(horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small)) {
-                OpalButton(text = "Claim", onClick = {}, style = OpalButtonStyle.Primary, size = OpalButtonSize.Small)
+                OpalButton(text = "Claim", onClick = {}, style = OpalButtonStyle.Neutral, size = OpalButtonSize.Small)
                 OpalButton(
                     text = "Claim",
                     onClick = {},
-                    style = OpalButtonStyle.Primary,
+                    style = OpalButtonStyle.Neutral,
                     size = OpalButtonSize.Small,
                     loading = true
                 )
                 OpalButton(
                     text = "Claim",
                     onClick = {},
-                    style = OpalButtonStyle.Primary,
+                    style = OpalButtonStyle.Neutral,
                     size = OpalButtonSize.Small,
                     enabled = false
                 )
