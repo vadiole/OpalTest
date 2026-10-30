@@ -169,8 +169,12 @@ class DesignSystemScreenshotTest {
             }
             Row(horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small)) {
                 OpalIconButton(icon = R.drawable.ic_arrow_back, contentDescription = null, onClick = {})
-                OpalIconButton(icon = R.drawable.ic_arrow_back, contentDescription = null, onClick = {
-                }, enabled = false)
+                OpalIconButton(
+                    icon = R.drawable.ic_arrow_back,
+                    contentDescription = null,
+                    onClick = {},
+                    enabled = false
+                )
             }
         }
     }
