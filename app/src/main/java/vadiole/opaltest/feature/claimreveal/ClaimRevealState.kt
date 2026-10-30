@@ -4,7 +4,6 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -57,6 +56,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
     internal val glow = Animatable(0f)
     internal val charge = Animatable(0f)
     internal val sweep = Animatable(0f)
+    internal val sweepFade = Animatable(1f)
     internal val fade = Animatable(1f)
     internal val items = List(ITEM_STARTS_MS.size) { Animatable(0f) }
     internal val back = Animatable(0f)
@@ -107,10 +107,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
                 items.forEach { launch { it.animateTo(0f, tween(ITEM_EXIT_MS, easing = StrongEaseOut)) } }
                 launch { charge.animateTo(0f, tween(ITEM_EXIT_MS, easing = StrongEaseOut)) }
                 launch { sparkle.animateTo(0f, tween(SPARKLE_OUT_MS, easing = StrongEaseOut)) }
-                if (sweep.value > 0f && sweep.value < 1f) {
-                    val remaining = ((1f - sweep.value) * SWEEP_MS).toInt().coerceAtMost(SWEEP_EXIT_MS)
-                    launch { sweep.animateTo(1f, tween(remaining, easing = LinearEasing)) }
-                }
+                launch { sweepFade.animateTo(0f, tween(SWEEP_EXIT_MS, easing = StrongEaseOut)) }
                 if (reducedMotion) closeReduced() else closeFull()
             }
             finish()
@@ -141,19 +138,6 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         phase = RevealPhase.Revealed
         launch { sparkle.animateTo(1f, tween(SPARKLE_IN_MS, easing = EnterEase)) }
         revealItems()
-        repeatSweeps()
-    }
-
-    private fun CoroutineScope.repeatSweeps() {
-        launch {
-            snapshotFlow { items.last().value }.first { it >= 1f }
-            delay(scaled(SWEEP_AFTER_BUTTON_MS))
-            while (true) {
-                sweep.snapTo(0f)
-                sweep.animateTo(1f, tween(SWEEP_MS, easing = SweepEase))
-                delay(scaled(SWEEP_REPEAT_MS - SWEEP_MS))
-            }
-        }
     }
 
     private fun restore(reveal: ActiveReveal) {
@@ -163,10 +147,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
             listOf(flight, scrim, glow).forEach { it.snapTo(1f) }
             items.forEach { it.snapTo(1f) }
             phase = RevealPhase.Revealed
-            if (!reducedMotion) {
-                sparkle.snapTo(1f)
-                repeatSweeps()
-            }
+            if (!reducedMotion) sparkle.snapTo(1f)
         }
     }
 
@@ -281,8 +262,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
     private suspend fun reset() {
         listOf(flight, scrim, glow, charge, sweep, back, sparkle).forEach { it.snapTo(0f) }
         items.forEach { it.snapTo(0f) }
-        fade.snapTo(1f)
-        press.snapTo(1f)
+        listOf(fade, sweepFade, press).forEach { it.snapTo(1f) }
         phase = RevealPhase.Opening
     }
 
@@ -365,9 +345,7 @@ private const val GLOW_IN_MS = 1100
 private const val FLIGHT_DELAY_MS = 200
 private const val GEM_WAIT_MS = 1000L
 private const val DEFAULT_PATH_BEND = 0.75f
-private const val SWEEP_MS = 2800
-private const val SWEEP_REPEAT_MS = 10_000
-private const val SWEEP_AFTER_BUTTON_MS = 2000
+private const val SWEEP_MS = 8400
 private const val SWEEP_PEAK_MS = SWEEP_MS / 2
 private const val SWEEP_EXIT_MS = 400
 private const val GLOW_OUT_DELAY_MS = 90
