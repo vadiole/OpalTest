@@ -31,18 +31,18 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 data class RevealContent(@DrawableRes val gem: Int, @StringRes val title: Int)
 
-internal enum class RevealPhase { Opening, Revealed, Closing }
+internal enum class RevealPhase { Opening, Revealed, Closing, Landed }
+
+internal data class ActiveReveal(val key: Any, val content: RevealContent)
 
 @Stable
 class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
-    internal var activeKey: Any? by mutableStateOf(null)
+    internal var active: ActiveReveal? by mutableStateOf(null)
         private set
-    internal var content: RevealContent? by mutableStateOf(null)
-        private set
+    internal val activeKey: Any? get() = active?.key
     internal var phase by mutableStateOf(RevealPhase.Opening)
         private set
-    internal var landed by mutableStateOf(false)
-        private set
+    internal val landed: Boolean get() = phase == RevealPhase.Landed
     internal var reducedMotion by mutableStateOf(false)
         private set
     internal var timeScale by mutableFloatStateOf(1f)
@@ -85,8 +85,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
 
     fun open(key: Any, content: RevealContent) {
         if (activeKey != null && !landed) return
-        activeKey = key
-        this.content = content
+        active = ActiveReveal(key, content)
         replay()
     }
 
@@ -99,7 +98,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
     }
 
     fun close() {
-        if (activeKey == null || phase == RevealPhase.Closing) return
+        if (activeKey == null || phase == RevealPhase.Closing || landed) return
         phase = RevealPhase.Closing
         run {
             coroutineScope {
@@ -155,9 +154,8 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         }
     }
 
-    private fun restore(key: Any, content: RevealContent) {
-        activeKey = key
-        this.content = content
+    private fun restore(reveal: ActiveReveal) {
+        active = reveal
         run {
             reset()
             listOf(flight, scrim, glow).forEach { it.snapTo(1f) }
@@ -228,7 +226,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
 
     private suspend fun land() {
         flight.snapTo(0f)
-        landed = true
+        phase = RevealPhase.Landed
     }
 
     internal suspend fun onBackProgress(progress: Float) = back.snapTo(progress)
@@ -283,13 +281,11 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         items.forEach { it.snapTo(0f) }
         fade.snapTo(1f)
         press.snapTo(1f)
-        landed = false
         phase = RevealPhase.Opening
     }
 
     private suspend fun finish() {
-        activeKey = null
-        content = null
+        active = null
         target = null
         gemReady = false
         prefetchedGem = null
@@ -311,13 +307,13 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
     internal companion object {
         fun saver(scope: CoroutineScope) = Saver<ClaimRevealState, List<Any?>>(
             save = { state ->
-                val content = state.content?.takeIf { !state.landed && state.phase != RevealPhase.Closing }
+                val active = state.active?.takeIf { state.phase != RevealPhase.Closing && !state.landed }
                 listOf(
                     state.sound?.ordinal,
                     state.timeScale,
-                    content?.let { state.activeKey },
-                    content?.gem,
-                    content?.title
+                    active?.key,
+                    active?.content?.gem,
+                    active?.content?.title
                 )
             },
             restore = { saved ->
@@ -325,7 +321,11 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
                     sound = (saved[0] as Int?)?.let { RevealSound.entries[it] }
                     timeScale = saved[1] as Float
                     val key = saved[2]
-                    if (key != null) restore(key, RevealContent(gem = saved[3] as Int, title = saved[4] as Int))
+                    if (key !=
+                        null
+                    ) {
+                        restore(ActiveReveal(key, RevealContent(gem = saved[3] as Int, title = saved[4] as Int)))
+                    }
                 }
             }
         )

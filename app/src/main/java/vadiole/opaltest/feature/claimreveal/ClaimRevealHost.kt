@@ -88,13 +88,12 @@ fun ClaimRevealHost(state: ClaimRevealState, modifier: Modifier = Modifier, cont
         ) {
             content()
         }
-        val key = state.activeKey
-        val revealContent = state.content
-        if (key != null && revealContent != null) {
+        val active = state.active
+        if (active != null) {
             RevealOverlay(
                 state = state,
-                key = key,
-                content = revealContent,
+                key = active.key,
+                content = active.content,
                 continueFocus = continueFocus,
                 modifier = Modifier.onFocusChanged { focus.overlay = it.hasFocus }
             )
