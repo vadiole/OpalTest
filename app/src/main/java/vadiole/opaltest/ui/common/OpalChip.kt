@@ -1,24 +1,20 @@
 package vadiole.opaltest.ui.common
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.foundation.background
-import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
@@ -45,7 +41,8 @@ fun OpalChip(
             selected = selected,
             interactionSource = interactionSource,
             indication = null,
-            enabled = enabled
+            enabled = enabled,
+            role = Role.RadioButton
         ) {
             if (selected) return@selectable
             haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
@@ -97,19 +94,24 @@ private fun ChipSurface(
     val indicationSource = remember { MutableInteractionSource() }
     val background by animateColorAsState(if (selected) colors.content else colors.fill, label = "chipBackground")
     val content by animateColorAsState(if (selected) colors.onAccent else colors.content, label = "chipContent")
+    val alpha = animateEnabledAlpha(enabled)
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .height(40.dp)
-            .pressFeedback(interactionSource, indicationSource, enabled)
-            .alpha(if (enabled) 1f else OpalTheme.alpha.disabled)
-            .clip(OpalTheme.shapes.pill)
-            .background(background)
-            .indication(indicationSource, chipRipple(selected))
+            .heightIn(min = 40.dp)
+            .pressableSurface(
+                interactionSource = interactionSource,
+                indicationSource = indicationSource,
+                shape = OpalTheme.shapes.pill,
+                background = SolidColor(background),
+                ripple = chipRipple(selected),
+                enabled = enabled,
+                alpha = { alpha.value }
+            )
             .then(interactionModifier)
-            .padding(horizontal = OpalTheme.spacing.small)
+            .padding(horizontal = OpalTheme.spacing.small, vertical = OpalTheme.spacing.xxSmall)
     ) {
-        Text(text = text, style = OpalTheme.typography.calloutMedium, color = content, maxLines = 1)
+        OpalLabel(text = text, style = OpalTheme.typography.calloutMedium, color = content)
     }
 }
 

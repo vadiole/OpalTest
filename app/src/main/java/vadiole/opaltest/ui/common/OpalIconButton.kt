@@ -1,9 +1,7 @@
 package vadiole.opaltest.ui.common
 
 import androidx.annotation.DrawableRes
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
@@ -13,7 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
@@ -34,10 +32,13 @@ fun OpalIconButton(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .size(OpalTheme.layout.iconButtonSize)
-            .pressFeedback(interactionSource, indicationSource)
-            .clip(OpalTheme.shapes.pill)
-            .background(OpalTheme.colors.fill)
-            .indication(indicationSource, opalRipple(OpalTheme.colors.content, OpalTheme.alpha.rippleOnFill))
+            .pressableSurface(
+                interactionSource = interactionSource,
+                indicationSource = indicationSource,
+                shape = OpalTheme.shapes.pill,
+                background = SolidColor(OpalTheme.colors.fill),
+                ripple = opalRipple(OpalTheme.colors.content, OpalTheme.alpha.rippleOnFill)
+            )
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
