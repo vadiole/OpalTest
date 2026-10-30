@@ -17,12 +17,16 @@ Maintained by the gardener agent. See [WORKFLOW.md](WORKFLOW.md).
 
 ## Active
 
+- 2026-10-30: Read-only review of #4 (design system, console) and #6 (console save errors) is running.
+
 - 2026-10-30 PR #3 update: fixed the push replaying on back and the outgoing screen vanishing on open. Root cause of the vanishing: a no-op NavDisplay ContentTransform has zero duration, so the exiting entry was disposed after one frame. The user decided to block navigation mid-transition through the `navigate`/`navigateBack` helpers, and to make the window and screens Opal black (the app is always dark). Merged develop (#4, #6) and resolved the AppNavigation conflict.
-- 2026-10-30 `gardening/nav-transitions` → PR #3, awaiting user review: Port the Unicode app's `Nav.kt` push, pop and predictive-back transitions to Nav3 (requested by the user). Tokens are in `ui/theme/OpalMotion.kt`. A `NavEntryDecorator` in `ui/common/StackTransitions.kt` draws predictive back, while Nav3's predictive spec is a timed no-op. Known gaps: Nav3 shortens the commit fade and the cancel duration in proportion to back progress, push during a back commit snaps, and there's no RTL handling. Risk: it relies on Nav3/navigationevent predictive-back internals. The user checked the animations on their phone.
+- 2026-10-30 `gardening/nav-transitions` → PR #3, merged as 78ae1a9: Port the Unicode app's `Nav.kt` push, pop and predictive-back transitions to Nav3 (requested by the user). Tokens are in `ui/theme/OpalMotion.kt`. A `NavEntryDecorator` in `ui/common/StackTransitions.kt` draws predictive back, while Nav3's predictive spec is a timed no-op. Known gaps: Nav3 shortens the commit fade and the cancel duration in proportion to back progress, push during a back commit snaps, and there's no RTL handling. Risk: it relies on Nav3/navigationevent predictive-back internals. The user checked the animations on their phone.
 
 ## Findings
 
 ## Done
+
+- PR #3, Nav3 transitions: see the entries under Active.
 
 ## Deferred
 
