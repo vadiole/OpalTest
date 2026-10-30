@@ -280,6 +280,7 @@ private fun RevealOverlay(
                         drawGlow(gem, frame, lerp(GLOW_START_SCALE, GLOW_END_SCALE, state.glow.value))
                     }
             )
+            GemSparkles(state = state, frame = { state.gemFrame(key) })
         }
         Spacer(
             Modifier
@@ -597,7 +598,7 @@ private fun arc(start: Offset, end: Offset, t: Float, bend: Float): Offset {
     return start * (u * u) + control * (2f * u * t) + end * (t * t)
 }
 
-private fun Rect.gemCenter(): Offset = Offset(left + width * GEM_CENTER_X, top + height * GEM_CENTER_Y)
+internal fun Rect.gemCenter(): Offset = Offset(left + width * GEM_CENTER_X, top + height * GEM_CENTER_Y)
 
 private fun Rect.gemCrop(): Rect = Rect(
     left = left + width * GEM_CROP_LEFT,
