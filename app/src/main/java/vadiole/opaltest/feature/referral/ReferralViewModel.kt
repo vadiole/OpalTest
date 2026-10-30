@@ -56,13 +56,14 @@ class ReferralViewModel(private val repository: ReferralRepository) : ViewModel(
 
     private fun claim(tierId: String) {
         if (state.value.claimingTierId != null) return
+        val reward = state.value.program?.tiers?.firstOrNull { it.id == tierId }?.reward ?: return
         mutableState.update { it.copy(claimingTierId = tierId) }
         viewModelScope.launch {
             when (val outcome = repository.claimReward(tierId)) {
                 is Outcome.Success -> {
                     loadJob?.cancel()
                     mutableState.update { it.copy(program = outcome.value, loadError = null, claimingTierId = null) }
-                    effectChannel.send(ReferralEffect.ClaimSucceeded)
+                    effectChannel.send(ReferralEffect.ClaimSucceeded(reward))
                 }
 
                 is Outcome.Failure -> {

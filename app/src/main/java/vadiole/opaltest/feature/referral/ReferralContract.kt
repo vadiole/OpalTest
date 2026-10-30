@@ -2,6 +2,7 @@ package vadiole.opaltest.feature.referral
 
 import vadiole.opaltest.domain.referral.ReferralError
 import vadiole.opaltest.domain.referral.ReferralProgram
+import vadiole.opaltest.domain.referral.Reward
 
 data class ReferralState(
     val program: ReferralProgram? = null,
@@ -26,7 +27,7 @@ sealed interface ReferralEffect {
 
     data class CopyInvite(val invite: Invite) : ReferralEffect
 
-    data object ClaimSucceeded : ReferralEffect
+    data class ClaimSucceeded(val reward: Reward) : ReferralEffect
 
     data class ClaimFailed(val error: ReferralError) : ReferralEffect
 }

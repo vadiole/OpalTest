@@ -28,7 +28,9 @@ class OpalColors(
     val onAccentSecondary: Color,
     val accentStart: Color,
     val accentEnd: Color,
-    val glow: Color
+    val glow: Color,
+    val sheenWarm: Color,
+    val sheenCool: Color
 ) {
     val accent: Brush = AngledLinearGradient(listOf(accentStart, accentEnd), angleDegrees = 187.86f)
 }
@@ -68,5 +70,7 @@ val DarkOpalColors = OpalColors(
     onAccentSecondary = Color(0x99000000),
     accentStart = Color(0xFFA4C8FF),
     accentEnd = Color(0xFF9EF9FF),
-    glow = Color(0xFF99E2FF)
+    glow = Color(0xFF99E2FF),
+    sheenWarm = Color(0xFFFFE1F2),
+    sheenCool = Color(0xFFDDF8FF)
 )

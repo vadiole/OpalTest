@@ -1,0 +1,21 @@
+<resources>
+    <string name="claim_reveal_demo_label">Claim reveal</string>
+    <string name="claim_reveal_demo_title">Rewards</string>
+    <string name="claim_reveal_demo_claim">Claim</string>
+    <string name="claim_reveal_demo_claimed">Claimed</string>
+    <string name="claim_reveal_demo_reset">Reset</string>
+    <string name="claim_reveal_demo_subtitle">Reveal this special MileStone</string>
+    <string name="claim_reveal_demo_loyal">Loyal MileStone</string>
+    <string name="claim_reveal_demo_soulful">Soulful MileStone</string>
+    <string name="claim_reveal_demo_popular">Popular MileStone</string>
+    <string name="claim_reveal_demo_sound">Sound</string>
+    <string name="claim_reveal_demo_random">Random</string>
+    <string name="claim_reveal_demo_slow">Slow motion</string>
+    <string name="claim_reveal_demo_replay">Replay</string>
+    <string name="claim_reveal_demo_path">Path curve: %1$.2f (−1 rises first, 1 heads to the middle first)</string>
+    <string name="claim_reveal_demo_hint">Keys: 0 random, 1 2 3 5 6 sound, S slow motion, R replay</string>
+    <plurals name="claim_reveal_demo_friends">
+        <item quantity="one">%d Friend</item>
+        <item quantity="other">%d Friends</item>
+    </plurals>
+</resources>
