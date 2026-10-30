@@ -107,7 +107,7 @@ class GemPressTest {
         up()
         advance(80)
         val before = scale()
-        assertTrue(abs(before - 1f) > 0.005f || abs(before - PRESSED) > 0.005f)
+        assertTrue(abs(before - 1f) > 0.005f && abs(before - PRESSED) > 0.005f)
         down(gemCenter())
         frame()
         assertTrue("jumped from $before to ${scale()}", abs(scale() - before) < 0.01f)
@@ -164,18 +164,32 @@ class GemPressTest {
         setContent()
         awaitRevealed()
         advance(2000)
-        capture("claim_reveal_gem_rest")
+        val rest = capture("claim_reveal_gem_rest")
         down(gemCenter())
         advance(300)
-        capture("claim_reveal_gem_pressed")
+        val pressed = capture("claim_reveal_gem_pressed")
         up()
+        val gem = state.target!!
+        val around = gem.inflate(gem.width / 2f)
+        val columns = around.left.toInt().coerceAtLeast(0) until around.right.toInt().coerceAtMost(rest.width)
+        val rows = around.top.toInt().coerceAtLeast(0) until around.bottom.toInt().coerceAtMost(rest.height)
+        var outside = 0
+        var inside = 0
+        for (y in rows) {
+            for (x in columns) {
+                if (rest.getPixel(x, y) == pressed.getPixel(x, y)) continue
+                if (gem.contains(Offset(x + 0.5f, y + 0.5f))) inside++ else outside++
+            }
+        }
+        assertEquals("glow changed around the gem", 0, outside)
+        assertTrue("gem did not change", inside > 0)
     }
 
-    private fun capture(name: String) {
+    private fun capture(name: String): Bitmap {
+        val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
         val output = File("build/screenshots/$name.png").apply { parentFile?.mkdirs() }
-        output.outputStream().use {
-            compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
-        }
+        output.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        return bitmap
     }
 
     private companion object {
