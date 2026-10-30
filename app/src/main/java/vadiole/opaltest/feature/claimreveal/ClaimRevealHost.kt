@@ -431,10 +431,9 @@ private fun Modifier.expandTouchBounds(expansion: Dp): Modifier = layout { measu
 private suspend fun PointerInputScope.trackGemPress(state: ClaimRevealState, haptics: HapticFeedback) =
     awaitEachGesture {
         val down = awaitFirstDown(requireUnconsumed = false)
-        val extra = GEM_TOUCH_EXPANSION.toPx()
-        val slotWidth = size.width - extra * 2
-        val x = down.position.x - extra
-        if (x !in slotWidth * STONE_LEFT - extra..slotWidth * STONE_RIGHT + extra) return@awaitEachGesture
+        val expansion = GEM_TOUCH_EXPANSION.roundToPx() * 2
+        val slotWidth = size.width - expansion
+        if (down.position.x !in slotWidth * STONE_LEFT..slotWidth * STONE_RIGHT + expansion) return@awaitEachGesture
         haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
         state.pressGem()
         try {
