@@ -32,7 +32,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -59,7 +58,6 @@ import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.delay
 import vadiole.opaltest.R
 import vadiole.opaltest.container
-import vadiole.opaltest.domain.referral.MilestoneStone
 import vadiole.opaltest.domain.referral.Plan
 import vadiole.opaltest.domain.referral.ReferralError
 import vadiole.opaltest.domain.referral.Reward
@@ -273,13 +271,6 @@ private fun ClaimAnnouncement(state: ReferralState, reveal: ClaimRevealState) {
         if (instantClaims == null) return@LaunchedEffect
         seen?.let { old -> instantClaims.lastOrNull { it !in old }?.let { claimed = it } }
         seen = instantClaims
-    }
-    LaunchedEffect(reveal) {
-        var held: MilestoneStone? = null
-        snapshotFlow { (reveal.activeKey as? MilestoneStone)?.takeUnless { reveal.landed } }.collect { stone ->
-            if (stone == null) held?.let { claimed = Reward.Milestone(it) }
-            held = stone
-        }
     }
     LaunchedEffect(claimed) {
         if (claimed == null) return@LaunchedEffect

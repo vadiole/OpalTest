@@ -180,7 +180,7 @@ class ReferralContentTest {
     }
 
     @Test
-    fun `a milestone is announced when its gem lands`() {
+    fun `a milestone is not announced again after its reveal`() {
         val program = previewProgram()
         setContent(ReferralState.Ready(program))
         compose.mainClock.autoAdvance = false
@@ -203,10 +203,10 @@ class ReferralContentTest {
         while (reveal.phase != RevealPhase.Landed) {
             check(System.currentTimeMillis() < deadline) { "reveal never landed" }
             frame()
-            if (reveal.phase != RevealPhase.Landed) assertEquals(null, announcement())
+            assertEquals(null, announcement())
         }
-        frame()
-        assertEquals("Soulful MileStone claimed", announcement())
+        repeat(30) { frame() }
+        assertEquals(null, announcement())
     }
 
     @Test
