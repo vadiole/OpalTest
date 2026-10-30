@@ -1,0 +1,15 @@
+<resources>
+    <string name="claim_reveal_demo_label">Claim reveal</string>
+    <string name="claim_reveal_demo_title">Rewards</string>
+    <string name="claim_reveal_demo_claim">Claim</string>
+    <string name="claim_reveal_demo_claimed">Claimed</string>
+    <string name="claim_reveal_demo_reset">Reset</string>
+    <string name="claim_reveal_demo_subtitle">Reveal this special MileStone</string>
+    <string name="claim_reveal_demo_loyal">Loyal MileStone</string>
+    <string name="claim_reveal_demo_soulful">Soulful MileStone</string>
+    <string name="claim_reveal_demo_popular">Popular MileStone</string>
+    <plurals name="claim_reveal_demo_friends">
+        <item quantity="one">%d Friend</item>
+        <item quantity="other">%d Friends</item>
+    </plurals>
+</resources>
