@@ -1,9 +1,12 @@
 package vadiole.opaltest.feature.referral
 
 import android.view.View
+import android.view.accessibility.AccessibilityManager
+import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -21,11 +24,13 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import vadiole.opaltest.R
 import vadiole.opaltest.domain.referral.MilestoneStone
 import vadiole.opaltest.domain.referral.ReferralError
+import vadiole.opaltest.domain.referral.RewardTier
 import vadiole.opaltest.feature.claimreveal.ClaimRevealState
 import vadiole.opaltest.feature.claimreveal.RevealContent
 import vadiole.opaltest.feature.claimreveal.RevealPhase
@@ -42,12 +47,30 @@ class ReferralContentTest {
     private var state: ReferralState by mutableStateOf(ReferralState.Loading)
     private lateinit var reveal: ClaimRevealState
 
-    private fun setContent(initial: ReferralState) {
+    private fun setContent(initial: ReferralState, probe: RewardTier? = null) {
         state = initial
         compose.setContent {
             reveal = rememberClaimRevealState()
             OpalTheme {
-                ReferralContent(state = state, onIntent = {}, onBack = {}, reveal = reveal)
+                Column {
+                    ReferralContent(
+                        state = state,
+                        onIntent = {},
+                        onBack = {},
+                        modifier = Modifier.weight(1f),
+                        reveal = reveal
+                    )
+                    probe?.let {
+                        TierCard(
+                            tier = it,
+                            successfulReferrals = 1,
+                            claimAction = ClaimAction.Idle,
+                            active = false,
+                            reveal = reveal,
+                            onClaim = {}
+                        )
+                    }
+                }
             }
         }
         compose.waitForIdle()
@@ -70,12 +93,14 @@ class ReferralContentTest {
 
     @Test
     fun `claim stays busy while the reveal holds the gem and through its exit`() {
-        setContent(ReferralState.Ready(previewProgram(referrals = 1)))
+        val program = previewProgram(referrals = 1)
+        setContent(ReferralState.Ready(program), probe = program.tiers.first { it.id == "loyal" })
+        assertTrue(compose.onAllNodes(claimButton).fetchSemanticsNodes().isEmpty())
         compose.mainClock.autoAdvance = false
         compose.runOnIdle {
             reveal.open(
                 MilestoneStone.Loyal,
-                RevealContent(gem = R.drawable.img_milestone_loyal_large, title = "Loyal")
+                RevealContent(gem = R.drawable.img_milestone_loyal_large, title = R.string.referral_milestone_loyal)
             )
         }
         var sawBusy = false
@@ -85,7 +110,7 @@ class ReferralContentTest {
             Thread.sleep(5)
             frame()
             assertClaimNeverIdle("opening")
-            sawBusy = sawBusy || compose.onAllNodes(claimButton).fetchSemanticsNodes().isNotEmpty()
+            sawBusy = sawBusy || compose.onAllNodes(claimButton).fetchSemanticsNodes().any(::busy)
         }
         assertTrue(sawBusy)
 
@@ -143,6 +168,10 @@ class ReferralContentTest {
         setContent(ReferralState.Ready(previewProgram()))
         val root = compose.onRoot().fetchSemanticsNode()
         val view = root.root as View
+        shadowOf(view.context.getSystemService(AccessibilityManager::class.java)).apply {
+            setEnabled(true)
+            setTouchExplorationEnabled(true)
+        }
         root.root!!.forceAccessibilityForTesting(true)
         compose.waitForIdle()
 
