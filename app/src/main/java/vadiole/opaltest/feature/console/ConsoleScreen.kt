@@ -64,7 +64,9 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.window.core.layout.WindowSizeClass
 import java.text.NumberFormat
@@ -96,8 +98,9 @@ fun ConsoleScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val haptics = LocalHapticFeedback.current
     val openReferrals by rememberUpdatedState(onOpenReferrals)
-    LaunchedEffect(viewModel) {
-        viewModel.effects.collect { effect ->
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(viewModel, lifecycle) {
+        viewModel.effects.flowWithLifecycle(lifecycle).collect { effect ->
             when (effect) {
                 ConsoleEffect.FriendAdded -> haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                 ConsoleEffect.TierReached -> haptics.performHapticFeedback(HapticFeedbackType.Confirm)
