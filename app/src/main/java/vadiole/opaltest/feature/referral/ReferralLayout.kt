@@ -163,8 +163,7 @@ internal fun LazyListScope.tiers(
             TierCard(
                 tier = tier,
                 successfulReferrals = program.successfulReferrals,
-                claiming = tier.id == claimingTierId,
-                claimable = claimingTierId == null || tier.id == claimingTierId,
+                claimAction = claimAction(tier.id, claimingTierId),
                 active = tier.id == activeTierId,
                 reveal = reveal,
                 onClaim = { onIntent(ReferralIntent.Claim(tier.id)) }
