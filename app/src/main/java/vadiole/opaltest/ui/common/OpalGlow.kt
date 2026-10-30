@@ -9,7 +9,6 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.tooling.preview.Preview
@@ -21,7 +20,7 @@ private const val GLOW_STEPS = 4
 
 private val glowStops = Array(GLOW_STEPS + 1) { step ->
     val fraction = step.toFloat() / GLOW_STEPS
-    fraction to lerp(OpalTheme.colors.glow, Color.Black, fraction).copy(alpha = 1f - fraction)
+    fraction to lerp(OpalTheme.colors.glow, OpalTheme.colors.background, fraction).copy(alpha = 1f - fraction)
 }
 
 @Composable
