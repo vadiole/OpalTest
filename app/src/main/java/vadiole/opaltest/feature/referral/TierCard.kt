@@ -92,15 +92,9 @@ internal fun TierCard(
             .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
     ) {
         BoxWithConstraints {
-            val minTextWidth = ReferralDimens.minTierTextWidth * LocalDensity.current.fontScale
-            val spacing = OpalTheme.spacing.large
-            val artworkSize = if (maxWidth - ReferralDimens.tierArtworkSize - spacing < minTextWidth) {
-                ReferralDimens.compactTierArtworkSize
-            } else {
-                ReferralDimens.tierArtworkSize
-            }
+            val artworkSize = tierArtworkSize(maxWidth)
             Row(
-                horizontalArrangement = Arrangement.spacedBy(spacing),
+                horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.large),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 TierArtwork(tier.reward, claimed = status == TierStatus.Claimed, reveal = reveal, size = artworkSize)
@@ -130,6 +124,13 @@ internal fun TierCard(
             }
         }
     }
+}
+
+@Composable
+internal fun tierArtworkSize(cardContentWidth: Dp): Dp {
+    val minTextWidth = ReferralDimens.minTierTextWidth * LocalDensity.current.fontScale
+    val textWidth = cardContentWidth - ReferralDimens.tierArtworkSize - OpalTheme.spacing.large
+    return if (textWidth < minTextWidth) ReferralDimens.compactTierArtworkSize else ReferralDimens.tierArtworkSize
 }
 
 @Composable

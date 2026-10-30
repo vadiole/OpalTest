@@ -186,31 +186,34 @@ private fun TiersSkeleton() {
 @Composable
 private fun TierCardSkeleton() {
     OpalCard(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.large),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            OpalSkeletonBlock(Modifier.size(ReferralDimens.tierArtworkSize), OpalTheme.shapes.medium)
-            Column(
-                verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small),
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(vertical = OpalTheme.spacing.xxSmall)
+        BoxWithConstraints {
+            val artworkSize = tierArtworkSize(maxWidth)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.large),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xxxSmall)) {
-                    OpalSkeletonLine(OpalTheme.typography.caption, 64.dp)
-                    Column {
-                        OpalSkeletonLine(OpalTheme.typography.body, 120.dp)
-                        OpalSkeletonLine(OpalTheme.typography.caption, 160.dp)
+                OpalSkeletonBlock(Modifier.size(artworkSize), OpalTheme.shapes.medium)
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(vertical = OpalTheme.spacing.xxSmall)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xxxSmall)) {
+                        OpalSkeletonLine(OpalTheme.typography.caption, 64.dp)
+                        Column {
+                            OpalSkeletonLine(OpalTheme.typography.body, 120.dp)
+                            OpalSkeletonLine(OpalTheme.typography.caption, 160.dp)
+                        }
                     }
+                    OpalSkeletonBlock(
+                        Modifier
+                            .widthIn(max = ReferralDimens.progressMaxWidth)
+                            .fillMaxWidth()
+                            .height(OpalTheme.layout.progressBarHeight),
+                        OpalTheme.shapes.pill
+                    )
                 }
-                OpalSkeletonBlock(
-                    Modifier
-                        .widthIn(max = ReferralDimens.progressMaxWidth)
-                        .fillMaxWidth()
-                        .height(OpalTheme.layout.progressBarHeight),
-                    OpalTheme.shapes.pill
-                )
             }
         }
     }

@@ -113,6 +113,10 @@ class ReferralScreenshotTest {
     fun narrowLargeFont() = capture("referral_narrow_large_font", ReferralState.Ready(previewProgram()))
 
     @Test
+    @Config(qualifiers = "w320dp-h1861dp-xxhdpi", fontScale = 2f)
+    fun loadingNarrowLargeFont() = capture("referral_loading_narrow_large_font", ReferralState.Loading)
+
+    @Test
     @Config(qualifiers = "fr-w402dp-h1861dp-xxhdpi")
     fun french() = capture("referral_fr", ReferralState.Ready(previewProgram()))
 
