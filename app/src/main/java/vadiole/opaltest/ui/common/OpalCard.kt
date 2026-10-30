@@ -1,6 +1,6 @@
 package vadiole.opaltest.ui.common
 
-import androidx.compose.foundation.background
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -11,18 +11,25 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import vadiole.opaltest.ui.theme.OpalMotion
 import vadiole.opaltest.ui.theme.OpalTheme
 
 @Composable
 fun OpalCard(modifier: Modifier = Modifier, highlighted: Boolean = false, content: @Composable BoxScope.() -> Unit) {
     val shape = OpalTheme.shapes.xLarge
+    val fill = OpalTheme.colors.fillSubtle
+    val highlight = animateFloatAsState(
+        targetValue = if (highlighted) 1f else 0f,
+        animationSpec = OpalMotion.StateSpring,
+        label = "cardHighlight"
+    )
     Box(
         modifier = modifier
             .clip(shape)
-            .background(if (highlighted) OpalTheme.colors.fillSubtle else Color.Transparent)
+            .drawBehind { if (highlight.value > 0f) drawRect(fill, alpha = highlight.value) }
             .outlineBorder(1.dp, OpalTheme.colors.border, shape)
             .padding(OpalTheme.spacing.small),
         content = content
