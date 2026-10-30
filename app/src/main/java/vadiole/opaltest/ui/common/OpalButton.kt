@@ -3,6 +3,7 @@ package vadiole.opaltest.ui.common
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -61,6 +62,7 @@ fun OpalButton(
     }
     val busyDescription = stringResource(R.string.opal_button_loading)
     val interactionSource = remember { MutableInteractionSource() }
+    val indicationSource = remember { MutableInteractionSource() }
     val interactive = enabled && !loading
     Box(
         contentAlignment = Alignment.Center,
@@ -72,13 +74,14 @@ fun OpalButton(
                 }
             }
             .height(metrics.height)
-            .pressScale(interactionSource, interactive)
+            .pressFeedback(interactionSource, indicationSource, interactive)
             .alpha(if (enabled) 1f else OpalTheme.alpha.disabled)
             .clip(OpalTheme.shapes.pill)
             .background(background)
+            .indication(indicationSource, opalRipple(colors.onAccent, OpalTheme.alpha.rippleOnLight))
             .clickable(
                 interactionSource = interactionSource,
-                indication = opalRipple(colors.onAccent),
+                indication = null,
                 enabled = interactive,
                 role = Role.Button,
                 onClick = onClick

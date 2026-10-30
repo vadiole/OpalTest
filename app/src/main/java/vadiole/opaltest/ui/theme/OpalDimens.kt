@@ -33,6 +33,10 @@ object OpalAlpha {
     val disabled = 0.4f
     val completed = 0.75f
     val ripple = RippleAlpha(draggedAlpha = 0.08f, focusedAlpha = 0.1f, hoveredAlpha = 0.05f, pressedAlpha = 0.1f)
+    val rippleOnFill =
+        RippleAlpha(draggedAlpha = 0.12f, focusedAlpha = 0.12f, hoveredAlpha = 0.06f, pressedAlpha = 0.14f)
+    val rippleOnLight =
+        RippleAlpha(draggedAlpha = 0.16f, focusedAlpha = 0.16f, hoveredAlpha = 0.08f, pressedAlpha = 0.22f)
 }
 
 object OpalLayout {

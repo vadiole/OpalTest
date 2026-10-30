@@ -2,6 +2,7 @@ package vadiole.opaltest.ui.common
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,7 +44,7 @@ fun OpalChip(
         interactionModifier = Modifier.selectable(
             selected = selected,
             interactionSource = interactionSource,
-            indication = chipRipple(selected),
+            indication = null,
             enabled = enabled
         ) {
             if (selected) return@selectable
@@ -72,7 +73,7 @@ fun OpalToggleChip(
         interactionModifier = Modifier.toggleable(
             value = checked,
             interactionSource = interactionSource,
-            indication = chipRipple(checked),
+            indication = null,
             enabled = enabled,
             role = Role.Checkbox
         ) {
@@ -93,16 +94,18 @@ private fun ChipSurface(
     interactionModifier: Modifier = Modifier
 ) {
     val colors = OpalTheme.colors
+    val indicationSource = remember { MutableInteractionSource() }
     val background by animateColorAsState(if (selected) colors.content else colors.fill, label = "chipBackground")
     val content by animateColorAsState(if (selected) colors.onAccent else colors.content, label = "chipContent")
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .height(40.dp)
-            .pressScale(interactionSource, enabled)
+            .pressFeedback(interactionSource, indicationSource, enabled)
             .alpha(if (enabled) 1f else OpalTheme.alpha.disabled)
             .clip(OpalTheme.shapes.pill)
             .background(background)
+            .indication(indicationSource, chipRipple(selected))
             .then(interactionModifier)
             .padding(horizontal = OpalTheme.spacing.small)
     ) {
@@ -110,8 +113,11 @@ private fun ChipSurface(
     }
 }
 
-private fun chipRipple(selected: Boolean) =
-    opalRipple(if (selected) OpalTheme.colors.onAccent else OpalTheme.colors.content)
+private fun chipRipple(selected: Boolean) = if (selected) {
+    opalRipple(OpalTheme.colors.onAccent, OpalTheme.alpha.rippleOnLight)
+} else {
+    opalRipple(OpalTheme.colors.content, OpalTheme.alpha.rippleOnFill)
+}
 
 @Preview(showBackground = true, backgroundColor = 0xFF000000)
 @Composable
