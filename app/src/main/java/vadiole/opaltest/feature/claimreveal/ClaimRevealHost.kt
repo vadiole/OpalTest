@@ -59,10 +59,13 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.node.LayoutAwareModifierNode
@@ -70,12 +73,14 @@ import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -401,7 +406,8 @@ private fun WideReveal(
 
 @Composable
 private fun GemSlot(state: ClaimRevealState, size: Dp) {
-    val pressable = state.phase == RevealPhase.Revealed && !state.reducedMotion
+    val pressable = state.phase == RevealPhase.Revealed
+    val haptics = LocalHapticFeedback.current
     Spacer(
         Modifier
             .size(size)
@@ -409,24 +415,41 @@ private fun GemSlot(state: ClaimRevealState, size: Dp) {
                 val host = state.host?.takeIf { it.isAttached } ?: return@onGloballyPositioned
                 state.target = host.localBoundingBoxOf(coordinates, clipBounds = false)
             }
-            .pointerInput(state, pressable) { if (pressable) trackGemPress(state) }
+            .expandTouchBounds(GEM_TOUCH_EXPANSION)
+            .pointerInput(state, pressable, haptics) { if (pressable) trackGemPress(state, haptics) }
     )
 }
 
-private suspend fun PointerInputScope.trackGemPress(state: ClaimRevealState) = awaitEachGesture {
-    val down = awaitFirstDown(requireUnconsumed = false)
-    if (down.position.x !in size.width * STONE_LEFT..size.width * STONE_RIGHT) return@awaitEachGesture
-    state.pressGem()
-    try {
-        while (true) {
-            val change = awaitPointerEvent(PointerEventPass.Final).changes.firstOrNull { it.id == down.id } ?: break
-            if (!change.pressed || change.isConsumed) break
-            if ((change.position - down.position).getDistance() > viewConfiguration.touchSlop) break
-        }
-    } finally {
-        state.releaseGem()
-    }
+private fun Modifier.expandTouchBounds(expansion: Dp): Modifier = layout { measurable, constraints ->
+    val extra = expansion.roundToPx()
+    val placeable = measurable.measure(
+        Constraints.fixed(constraints.maxWidth + extra * 2, constraints.maxHeight + extra * 2)
+    )
+    layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(-extra, -extra) }
 }
+
+private suspend fun PointerInputScope.trackGemPress(state: ClaimRevealState, haptics: HapticFeedback) =
+    awaitEachGesture {
+        val down = awaitFirstDown(requireUnconsumed = false)
+        val expansion = GEM_TOUCH_EXPANSION.roundToPx() * 2
+        val slotWidth = size.width - expansion
+        if (down.position.x !in slotWidth * STONE_LEFT..slotWidth * STONE_RIGHT + expansion) return@awaitEachGesture
+        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+        state.pressGem()
+        try {
+            while (true) {
+                val change = awaitPointerEvent(PointerEventPass.Final).changes.firstOrNull { it.id == down.id } ?: break
+                if (change.isConsumed) break
+                if (!change.pressed) {
+                    haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                    break
+                }
+                if ((change.position - down.position).getDistance() > viewConfiguration.touchSlop) break
+            }
+        } finally {
+            state.releaseGem()
+        }
+    }
 
 @Composable
 private fun RevealTexts(state: ClaimRevealState, title: String, textAlign: TextAlign) {
@@ -628,4 +651,5 @@ private val BACKDROP_BLUR = 14.dp
 private const val CLICKABLE_VISIBILITY = 0.5f
 private val TEXT_RISE = 12.dp
 private val MAX_GEM_SIZE = 320.dp
+private val GEM_TOUCH_EXPANSION = 16.dp
 private val MAX_TEXT_WIDTH = 400.dp
