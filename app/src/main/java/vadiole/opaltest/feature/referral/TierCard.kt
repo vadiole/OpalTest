@@ -1,12 +1,12 @@
 package vadiole.opaltest.feature.referral
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
@@ -14,6 +14,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,17 +25,21 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import vadiole.opaltest.R
 import vadiole.opaltest.domain.referral.Reward
@@ -54,19 +59,27 @@ import vadiole.opaltest.ui.common.brushTint
 import vadiole.opaltest.ui.theme.OpalMotion
 import vadiole.opaltest.ui.theme.OpalTheme
 
+internal enum class ClaimAction { Idle, Busy, Disabled }
+
+internal fun claimAction(tierId: String, claimingTierId: String?): ClaimAction = when (claimingTierId) {
+    null -> ClaimAction.Idle
+    tierId -> ClaimAction.Busy
+    else -> ClaimAction.Disabled
+}
+
 @Composable
 internal fun TierCard(
     tier: RewardTier,
     successfulReferrals: Int,
-    claiming: Boolean,
-    claimable: Boolean,
+    claimAction: ClaimAction,
     active: Boolean,
     reveal: ClaimRevealState,
     onClaim: () -> Unit
 ) {
-    val featured = tier.reward.isFreeYear
     val stone = (tier.reward as? Reward.Milestone)?.stone
-    val status = if (stone != null && reveal.isHolding(stone)) TierStatus.Claimable else tier.status
+    val holding = stone != null && reveal.isHolding(stone)
+    val status = if (holding) TierStatus.Claimable else tier.status
+    val action = if (holding) ClaimAction.Busy else claimAction
     val alpha by animateFloatAsState(
         targetValue = if (status == TierStatus.Claimed) OpalTheme.alpha.completed else 1f,
         animationSpec = OpalMotion.StateSpring,
@@ -77,60 +90,93 @@ internal fun TierCard(
         modifier = Modifier
             .fillMaxWidth()
             .graphicsLayer { this.alpha = alpha }
+            .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.large),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TierArtwork(tier.reward, featured, claimed = status == TierStatus.Claimed, reveal = reveal)
-            Column(
-                verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small),
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(vertical = OpalTheme.spacing.xxSmall)
+        BoxWithConstraints {
+            val minTextWidth = MinTierTextWidth * LocalDensity.current.fontScale
+            val spacing = OpalTheme.spacing.large
+            val artworkSize = if (maxWidth - TierArtworkSize - spacing < minTextWidth) {
+                CompactTierArtworkSize
+            } else {
+                TierArtworkSize
+            }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(spacing),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xxxSmall)) {
-                    TierCaption(tier, status)
-                    Column {
-                        Text(text = tier.reward.title(), style = OpalTheme.typography.body)
-                        Text(
-                            text = tier.reward.description(),
-                            style = OpalTheme.typography.caption,
-                            color = OpalTheme.colors.contentSecondary
-                        )
+                TierArtwork(tier.reward, claimed = status == TierStatus.Claimed, reveal = reveal, size = artworkSize)
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(vertical = OpalTheme.spacing.xxSmall)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xxxSmall)) {
+                        TierCaption(tier, status)
+                        Column {
+                            Text(text = tier.reward.title(), style = OpalTheme.typography.body)
+                            Text(
+                                text = tier.reward.description(),
+                                style = OpalTheme.typography.caption,
+                                color = OpalTheme.colors.contentSecondary
+                            )
+                        }
                     }
-                }
-                AnimatedContent(
-                    targetState = status == TierStatus.Claimable,
-                    transitionSpec = {
-                        (fadeIn(OpalMotion.StateSpring) togetherWith fadeOut(OpalMotion.StateSpring))
-                            .using(SizeTransform(clip = false) { _, _ -> OpalMotion.SizeSpring })
-                    },
-                    contentAlignment = Alignment.CenterStart,
-                    label = "tierAction"
-                ) { showClaim ->
-                    if (showClaim) {
-                        val exiting = transition.targetState != EnterExitState.Visible
-                        OpalButton(
-                            text = stringResource(R.string.referral_claim),
-                            onClick = onClaim,
-                            style = OpalButtonStyle.Primary,
-                            size = OpalButtonSize.Small,
-                            enabled = claimable,
-                            loading = claiming || exiting
-                        )
-                    } else {
-                        OpalProgressBar(
-                            progress = tier.progress(successfulReferrals),
-                            modifier = Modifier
-                                .widthIn(max = 179.dp)
-                                .fillMaxWidth()
-                        )
-                    }
+                    TierAction(
+                        action = action.takeIf { status == TierStatus.Claimable },
+                        progress = { TierProgress(tier, successfulReferrals) },
+                        onClaim = onClaim
+                    )
                 }
             }
         }
     }
+}
+
+@Composable
+private fun TierAction(action: ClaimAction?, progress: @Composable () -> Unit, onClaim: () -> Unit) {
+    AnimatedContent(
+        targetState = action,
+        contentKey = { it != null },
+        transitionSpec = {
+            (fadeIn(OpalMotion.StateSpring) togetherWith fadeOut(OpalMotion.StateSpring))
+                .using(SizeTransform(clip = false) { _, _ -> OpalMotion.SizeSpring })
+        },
+        contentAlignment = Alignment.CenterStart,
+        label = "tierAction"
+    ) { current ->
+        if (current != null) {
+            OpalButton(
+                text = stringResource(R.string.referral_claim),
+                onClick = onClaim,
+                style = OpalButtonStyle.Primary,
+                size = OpalButtonSize.Small,
+                enabled = current != ClaimAction.Disabled,
+                loading = current == ClaimAction.Busy
+            )
+        } else {
+            progress()
+        }
+    }
+}
+
+@Composable
+private fun TierProgress(tier: RewardTier, successfulReferrals: Int) {
+    val required = tier.requiredReferrals
+    val reached = if (tier.status == TierStatus.Locked) successfulReferrals.coerceIn(0, required) else required
+    val description = pluralStringResource(
+        R.plurals.referral_tier_progress,
+        required,
+        reached.formatCount(),
+        required.formatCount()
+    )
+    OpalProgressBar(
+        progress = tier.progress(successfulReferrals),
+        modifier = Modifier
+            .widthIn(max = 179.dp)
+            .fillMaxWidth()
+            .semantics { stateDescription = description }
+    )
 }
 
 @Composable
@@ -149,17 +195,14 @@ private fun TierCaption(tier: RewardTier, status: TierStatus) {
                 horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xxSmall),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val entering = transition.currentState == EnterExitState.PreEnter
-                val scale = remember { Animatable(if (entering) OpalMotion.POP_START_SCALE else 1f) }
-                LaunchedEffect(Unit) { scale.animateTo(1f, OpalMotion.PopSpring) }
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .size(13.dp)
-                        .graphicsLayer {
-                            scaleX = scale.value
-                            scaleY = scale.value
-                        }
+                        .animateEnterExit(
+                            enter = scaleIn(OpalMotion.PopSpring, initialScale = OpalMotion.POP_START_SCALE),
+                            exit = ExitTransition.None
+                        )
                 ) {
                     Image(
                         painter = painterResource(R.drawable.ic_check_circle),
@@ -174,7 +217,7 @@ private fun TierCaption(tier: RewardTier, status: TierStatus) {
                 text = pluralStringResource(
                     R.plurals.referral_tier_friends,
                     tier.requiredReferrals,
-                    tier.requiredReferrals
+                    tier.requiredReferrals.formatCount()
                 ),
                 style = style
             )
@@ -183,13 +226,13 @@ private fun TierCaption(tier: RewardTier, status: TierStatus) {
 }
 
 @Composable
-private fun TierArtwork(reward: Reward, featured: Boolean, claimed: Boolean, reveal: ClaimRevealState) {
+private fun TierArtwork(reward: Reward, claimed: Boolean, reveal: ClaimRevealState, size: Dp) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .size(100.dp)
+            .size(size)
             .clip(OpalTheme.shapes.medium)
-            .then(if (featured) Modifier else Modifier.background(OpalTheme.colors.fillSubtle))
+            .then(if (reward.isFreeYear) Modifier else Modifier.background(OpalTheme.colors.fillSubtle))
     ) {
         val stone = (reward as? Reward.Milestone)?.stone
         if (stone != null) {
@@ -220,3 +263,7 @@ private fun TierArtwork(reward: Reward, featured: Boolean, claimed: Boolean, rev
         }
     }
 }
+
+private val TierArtworkSize = 100.dp
+private val CompactTierArtworkSize = 64.dp
+private val MinTierTextWidth = 80.dp

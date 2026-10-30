@@ -3,10 +3,12 @@ package vadiole.opaltest.feature.referral
 import app.cash.turbine.test
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import vadiole.opaltest.MainDispatcherRule
@@ -51,13 +53,84 @@ class ReferralViewModelTest {
                 .await()
     }
 
+    private fun TestScope.loadedViewModel(repository: FakeRepository, program: ReferralProgram = program(1)) =
+        ReferralViewModel(repository).also {
+            runCurrent()
+            repository.loads.removeFirst().complete(Outcome.Success(program))
+            runCurrent()
+        }
+
     @Test
-    fun `failed reload after rejected claim is reported and next success clears it`() = runTest {
+    fun `initial load shows the program`() = runTest {
         val repository = FakeRepository()
         val viewModel = ReferralViewModel(repository)
         runCurrent()
+        assertEquals(ReferralState.Loading, viewModel.state.value)
+
         repository.loads.removeFirst().complete(Outcome.Success(program(1)))
         runCurrent()
+        assertEquals(ReferralState.Ready(program(1)), viewModel.state.value)
+    }
+
+    @Test
+    fun `failed load shows the error and retry loads again`() = runTest {
+        val repository = FakeRepository()
+        val viewModel = ReferralViewModel(repository)
+        runCurrent()
+        repository.loads.removeFirst().complete(Outcome.Failure(ReferralError.Network))
+        runCurrent()
+        assertEquals(ReferralState.Failed(ReferralError.Network), viewModel.state.value)
+
+        viewModel.onIntent(ReferralIntent.Retry)
+        runCurrent()
+        assertEquals(ReferralState.Loading, viewModel.state.value)
+
+        repository.loads.removeFirst().complete(Outcome.Success(program(2)))
+        runCurrent()
+        assertEquals(ReferralState.Ready(program(2)), viewModel.state.value)
+    }
+
+    @Test
+    fun `successful claim replaces the program and reports the reward`() = runTest {
+        val repository = FakeRepository()
+        val viewModel = loadedViewModel(repository)
+
+        viewModel.effects.test {
+            viewModel.onIntent(ReferralIntent.Claim("tier"))
+            runCurrent()
+            assertEquals(ReferralState.Ready(program(1), claimingTierId = "tier"), viewModel.state.value)
+
+            viewModel.onIntent(ReferralIntent.Claim("first"))
+            runCurrent()
+            assertEquals(1, repository.claims.size)
+
+            repository.claims.removeFirst().complete(Outcome.Success(program(2)))
+            runCurrent()
+            assertEquals(ReferralState.Ready(program(2)), viewModel.state.value)
+            assertEquals(ReferralEffect.ClaimSucceeded(Reward.Milestone(MilestoneStone.Loyal)), awaitItem())
+        }
+    }
+
+    @Test
+    fun `failed claim re-enables claiming without reloading`() = runTest {
+        val repository = FakeRepository()
+        val viewModel = loadedViewModel(repository)
+
+        viewModel.effects.test {
+            viewModel.onIntent(ReferralIntent.Claim("tier"))
+            runCurrent()
+            repository.claims.removeFirst().complete(Outcome.Failure(ReferralError.Network))
+            runCurrent()
+            assertEquals(ReferralEffect.ClaimFailed(ReferralError.Network), awaitItem())
+            assertEquals(ReferralState.Ready(program(1)), viewModel.state.value)
+            assertTrue(repository.loads.isEmpty())
+        }
+    }
+
+    @Test
+    fun `failed reload after rejected claim keeps the program silently`() = runTest {
+        val repository = FakeRepository()
+        val viewModel = loadedViewModel(repository)
 
         viewModel.effects.test {
             viewModel.onIntent(ReferralIntent.Claim("tier"))
@@ -68,9 +141,7 @@ class ReferralViewModelTest {
 
             repository.loads.removeFirst().complete(Outcome.Failure(ReferralError.Network))
             runCurrent()
-            assertEquals(ReferralEffect.ClaimFailed(ReferralError.Network), awaitItem())
-            assertEquals(ReferralError.Network, viewModel.state.value.loadError)
-            assertEquals(program(1), viewModel.state.value.program)
+            assertEquals(ReferralState.Ready(program(1)), viewModel.state.value)
 
             viewModel.onIntent(ReferralIntent.Claim("tier"))
             runCurrent()
@@ -80,19 +151,54 @@ class ReferralViewModelTest {
 
             repository.loads.removeFirst().complete(Outcome.Success(program(2)))
             runCurrent()
-            assertEquals(program(2), viewModel.state.value.program)
-            assertNull(viewModel.state.value.loadError)
+            assertEquals(ReferralState.Ready(program(2)), viewModel.state.value)
             expectNoEvents()
+        }
+    }
+
+    @Test
+    fun `share ignores repeats until the cooldown ends`() = runTest {
+        val repository = FakeRepository()
+        val viewModel = loadedViewModel(repository)
+        val share = ReferralEffect.Share(Invite("CODE", "https://opal.so/r/CODE", 14))
+
+        viewModel.effects.test {
+            viewModel.onIntent(ReferralIntent.Share)
+            viewModel.onIntent(ReferralIntent.Share)
+            runCurrent()
+            assertEquals(share, awaitItem())
+            expectNoEvents()
+
+            advanceTimeBy(ReferralViewModel.SHARE_COOLDOWN)
+            runCurrent()
+            viewModel.onIntent(ReferralIntent.Share)
+            runCurrent()
+            assertEquals(share, awaitItem())
+        }
+    }
+
+    @Test
+    fun `copy carries the invite and is ignored before the program loads`() = runTest {
+        val repository = FakeRepository()
+        val viewModel = ReferralViewModel(repository)
+
+        viewModel.effects.test {
+            viewModel.onIntent(ReferralIntent.CopyInvite)
+            runCurrent()
+            expectNoEvents()
+
+            repository.loads.removeFirst().complete(Outcome.Success(program(1)))
+            runCurrent()
+            viewModel.onIntent(ReferralIntent.CopyInvite)
+            runCurrent()
+            assertEquals(ReferralEffect.CopyInvite(Invite("CODE", "https://opal.so/r/CODE", 14)), awaitItem())
         }
     }
 
     @Test
     fun `stale reload cannot overwrite a newer claim result`() = runTest {
         val repository = FakeRepository()
-        val viewModel = ReferralViewModel(repository)
-        runCurrent()
-        repository.loads.removeFirst().complete(Outcome.Success(program(1)))
-        runCurrent()
+        val viewModel = loadedViewModel(repository)
 
         viewModel.onIntent(ReferralIntent.Claim("first"))
         runCurrent()
@@ -107,7 +213,6 @@ class ReferralViewModelTest {
 
         staleLoad.complete(Outcome.Success(program(2)))
         runCurrent()
-        assertEquals(program(3), viewModel.state.value.program)
-        assertNull(viewModel.state.value.claimingTierId)
+        assertEquals(ReferralState.Ready(program(3)), viewModel.state.value)
     }
 }

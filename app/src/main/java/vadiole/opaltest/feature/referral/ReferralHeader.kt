@@ -101,7 +101,7 @@ internal fun Summary(program: ReferralProgram) {
             textAlign = TextAlign.Center
         )
         val referrals = program.successfulReferrals
-        val friends = pluralStringResource(R.plurals.referral_friends, referrals, referrals)
+        val friends = pluralStringResource(R.plurals.referral_friends, referrals, referrals.formatCount())
         val template = stringResource(R.string.referral_referred, PLACEHOLDER)
         val accent = OpalTheme.colors.accent
         Text(

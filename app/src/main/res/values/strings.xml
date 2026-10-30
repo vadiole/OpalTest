@@ -11,8 +11,8 @@
     <string name="referral_referred">You referred %1$s to Opal. Great job!</string>
     <string name="referral_referred_none">Invite friends to Opal and earn rewards.</string>
     <plurals name="referral_friends">
-        <item quantity="one">%d friend</item>
-        <item quantity="other">%d friends</item>
+        <item quantity="one">%1$s friend</item>
+        <item quantity="other">%1$s friends</item>
     </plurals>
     <string name="referral_code_title">Your Opal code</string>
     <string name="referral_code_description">Your Opal code: %1$s</string>
@@ -23,8 +23,12 @@
         <item quantity="other">Join me on Opal with my code %1$s and get %2$d days of Opal Pro for free: %3$s</item>
     </plurals>
     <plurals name="referral_tier_friends">
-        <item quantity="one">%d Friend</item>
-        <item quantity="other">%d Friends</item>
+        <item quantity="one">%1$s Friend</item>
+        <item quantity="other">%1$s Friends</item>
+    </plurals>
+    <plurals name="referral_tier_progress">
+        <item quantity="one">%1$s of %2$s friend</item>
+        <item quantity="other">%1$s of %2$s friends</item>
     </plurals>
     <string name="referral_claimed">Claimed</string>
     <string name="referral_claim">Claim</string>

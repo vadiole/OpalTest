@@ -27,40 +27,44 @@ class ReferralScreenshotTest {
 
     @Test
     @Config(qualifiers = "w402dp-h1861dp-xxhdpi")
-    fun figma() = capture("referral_figma", ReferralState(program = previewProgram()))
+    fun figma() = capture("referral_figma", ReferralState.Ready(previewProgram()))
 
     @Test
     fun proNoReferrals() = capture(
         "referral_pro_no_referrals",
-        ReferralState(program = previewProgram(plan = Plan.Pro, referrals = 0))
+        ReferralState.Ready(previewProgram(plan = Plan.Pro, referrals = 0))
     )
 
     @Test
     fun claiming() = capture(
         "referral_claiming",
-        ReferralState(program = previewProgram(), claimingTierId = "soulful")
+        ReferralState.Ready(previewProgram(), claimingTierId = "soulful")
     )
 
     @Test
-    fun loading() = capture("referral_loading", ReferralState())
+    fun loading() = capture("referral_loading", ReferralState.Loading)
 
     @Test
-    fun error() = capture("referral_error", ReferralState(loadError = ReferralError.Network))
-
-    @Test
-    @Config(qualifiers = "w874dp-h402dp-xxhdpi")
-    fun landscape() = capture("referral_landscape", ReferralState(program = previewProgram()))
+    fun error() = capture("referral_error", ReferralState.Failed(ReferralError.Network))
 
     @Test
     @Config(qualifiers = "w874dp-h402dp-xxhdpi")
-    fun loadingLandscape() = capture("referral_loading_landscape", ReferralState())
+    fun landscape() = capture("referral_landscape", ReferralState.Ready(previewProgram()))
+
+    @Test
+    @Config(qualifiers = "w874dp-h402dp-xxhdpi")
+    fun loadingLandscape() = capture("referral_loading_landscape", ReferralState.Loading)
 
     @Test
     @Config(qualifiers = "w1280dp-h800dp-xhdpi")
     fun tablet() = capture(
         "referral_tablet",
-        ReferralState(program = previewProgram(referrals = 12))
+        ReferralState.Ready(previewProgram(referrals = 12))
     )
+
+    @Test
+    @Config(qualifiers = "w320dp-h1861dp-xxhdpi", fontScale = 2f)
+    fun narrowLargeFont() = capture("referral_narrow_large_font", ReferralState.Ready(previewProgram()))
 
     private fun capture(name: String, state: ReferralState) {
         compose.mainClock.autoAdvance = false
