@@ -131,7 +131,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         launch { sweep.animateTo(1f, tween(SWEEP_MS, easing = SweepEase)) }
         launch {
             val shine = pickSound()
-            delay((SWEEP_PEAK_MS * runScale - shine.leadMs).toLong().coerceAtLeast(0))
+            delay(shineSoundDelayMs(shine, runScale))
             feedback?.shine(shine)
         }
         snapshotFlow { flight.value }.first { it >= SETTLE_THRESHOLD }
@@ -318,6 +318,9 @@ fun rememberClaimRevealState(): ClaimRevealState {
     return rememberSaveable(saver = ClaimRevealState.saver(scope)) { ClaimRevealState(scope) }
 }
 
+internal fun shineSoundDelayMs(sound: RevealSound, scale: Float): Long =
+    (SHINE_SOUND_MS * scale - sound.leadMs).toLong().coerceAtLeast(0)
+
 internal val StrongEaseOut = CubicBezierEasing(0.23f, 1f, 0.32f, 1f)
 internal val EnterEase = CubicBezierEasing(0.32f, 0.72f, 0f, 1f)
 internal val StrongEaseInOut = CubicBezierEasing(0.77f, 0f, 0.175f, 1f)
@@ -346,7 +349,7 @@ private const val FLIGHT_DELAY_MS = 200
 private const val GEM_WAIT_MS = 1000L
 private const val DEFAULT_PATH_BEND = 0.75f
 private const val SWEEP_MS = 8400
-private const val SWEEP_PEAK_MS = SWEEP_MS / 2
+private const val SHINE_SOUND_MS = 1400
 private const val SWEEP_EXIT_MS = 400
 private const val GLOW_OUT_DELAY_MS = 90
 private const val GLOW_OUT_MS = 900
