@@ -24,7 +24,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -44,7 +43,6 @@ import androidx.compose.ui.graphics.ImageShader
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.TileMode
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -55,7 +53,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
@@ -113,7 +110,7 @@ fun Modifier.claimRevealSource(state: ClaimRevealState, key: Any): Modifier = th
 
 @Composable
 private fun RevealOverlay(state: ClaimRevealState, key: Any, content: RevealContent) {
-    val gem = rememberGemBitmap(content.gem)
+    val gem = rememberDecodedBitmap(content.gem, mipmap = true).value ?: return
     val scrimColor = OpalTheme.colors.background
     val scrimTint = OpalTheme.colors.fillSubtle
     val colors = OpalTheme.colors
@@ -330,12 +327,6 @@ private fun Modifier.blockTouches(): Modifier = pointerInput(Unit) {
     awaitEachGesture { awaitFirstDown(requireUnconsumed = false).consume() }
 }
 
-@Composable
-private fun rememberGemBitmap(id: Int): ImageBitmap {
-    val bitmap = ImageBitmap.imageResource(id)
-    return remember(bitmap) { bitmap.also { it.asAndroidBitmap().setHasMipMap(true) } }
-}
-
 private fun ClaimRevealState.gemFrame(key: Any): Rect? {
     val target = target ?: return null
     val source = sourceRect(key)?.gemCrop() ?: target
@@ -355,7 +346,7 @@ private fun DrawScope.drawGem(state: ClaimRevealState, gem: ImageBitmap, frame: 
                 return@scale
             }
             val bounds = Rect(Offset.Zero, Size(gem.width.toFloat(), gem.height.toFloat()))
-            drawIntoCanvas { it.saveLayer(bounds, Paint().apply { alpha = state.fade.value }) }
+            drawIntoCanvas { it.saveLayer(bounds, GemLayerPaint.apply { alpha = state.fade.value }) }
             drawImage(gem)
             if (light >= MIN_LIGHT) {
                 drawRect(
@@ -470,6 +461,7 @@ private const val SWEEP_SHEEN_ALPHA = 0.05f
 private const val SWEEP_FRINGE_ALPHA = 0.13f
 private const val SWEEP_CORE_ALPHA = 0.32f
 private val SweepDirection = Offset(0.86f, 0.5f)
+private val GemLayerPaint = Paint()
 private val GrainBrush: ShaderBrush by lazy {
     val random = Random(GRAIN_SEED)
     val pixels = IntArray(GRAIN_SIZE * GRAIN_SIZE) { if (random.nextBoolean()) GRAIN_LIGHT else GRAIN_DARK }
