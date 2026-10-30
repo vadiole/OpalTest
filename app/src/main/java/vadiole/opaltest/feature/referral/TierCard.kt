@@ -55,6 +55,7 @@ import vadiole.opaltest.ui.common.OpalCard
 import vadiole.opaltest.ui.common.OpalImage
 import vadiole.opaltest.ui.common.OpalProgressBar
 import vadiole.opaltest.ui.common.brushTint
+import vadiole.opaltest.ui.common.formatCount
 import vadiole.opaltest.ui.theme.OpalMotion
 import vadiole.opaltest.ui.theme.OpalTheme
 

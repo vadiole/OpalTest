@@ -26,7 +26,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalAccessibilityManager
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -41,7 +40,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
-import java.text.NumberFormat
 import kotlin.time.Duration.Companion.milliseconds
 import vadiole.opaltest.R
 import vadiole.opaltest.data.debug.ReferralDebugState
@@ -53,6 +51,8 @@ import vadiole.opaltest.ui.common.OpalButtonStyle
 import vadiole.opaltest.ui.common.OpalCard
 import vadiole.opaltest.ui.common.OpalChip
 import vadiole.opaltest.ui.common.OpalToggleChip
+import vadiole.opaltest.ui.common.formatCount
+import vadiole.opaltest.ui.common.formatDecimal
 import vadiole.opaltest.ui.theme.OpalMotion
 import vadiole.opaltest.ui.theme.OpalTheme
 
@@ -115,7 +115,6 @@ internal fun Controls(
     modifier: Modifier = Modifier
 ) {
     val labels = controlLabels()
-    val format = rememberNumberFormat()
     val addDescription = stringResource(R.string.console_add_friend_description)
     val measuredLabelWidth = rememberLabelWidth(labels)
     OpalCard(modifier = modifier.fillMaxWidth()) {
@@ -138,7 +137,6 @@ internal fun Controls(
                     val next = debug.nextTierAt
                     FriendCount(
                         count = debug.successfulReferrals,
-                        format = format,
                         modifier = Modifier.padding(horizontal = OpalTheme.spacing.xxSmall)
                     )
                     OpalButton(
@@ -151,7 +149,7 @@ internal fun Controls(
                     )
                     OpalButton(
                         text = if (next != null) {
-                            pluralStringResource(R.plurals.console_reach_friends, next, format.format(next))
+                            pluralStringResource(R.plurals.console_reach_friends, next, next.formatCount())
                         } else {
                             stringResource(R.string.console_all_unlocked)
                         },
@@ -213,8 +211,8 @@ private fun ControlRow(label: String, labelWidth: Dp?, group: Boolean = false, c
 }
 
 @Composable
-private fun FriendCount(count: Int, format: NumberFormat, modifier: Modifier = Modifier) {
-    val description = pluralStringResource(R.plurals.console_friends, count, format.format(count))
+private fun FriendCount(count: Int, modifier: Modifier = Modifier) {
+    val description = pluralStringResource(R.plurals.console_friends, count, count.formatCount())
     val style = OpalTheme.typography.body.copy(fontFeatureSettings = "tnum")
     AnimatedContent(
         targetState = count,
@@ -233,7 +231,7 @@ private fun FriendCount(count: Int, format: NumberFormat, modifier: Modifier = M
         },
         label = "friendCount"
     ) {
-        Text(text = format.format(it), style = style)
+        Text(text = it.formatCount(), style = style)
     }
 }
 
@@ -286,13 +284,5 @@ private val ResetFadeIn = tween<Float>(OpalMotion.CrossFade.durationMillis, RESE
 private fun SimulatedLatency.label(): String = if (millis == 0L) {
     stringResource(R.string.console_delay_none)
 } else {
-    stringResource(R.string.console_delay_seconds, rememberNumberFormat(maxFractionDigits = 1).format(millis / 1000.0))
-}
-
-@Composable
-internal fun rememberNumberFormat(maxFractionDigits: Int = 0): NumberFormat {
-    val locale = LocalConfiguration.current.locales[0]
-    return remember(locale, maxFractionDigits) {
-        NumberFormat.getNumberInstance(locale).apply { maximumFractionDigits = maxFractionDigits }
-    }
+    stringResource(R.string.console_delay_seconds, (millis / 1000.0).formatDecimal(maxFractionDigits = 1))
 }

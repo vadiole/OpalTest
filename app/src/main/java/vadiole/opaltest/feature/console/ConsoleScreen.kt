@@ -55,6 +55,7 @@ import vadiole.opaltest.ui.common.OpalButton
 import vadiole.opaltest.ui.common.OpalButtonSize
 import vadiole.opaltest.ui.common.OpalButtonStyle
 import vadiole.opaltest.ui.common.OpalCard
+import vadiole.opaltest.ui.common.formatCount
 import vadiole.opaltest.ui.common.rememberPacedPhase
 import vadiole.opaltest.ui.theme.OpalMotion
 import vadiole.opaltest.ui.theme.OpalTheme
@@ -248,13 +249,12 @@ private fun LoadError(onRetry: () -> Unit, modifier: Modifier = Modifier) {
 
 @Composable
 private fun Status(debug: ReferralDebugState, modifier: Modifier = Modifier) {
-    val format = rememberNumberFormat()
     val claimed = debug.claimedTiers
     Text(
         text = if (claimed == 0) {
             stringResource(R.string.console_no_rewards_claimed)
         } else {
-            pluralStringResource(R.plurals.console_claimed, claimed, format.format(claimed))
+            pluralStringResource(R.plurals.console_claimed, claimed, claimed.formatCount())
         },
         style = OpalTheme.typography.body,
         modifier = modifier

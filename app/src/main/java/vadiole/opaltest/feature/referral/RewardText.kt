@@ -11,6 +11,7 @@ import vadiole.opaltest.domain.referral.MilestoneStone
 import vadiole.opaltest.domain.referral.Money
 import vadiole.opaltest.domain.referral.ProTerm
 import vadiole.opaltest.domain.referral.Reward
+import vadiole.opaltest.ui.common.currentLocale
 
 @get:StringRes
 internal val MilestoneStone.title: Int
@@ -52,19 +53,16 @@ internal fun Reward.description(): String = when (this) {
                 ProTerm.Lifetime -> R.string.referral_pro_lifetime_description
             }
         )
-        value?.let { stringResource(R.string.referral_with_value, text, it.format()) } ?: text
+        value?.let { stringResource(R.string.referral_with_value, text, it.format(currentLocale())) } ?: text
     }
 
     Reward.Mystery -> stringResource(R.string.referral_mystery_description)
 }
 
-internal fun Money.format(locale: Locale = Locale.getDefault(Locale.Category.FORMAT)): String {
+internal fun Money.format(locale: Locale): String {
     val amount = amountMinor.toBigDecimal().movePointLeft(currency.defaultFractionDigits)
     return NumberFormat.getCurrencyInstance(locale).apply {
         currency = this@format.currency
         if (amount.stripTrailingZeros().scale() <= 0) maximumFractionDigits = 0
     }.format(amount)
 }
-
-internal fun Int.formatCount(locale: Locale = Locale.getDefault(Locale.Category.FORMAT)): String =
-    NumberFormat.getIntegerInstance(locale).format(this)

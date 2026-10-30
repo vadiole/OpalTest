@@ -33,6 +33,7 @@ import vadiole.opaltest.ui.common.OpalCard
 import vadiole.opaltest.ui.common.OpalSkeleton
 import vadiole.opaltest.ui.common.OpalSkeletonBlock
 import vadiole.opaltest.ui.common.OpalSkeletonLine
+import vadiole.opaltest.ui.common.formatCount
 import vadiole.opaltest.ui.theme.OpalTheme
 
 @Composable
