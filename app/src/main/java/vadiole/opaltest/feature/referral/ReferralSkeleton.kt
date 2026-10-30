@@ -31,8 +31,8 @@ import androidx.compose.ui.unit.dp
 import vadiole.opaltest.R
 import vadiole.opaltest.ui.common.OpalCard
 import vadiole.opaltest.ui.common.OpalSkeleton
-import vadiole.opaltest.ui.common.SkeletonBlock
-import vadiole.opaltest.ui.common.SkeletonLine
+import vadiole.opaltest.ui.common.OpalSkeletonBlock
+import vadiole.opaltest.ui.common.OpalSkeletonLine
 import vadiole.opaltest.ui.theme.OpalTheme
 
 @Composable
@@ -97,12 +97,12 @@ private fun SkeletonPane(
 
 @Composable
 private fun InviteSkeleton() {
-    SkeletonBlock(paneItemModifier.height(ReferralDimens.inviteCardHeight), OpalTheme.shapes.large)
+    OpalSkeletonBlock(paneItemModifier.height(ReferralDimens.inviteCardHeight), OpalTheme.shapes.large)
 }
 
 @Composable
 private fun CompactInviteSkeleton() {
-    SkeletonBlock(paneItemModifier.height(ReferralDimens.compactInviteCardHeight), OpalTheme.shapes.xLarge)
+    OpalSkeletonBlock(paneItemModifier.height(ReferralDimens.compactInviteCardHeight), OpalTheme.shapes.xLarge)
 }
 
 @Composable
@@ -138,9 +138,9 @@ private fun CodeSkeleton() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small)
         ) {
-            SkeletonLine(OpalTheme.typography.headline, 140.dp)
+            OpalSkeletonLine(OpalTheme.typography.headline, 140.dp)
             Row(horizontalArrangement = Arrangement.spacedBy(ReferralDimens.codeCellGap)) {
-                repeat(SKELETON_CODE_LENGTH) { SkeletonBlock(Modifier.size(ReferralDimens.codeCell)) }
+                repeat(SKELETON_CODE_LENGTH) { OpalSkeletonBlock(Modifier.size(ReferralDimens.codeCell)) }
             }
         }
     }
@@ -157,9 +157,9 @@ private fun TextSkeleton(text: String, style: TextStyle, singleLineWidth: Dp) {
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             if (lineWidths.size <= 1) {
-                SkeletonLine(style, singleLineWidth)
+                OpalSkeletonLine(style, singleLineWidth)
             } else {
-                lineWidths.forEach { SkeletonLine(style, it) }
+                lineWidths.forEach { OpalSkeletonLine(style, it) }
             }
         }
     }
@@ -167,7 +167,7 @@ private fun TextSkeleton(text: String, style: TextStyle, singleLineWidth: Dp) {
 
 @Composable
 private fun ShareSkeleton() {
-    SkeletonBlock(paneItemModifier.height(OpalTheme.layout.controlHeight), OpalTheme.shapes.pill)
+    OpalSkeletonBlock(paneItemModifier.height(OpalTheme.layout.controlHeight), OpalTheme.shapes.pill)
 }
 
 @Composable
@@ -190,7 +190,7 @@ private fun TierCardSkeleton() {
             horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.large),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            SkeletonBlock(Modifier.size(ReferralDimens.tierArtworkSize), OpalTheme.shapes.medium)
+            OpalSkeletonBlock(Modifier.size(ReferralDimens.tierArtworkSize), OpalTheme.shapes.medium)
             Column(
                 verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small),
                 modifier = Modifier
@@ -198,13 +198,13 @@ private fun TierCardSkeleton() {
                     .padding(vertical = OpalTheme.spacing.xxSmall)
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xxxSmall)) {
-                    SkeletonLine(OpalTheme.typography.caption, 64.dp)
+                    OpalSkeletonLine(OpalTheme.typography.caption, 64.dp)
                     Column {
-                        SkeletonLine(OpalTheme.typography.body, 120.dp)
-                        SkeletonLine(OpalTheme.typography.caption, 160.dp)
+                        OpalSkeletonLine(OpalTheme.typography.body, 120.dp)
+                        OpalSkeletonLine(OpalTheme.typography.caption, 160.dp)
                     }
                 }
-                SkeletonBlock(
+                OpalSkeletonBlock(
                     Modifier
                         .widthIn(max = ReferralDimens.progressMaxWidth)
                         .fillMaxWidth()

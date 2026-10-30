@@ -80,9 +80,9 @@ import vadiole.opaltest.ui.common.OpalButtonStyle
 import vadiole.opaltest.ui.common.OpalCard
 import vadiole.opaltest.ui.common.OpalChip
 import vadiole.opaltest.ui.common.OpalSkeleton
+import vadiole.opaltest.ui.common.OpalSkeletonBlock
+import vadiole.opaltest.ui.common.OpalSkeletonLine
 import vadiole.opaltest.ui.common.OpalToggleChip
-import vadiole.opaltest.ui.common.SkeletonBlock
-import vadiole.opaltest.ui.common.SkeletonLine
 import vadiole.opaltest.ui.common.rememberPacedPhase
 import vadiole.opaltest.ui.theme.OpalMotion
 import vadiole.opaltest.ui.theme.OpalTheme
@@ -260,7 +260,7 @@ private fun Loading(modifier: Modifier = Modifier) {
     val labelWidth = rememberLabelWidth()
     OpalSkeleton(description = stringResource(R.string.console_loading), modifier = modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.large)) {
-            SkeletonLine(OpalTheme.typography.body, 160.dp)
+            OpalSkeletonLine(OpalTheme.typography.body, 160.dp)
             OpalCard(modifier = Modifier.fillMaxWidth()) {
                 BoxWithConstraints {
                     val stacked = stacksLabels(labelWidth, maxWidth)
@@ -269,7 +269,7 @@ private fun Loading(modifier: Modifier = Modifier) {
                         ControlRowSkeleton(stacked, chipWidths = listOf(44.dp, 128.dp), valueWidth = 12.dp)
                         ControlRowSkeleton(stacked, chipWidths = listOf(64.dp, 60.dp, 48.dp))
                         ControlRowSkeleton(stacked, chipWidths = listOf(96.dp, 100.dp))
-                        SkeletonBlock(
+                        OpalSkeletonBlock(
                             Modifier.size(width = 104.dp, height = OpalTheme.layout.controlHeightSmall),
                             OpalTheme.shapes.pill
                         )
@@ -284,21 +284,21 @@ private fun Loading(modifier: Modifier = Modifier) {
 private fun ControlRowSkeleton(stacked: Boolean, chipWidths: List<Dp>, valueWidth: Dp? = null) {
     LabeledRow(
         stacked = stacked,
-        label = { SkeletonLine(OpalTheme.typography.caption, 40.dp) }
+        label = { OpalSkeletonLine(OpalTheme.typography.caption, 40.dp) }
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (valueWidth != null) {
-                SkeletonLine(
+                OpalSkeletonLine(
                     OpalTheme.typography.body,
                     valueWidth,
                     Modifier.padding(horizontal = OpalTheme.spacing.xxSmall)
                 )
             }
             chipWidths.forEach {
-                SkeletonBlock(
+                OpalSkeletonBlock(
                     Modifier.size(width = it, height = OpalTheme.layout.controlHeightSmall),
                     OpalTheme.shapes.pill
                 )
