@@ -49,7 +49,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 ConsoleScreen(onOpenReferrals = { navigate(ReferralRoute) })
             }
             entry<ReferralRoute> {
-                ReferralScreen()
+                ReferralScreen(onBack = navigateBack)
             }
         }
     )
