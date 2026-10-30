@@ -1,7 +1,9 @@
 package vadiole.opaltest.feature.referral
 
 import android.graphics.Bitmap
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
@@ -63,8 +65,10 @@ class ReferralScreenshotTest {
     private fun capture(name: String, state: ReferralState) {
         compose.mainClock.autoAdvance = false
         compose.setContent {
-            OpalTheme {
-                ReferralContent(state = state, onIntent = {}, onBack = {})
+            CompositionLocalProvider(LocalInspectionMode provides true) {
+                OpalTheme {
+                    ReferralContent(state = state, onIntent = {}, onBack = {})
+                }
             }
         }
         compose.mainClock.advanceTimeBy(2_000)

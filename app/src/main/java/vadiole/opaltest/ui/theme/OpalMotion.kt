@@ -2,7 +2,6 @@ package vadiole.opaltest.ui.theme
 
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Easing
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.PathEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.SpringSpec
@@ -40,7 +39,7 @@ object OpalMotion {
     val PressRelease: TweenSpec<Float> = tween(durationMillis = 180, easing = Decelerate)
 
     const val LOADING_DELAY_MILLIS = 150L
-    val FadeIn: TweenSpec<Float> = tween(durationMillis = 150, easing = LinearEasing)
+    val FadeIn: SpringSpec<Float> = spring(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow)
 
     const val POP_START_SCALE = 0.6f
     val StateSpring: SpringSpec<Float> = spring(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow)
