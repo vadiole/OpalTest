@@ -7,7 +7,7 @@
         <item quantity="many">¡Regala %d días de Opal PRO gratis!</item>
         <item quantity="other">¡Regala %d días de Opal PRO gratis!</item>
     </plurals>
-    <string name="referral_referred">Has traído a %1$s a Opal. ¡Buen trabajo!</string>
+    <string name="referral_referred">Has invitado a %1$s a Opal. ¡Buen trabajo!</string>
     <string name="referral_referred_none">Invita a tus amigos a Opal y gana recompensas.</string>
     <plurals name="referral_friends">
         <item quantity="one">%1$s amigo</item>
@@ -36,7 +36,6 @@
     <string name="referral_claimed">Reclamado</string>
     <string name="referral_claim">Reclamar</string>
     <string name="referral_milestone_loyal">MileStone Leal</string>
-    <!-- REVIEW: "Soulful" has no direct equivalent; "Profundo" keeps the sense of depth and emotion. -->
     <string name="referral_milestone_soulful">MileStone Profundo</string>
     <string name="referral_milestone_popular">MileStone Popular</string>
     <string name="referral_milestone_description">Descubre este MileStone especial</string>
@@ -48,11 +47,11 @@
     <string name="referral_pro_lifetime_description">Contáctanos para obtener Opal Pro de por vida</string>
     <string name="referral_with_value">%1$s (valor de %2$s)</string>
     <string name="referral_mystery">Regalo misterioso</string>
-    <string name="referral_mystery_description">Contáctanos para recibir de Opal un regalo que te cambiará la vida</string>
+    <string name="referral_mystery_description">Contáctanos para recibir un regalo de Opal que te cambiará la vida</string>
     <string name="referral_loading">Cargando tus recompensas</string>
     <string name="referral_load_failed">No se pudieron cargar tus recompensas.</string>
     <string name="referral_retry">Reintentar</string>
-    <string name="referral_claim_failed_network">Sin conexión. Vuelve a intentar reclamarla.</string>
+    <string name="referral_claim_failed_network">Sin conexión. Vuelve a intentarlo.</string>
     <string name="referral_claim_failed">No se pudo reclamar esta recompensa.</string>
     <string name="console_open_referrals">Abrir Invitaciones y recompensas</string>
     <string name="console_title">Demo de referidos</string>
