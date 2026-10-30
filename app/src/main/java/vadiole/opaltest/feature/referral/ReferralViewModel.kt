@@ -45,8 +45,12 @@ class ReferralViewModel(private val repository: ReferralRepository) : ViewModel(
         mutableState.update { it.copy(loadError = null) }
         loadJob = viewModelScope.launch {
             when (val outcome = repository.getProgram()) {
-                is Outcome.Success -> mutableState.update { it.copy(program = outcome.value) }
-                is Outcome.Failure -> mutableState.update { it.copy(loadError = outcome.error) }
+                is Outcome.Success -> mutableState.update { it.copy(program = outcome.value, loadError = null) }
+
+                is Outcome.Failure -> {
+                    mutableState.update { it.copy(loadError = outcome.error) }
+                    if (state.value.program != null) effectChannel.send(ReferralEffect.ClaimFailed(outcome.error))
+                }
             }
         }
     }
@@ -57,7 +61,8 @@ class ReferralViewModel(private val repository: ReferralRepository) : ViewModel(
         viewModelScope.launch {
             when (val outcome = repository.claimReward(tierId)) {
                 is Outcome.Success -> {
-                    mutableState.update { it.copy(program = outcome.value, claimingTierId = null) }
+                    loadJob?.cancel()
+                    mutableState.update { it.copy(program = outcome.value, loadError = null, claimingTierId = null) }
                     effectChannel.send(ReferralEffect.ClaimSucceeded)
                 }
 
