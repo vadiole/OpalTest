@@ -2,10 +2,12 @@ package vadiole.opaltest.feature.console
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import java.io.IOException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -18,6 +20,7 @@ import vadiole.opaltest.data.fake.ReferralDebugControls
 class ConsoleViewModel(private val controls: ReferralDebugControls) : ViewModel() {
     val state: StateFlow<ConsoleState> = controls.state
         .map { ConsoleState(it) }
+        .catch { if (it !is IOException) throw it }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ConsoleState())
 
     private val effectChannel = Channel<ConsoleEffect>(Channel.BUFFERED)
@@ -31,7 +34,10 @@ class ConsoleViewModel(private val controls: ReferralDebugControls) : ViewModel(
             return
         }
         viewModelScope.launch {
-            mutex.withLock { handle(intent) }
+            try {
+                mutex.withLock { handle(intent) }
+            } catch (_: IOException) {
+            }
         }
     }
 
