@@ -198,6 +198,33 @@ class ConsoleViewModelTest {
     }
 
     @Test
+    fun `adding the friend that reaches the next tier sends tier reached`() = runTest {
+        val controls = FakeControls()
+        val viewModel = ConsoleViewModel(controls)
+        val threshold = checkNotNull(initial.nextTierAt)
+        val effects = mutableListOf<ConsoleEffect>()
+        backgroundScope.launch { viewModel.effects.collect { effects += it } }
+        runCurrent()
+
+        viewModel.onIntent(ConsoleIntent.AddFriend)
+        runCurrent()
+        assertEquals(listOf(ConsoleEffect.FriendAdded), effects)
+
+        controls.data.value = initial.copy(successfulReferrals = threshold - 1)
+        viewModel.onIntent(ConsoleIntent.AddFriend)
+        runCurrent()
+        assertEquals(listOf(ConsoleEffect.FriendAdded, ConsoleEffect.TierReached), effects)
+
+        controls.data.value = initial.copy(successfulReferrals = threshold, nextTierAt = null)
+        viewModel.onIntent(ConsoleIntent.AddFriend)
+        runCurrent()
+        assertEquals(
+            listOf(ConsoleEffect.FriendAdded, ConsoleEffect.TierReached, ConsoleEffect.FriendAdded),
+            effects
+        )
+    }
+
+    @Test
     fun `failed write sends no effect`() = runTest {
         val controls = FakeControls(failWrites = true)
         val viewModel = ConsoleViewModel(controls)

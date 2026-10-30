@@ -5,6 +5,7 @@ import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import vadiole.opaltest.domain.referral.Money
+import vadiole.opaltest.ui.common.formatCount
 
 class RewardTextTest {
     private fun money(amountMinor: Long, code: String) = Money(amountMinor, Currency.getInstance(code))
