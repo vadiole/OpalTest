@@ -1,5 +1,6 @@
 package vadiole.opaltest.feature.console
 
+import android.os.SystemClock
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -36,6 +37,7 @@ import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -189,22 +191,46 @@ fun ConsoleContent(state: ConsoleState, onIntent: (ConsoleIntent) -> Unit, modif
     }
 }
 
+private enum class Shown { Blank, Loading, Failed, Ready }
+
+private val ConsoleLoad?.shown: Shown
+    get() = when (this) {
+        null -> Shown.Blank
+        ConsoleLoad.Loading -> Shown.Loading
+        ConsoleLoad.Failed -> Shown.Failed
+        is ConsoleLoad.Ready -> Shown.Ready
+    }
+
 @Composable
 private fun rememberShownLoad(load: ConsoleLoad): ConsoleLoad? {
+    val target = load.shown
     val inspection = LocalInspectionMode.current
-    var coldStart by remember { mutableStateOf(!inspection) }
-    LaunchedEffect(Unit) {
-        delay(OpalMotion.LOADING_DELAY_MILLIS)
-        coldStart = false
-    }
-    return if (coldStart && load is ConsoleLoad.Loading) null else load
-}
+    var shown by remember { mutableStateOf(if (target == Shown.Loading && !inspection) Shown.Blank else target) }
+    var loadingSince by remember { mutableLongStateOf(SystemClock.uptimeMillis()) }
+    LaunchedEffect(target) {
+        when {
+            target == shown -> Unit
 
-private fun ConsoleLoad?.kind(): Int = when (this) {
-    null -> 0
-    ConsoleLoad.Loading -> 1
-    ConsoleLoad.Failed -> 2
-    is ConsoleLoad.Ready -> 3
+            target == Shown.Loading -> {
+                delay(OpalMotion.LOADING_DELAY_MILLIS)
+                loadingSince = SystemClock.uptimeMillis()
+                shown = Shown.Loading
+            }
+
+            else -> {
+                if (shown == Shown.Loading) {
+                    delay(loadingSince + OpalMotion.LOADING_MIN_MILLIS - SystemClock.uptimeMillis())
+                }
+                shown = target
+            }
+        }
+    }
+    return when (shown) {
+        target, Shown.Ready -> load
+        Shown.Blank -> null
+        Shown.Loading -> ConsoleLoad.Loading
+        Shown.Failed -> ConsoleLoad.Failed
+    }
 }
 
 @Composable
@@ -217,7 +243,7 @@ private fun Body(title: String, shown: ConsoleLoad?, onIntent: (ConsoleIntent) -
         )
         AnimatedContent(
             targetState = shown,
-            contentKey = { it.kind() },
+            contentKey = { it.shown },
             transitionSpec = {
                 if (initialState == null) {
                     EnterTransition.None togetherWith ExitTransition.None using null
@@ -543,7 +569,7 @@ private val previewDebug = ReferralDebugState(
     nextTierAt = 5,
     latency = SimulatedLatency.Normal,
     failNextLoad = false,
-    failNextClaim = true
+    failNextClaim = false
 )
 
 private val previewReady = ConsoleState(ConsoleLoad.Ready(previewDebug))

@@ -38,7 +38,7 @@ class ConsoleScreenshotTest {
         nextTierAt = 5,
         latency = SimulatedLatency.Normal,
         failNextLoad = false,
-        failNextClaim = true
+        failNextClaim = false
     )
 
     @Test
