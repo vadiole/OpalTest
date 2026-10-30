@@ -3,6 +3,8 @@ package vadiole.opaltest.ui.theme
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.PathEasing
+import androidx.compose.animation.core.SpringSpec
+import androidx.compose.animation.core.spring
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.unit.dp
 
@@ -26,6 +28,11 @@ object OpalMotion {
     const val BACK_COMMIT_SCRIM_FADE = 0.5f
     const val BACK_MIN_SCALE = 0.9f
     const val BACK_SCRIM_ALPHA = 77f / 255f
+
+    const val PRESS_SCALE = 0.96f
+    const val PRESS_MIN_HOLD_MILLIS = 100L
+    val PressSpring: SpringSpec<Float> = spring(dampingRatio = 1f, stiffness = 1200f)
+    val ReleaseSpring: SpringSpec<Float> = spring(dampingRatio = 0.7f, stiffness = 700f)
 
     val ScreenOffset = 96.dp
     val BackEdgeMargin = 16.dp

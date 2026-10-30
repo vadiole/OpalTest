@@ -2,6 +2,7 @@ package vadiole.opaltest.ui.common
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -12,6 +13,7 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -32,11 +34,18 @@ fun OpalChip(
     enabled: Boolean = true
 ) {
     val haptics = LocalHapticFeedback.current
+    val interactionSource = remember { MutableInteractionSource() }
     ChipSurface(
         text = text,
         selected = selected,
         enabled = enabled,
-        interactionModifier = Modifier.selectable(selected = selected, enabled = enabled) {
+        interactionSource = interactionSource,
+        interactionModifier = Modifier.selectable(
+            selected = selected,
+            interactionSource = interactionSource,
+            indication = chipRipple(selected),
+            enabled = enabled
+        ) {
             if (selected) return@selectable
             haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
             onClick()
@@ -54,11 +63,19 @@ fun OpalToggleChip(
     enabled: Boolean = true
 ) {
     val haptics = LocalHapticFeedback.current
+    val interactionSource = remember { MutableInteractionSource() }
     ChipSurface(
         text = text,
         selected = checked,
         enabled = enabled,
-        interactionModifier = Modifier.toggleable(value = checked, enabled = enabled, role = Role.Checkbox) {
+        interactionSource = interactionSource,
+        interactionModifier = Modifier.toggleable(
+            value = checked,
+            interactionSource = interactionSource,
+            indication = chipRipple(checked),
+            enabled = enabled,
+            role = Role.Checkbox
+        ) {
             haptics.performHapticFeedback(if (it) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
             onCheckedChange(it)
         },
@@ -71,6 +88,7 @@ private fun ChipSurface(
     text: String,
     selected: Boolean,
     enabled: Boolean,
+    interactionSource: MutableInteractionSource,
     modifier: Modifier = Modifier,
     interactionModifier: Modifier = Modifier
 ) {
@@ -81,6 +99,7 @@ private fun ChipSurface(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .height(40.dp)
+            .pressScale(interactionSource, enabled)
             .alpha(if (enabled) 1f else OpalTheme.alpha.disabled)
             .clip(OpalTheme.shapes.pill)
             .background(background)
@@ -90,6 +109,9 @@ private fun ChipSurface(
         Text(text = text, style = OpalTheme.typography.calloutMedium, color = content, maxLines = 1)
     }
 }
+
+private fun chipRipple(selected: Boolean) =
+    opalRipple(if (selected) OpalTheme.colors.onAccent else OpalTheme.colors.content)
 
 @Preview(showBackground = true, backgroundColor = 0xFF000000)
 @Composable

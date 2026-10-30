@@ -3,6 +3,7 @@ package vadiole.opaltest.ui.common
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -58,6 +60,8 @@ fun OpalButton(
         OpalButtonStyle.Primary -> SolidColor(colors.content)
     }
     val busyDescription = stringResource(R.string.opal_button_loading)
+    val interactionSource = remember { MutableInteractionSource() }
+    val interactive = enabled && !loading
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
@@ -68,10 +72,17 @@ fun OpalButton(
                 }
             }
             .height(metrics.height)
+            .pressScale(interactionSource, interactive)
             .alpha(if (enabled) 1f else OpalTheme.alpha.disabled)
             .clip(OpalTheme.shapes.pill)
             .background(background)
-            .clickable(enabled = enabled && !loading, role = Role.Button, onClick = onClick)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = opalRipple(colors.onAccent),
+                enabled = interactive,
+                role = Role.Button,
+                onClick = onClick
+            )
             .padding(metrics.padding)
     ) {
         Row(
