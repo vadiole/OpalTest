@@ -77,9 +77,9 @@ class ClaimRevealTitleTest {
         compose.waitForIdle()
     }
 
-    private fun titleLayout(): TextLayoutResult {
+    private fun titleLayout(title: String = TITLE): TextLayoutResult {
         val results = mutableListOf<TextLayoutResult>()
-        compose.onNodeWithText(TITLE).fetchSemanticsNode().config[SemanticsActions.GetTextLayoutResult].action!!
+        compose.onNodeWithText(title).fetchSemanticsNode().config[SemanticsActions.GetTextLayoutResult].action!!
             .invoke(results)
         return results.single()
     }
@@ -112,6 +112,22 @@ class ClaimRevealTitleTest {
         assertTrue("expected the name to wrap, got $lines", lines.size > 2)
         assertEquals(SUFFIX, lines.last())
         assertFalse(layout.hasVisualOverflow)
+    }
+
+    @Test
+    @Config(qualifiers = "fr-w402dp-h874dp-xxhdpi")
+    fun `french title keeps the gem name on its own line`() {
+        reveal()
+        capture("claim_reveal_title_fr")
+        assertEquals(listOf("MileStone Populaire", "est à toi"), lines(titleLayout("MileStone Populaire\nest à toi")))
+    }
+
+    @Test
+    @Config(qualifiers = "es-w402dp-h874dp-xxhdpi")
+    fun `spanish title keeps the gem name on its own line`() {
+        reveal()
+        capture("claim_reveal_title_es")
+        assertEquals(listOf("MileStone Popular", "es tuyo"), lines(titleLayout("MileStone Popular\nes tuyo")))
     }
 
     private fun capture(name: String) {

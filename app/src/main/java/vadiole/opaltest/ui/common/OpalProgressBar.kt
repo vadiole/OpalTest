@@ -14,10 +14,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import vadiole.opaltest.ui.theme.OpalTheme
 
@@ -39,7 +41,9 @@ fun OpalProgressBar(progress: Float, modifier: Modifier = Modifier) {
         drawRoundRect(color = colors.fill, cornerRadius = radius)
         if (animated > 0f) {
             val width = (size.width * animated).coerceAtLeast(size.height)
-            drawRoundRect(brush = colors.accent, size = Size(width, size.height), cornerRadius = radius)
+            scale(scaleX = if (layoutDirection == LayoutDirection.Rtl) -1f else 1f, scaleY = 1f) {
+                drawRoundRect(brush = colors.accent, size = Size(width, size.height), cornerRadius = radius)
+            }
         }
     }
 }

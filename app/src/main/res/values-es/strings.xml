@@ -1,0 +1,92 @@
+<resources>
+    <string name="referral_title">Invitaciones y recompensas</string>
+    <string name="referral_back">Atrás</string>
+    <string name="referral_invited_by">Te invitó %1$s</string>
+    <plurals name="referral_gift_days">
+        <item quantity="one">¡Regala %d día de Opal PRO gratis!</item>
+        <item quantity="many">¡Regala %d días de Opal PRO gratis!</item>
+        <item quantity="other">¡Regala %d días de Opal PRO gratis!</item>
+    </plurals>
+    <string name="referral_referred">Has invitado a %1$s a Opal. ¡Buen trabajo!</string>
+    <string name="referral_referred_none">Invita a tus amigos a Opal y gana recompensas.</string>
+    <plurals name="referral_friends">
+        <item quantity="one">%1$s amigo</item>
+        <item quantity="many">%1$s amigos</item>
+        <item quantity="other">%1$s amigos</item>
+    </plurals>
+    <string name="referral_code_title">Tu código de Opal</string>
+    <string name="referral_code_description">Tu código de Opal: %1$s</string>
+    <string name="referral_share">Compartir invitación</string>
+    <string name="referral_copy_invite">Copiar invitación</string>
+    <plurals name="referral_share_message">
+        <item quantity="one">Únete a Opal con mi código %1$s y consigue %2$d día de Opal Pro gratis: %3$s</item>
+        <item quantity="many">Únete a Opal con mi código %1$s y consigue %2$d días de Opal Pro gratis: %3$s</item>
+        <item quantity="other">Únete a Opal con mi código %1$s y consigue %2$d días de Opal Pro gratis: %3$s</item>
+    </plurals>
+    <plurals name="referral_tier_friends">
+        <item quantity="one">%1$s amigo</item>
+        <item quantity="many">%1$s amigos</item>
+        <item quantity="other">%1$s amigos</item>
+    </plurals>
+    <plurals name="referral_tier_progress">
+        <item quantity="one">%1$s de %2$s amigo</item>
+        <item quantity="many">%1$s de %2$s amigos</item>
+        <item quantity="other">%1$s de %2$s amigos</item>
+    </plurals>
+    <string name="referral_claimed">Reclamado</string>
+    <string name="referral_claim">Reclamar</string>
+    <string name="referral_milestone_loyal">MileStone Leal</string>
+    <string name="referral_milestone_soulful">MileStone Profundo</string>
+    <string name="referral_milestone_popular">MileStone Popular</string>
+    <string name="referral_milestone_description">Descubre este MileStone especial</string>
+    <string name="referral_pro_one_year">1 año de Opal Pro</string>
+    <string name="referral_pro_one_year_description">Desbloquea un año entero de Opal Pro gratis</string>
+    <string name="referral_pro_two_years">2 años de Opal Pro</string>
+    <string name="referral_pro_two_years_description">Contáctanos para obtener 2 años de Opal Pro</string>
+    <string name="referral_pro_lifetime">Opal Pro de por vida</string>
+    <string name="referral_pro_lifetime_description">Contáctanos para obtener Opal Pro de por vida</string>
+    <string name="referral_with_value">%1$s (valor de %2$s)</string>
+    <string name="referral_mystery">Regalo misterioso</string>
+    <string name="referral_mystery_description">Contáctanos para recibir un regalo de Opal que te cambiará la vida</string>
+    <string name="referral_loading">Cargando tus recompensas</string>
+    <string name="referral_load_failed">No se pudieron cargar tus recompensas.</string>
+    <string name="referral_retry">Reintentar</string>
+    <string name="referral_claim_failed_network">Sin conexión. Vuelve a intentarlo.</string>
+    <string name="referral_claim_failed">No se pudo reclamar esta recompensa.</string>
+    <string name="console_open_referrals">Abrir Invitaciones y recompensas</string>
+    <string name="console_title">Demo de referidos</string>
+    <plurals name="console_friends">
+        <item quantity="one">%s amigo</item>
+        <item quantity="many">%s amigos</item>
+        <item quantity="other">%s amigos</item>
+    </plurals>
+    <string name="console_no_rewards_claimed">Aún no has reclamado recompensas.</string>
+    <plurals name="console_claimed">
+        <item quantity="one">%s recompensa reclamada.</item>
+        <item quantity="many">%s recompensas reclamadas.</item>
+        <item quantity="other">%s recompensas reclamadas.</item>
+    </plurals>
+    <string name="console_label_plan">Plan</string>
+    <string name="console_label_friends">Amigos</string>
+    <string name="console_label_delay">Retraso</string>
+    <string name="console_label_fail">Fallo</string>
+    <string name="console_free">Gratis</string>
+    <string name="console_delay_none">Ninguno</string>
+    <string name="console_delay_seconds">%s s</string>
+    <string name="console_fail_next_load">Próxima carga</string>
+    <string name="console_fail_next_claim">Próximo reclamo</string>
+    <string name="console_reset">Reiniciar demo</string>
+    <string name="console_add_friend_description">Añadir un amigo</string>
+    <plurals name="console_reach_friends">
+        <item quantity="one">Llegar a %s amigo</item>
+        <item quantity="many">Llegar a %s amigos</item>
+        <item quantity="other">Llegar a %s amigos</item>
+    </plurals>
+    <string name="console_all_unlocked">Todo desbloqueado</string>
+    <string name="opal_button_loading">Cargando</string>
+    <string name="console_loading">Cargando el estado de la demo</string>
+    <string name="console_load_error">No se pudo cargar el estado de la demo.</string>
+    <string name="console_retry">Reintentar</string>
+    <string name="console_reset_confirm">Toca de nuevo para reiniciar</string>
+    <string name="console_reset_confirm_state">Esperando confirmación</string>
+</resources>
