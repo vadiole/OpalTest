@@ -282,10 +282,7 @@ private fun OpenReferralsButton(onIntent: (ConsoleIntent) -> Unit, modifier: Mod
 private fun Loading(modifier: Modifier = Modifier) {
     OpalSkeleton(description = stringResource(R.string.console_loading), modifier = modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.large)) {
-            Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xxSmall)) {
-                SkeletonLine(OpalTheme.typography.body, 180.dp)
-                SkeletonLine(OpalTheme.typography.callout, 120.dp)
-            }
+            SkeletonLine(OpalTheme.typography.body, 160.dp)
             OpalCard(modifier = Modifier.fillMaxWidth()) {
                 Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall)) {
                     ControlRowSkeleton(chipWidths = listOf(56.dp, 52.dp))
@@ -351,26 +348,16 @@ private fun LoadError(onRetry: () -> Unit, modifier: Modifier = Modifier) {
 @Composable
 private fun Status(debug: ReferralDebugState, modifier: Modifier = Modifier) {
     val format = rememberNumberFormat()
-    Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xxSmall), modifier = modifier) {
-        val next = debug.nextTierAt
-        Text(
-            text = if (next != null) {
-                pluralStringResource(R.plurals.console_next_reward, next, format.format(next))
-            } else {
-                stringResource(R.string.console_all_rewards_reached)
-            },
-            style = OpalTheme.typography.body
-        )
-        Text(
-            text = pluralStringResource(
-                R.plurals.console_claimed,
-                debug.claimedTiers,
-                format.format(debug.claimedTiers)
-            ),
-            style = OpalTheme.typography.callout,
-            color = OpalTheme.colors.contentSecondary
-        )
-    }
+    val claimed = debug.claimedTiers
+    Text(
+        text = if (claimed == 0) {
+            stringResource(R.string.console_no_rewards_claimed)
+        } else {
+            pluralStringResource(R.plurals.console_claimed, claimed, format.format(claimed))
+        },
+        style = OpalTheme.typography.body,
+        modifier = modifier
+    )
 }
 
 @Composable
