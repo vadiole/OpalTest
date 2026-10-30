@@ -75,6 +75,8 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
 
     fun isHolding(key: Any): Boolean = activeKey == key && !landed
 
+    fun isPresenting(key: Any): Boolean = isHolding(key) && phase != RevealPhase.Closing
+
     internal fun isFlying(key: Any): Boolean = isHolding(key) && target != null && gemReady
 
     fun prefetch(@DrawableRes gem: Int) {

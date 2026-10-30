@@ -123,7 +123,7 @@ fun ClaimRevealDemoScreen(modifier: Modifier = Modifier) {
                     DemoTierCard(
                         tier = tier,
                         name = names.getValue(tier.stone),
-                        claimed = tier.stone in claimed && !reveal.isHolding(tier.stone),
+                        claimed = tier.stone in claimed && !reveal.isPresenting(tier.stone),
                         reveal = reveal,
                         onClaim = { open(tier.stone) }
                     )

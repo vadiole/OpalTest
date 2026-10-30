@@ -54,6 +54,7 @@ import vadiole.opaltest.ui.common.OpalImage
 import vadiole.opaltest.ui.common.OpalProgressBar
 import vadiole.opaltest.ui.common.brushTint
 import vadiole.opaltest.ui.common.formatCount
+import vadiole.opaltest.ui.common.rememberPacedPhase
 import vadiole.opaltest.ui.theme.OpalMotion
 import vadiole.opaltest.ui.theme.OpalTheme
 
@@ -75,9 +76,9 @@ internal fun TierCard(
     onClaim: () -> Unit
 ) {
     val stone = (tier.reward as? Reward.Milestone)?.stone
-    val holding = stone != null && reveal.isHolding(stone)
-    val status = if (holding) TierStatus.Claimable else tier.status
-    val action = if (holding) ClaimAction.Busy else claimAction
+    val presenting = stone != null && reveal.isPresenting(stone)
+    val target = if (presenting) TierStatus.Claimable to ClaimAction.Busy else tier.status to claimAction
+    val (status, action) = rememberPacedPhase(target, loading = TierStatus.Claimable to ClaimAction.Busy) ?: target
     val alpha by animateFloatAsState(
         targetValue = if (status == TierStatus.Claimed) OpalTheme.alpha.completed else 1f,
         animationSpec = OpalMotion.StateSpring,
