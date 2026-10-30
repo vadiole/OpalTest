@@ -277,7 +277,9 @@ private fun ClaimAnnouncement(state: ReferralState, reveal: ClaimRevealState) {
         delay(ANNOUNCEMENT_HOLD_MS)
         claimed = null
     }
-    val announcement = claimed?.takeUnless { reveal.activeKey != null && !reveal.landed }
+    val revealing = reveal.activeKey != null && !reveal.landed
+    LaunchedEffect(revealing) { if (revealing) claimed = null }
+    val announcement = claimed?.takeUnless { revealing }
         ?.let { stringResource(R.string.referral_claimed_announcement, it.title()) }
     Box(
         Modifier
