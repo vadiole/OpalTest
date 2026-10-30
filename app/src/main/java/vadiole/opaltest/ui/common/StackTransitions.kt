@@ -3,9 +3,12 @@ package vadiole.opaltest.ui.common
 import android.view.RoundedCorner
 import android.view.View
 import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -36,6 +39,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.toSize
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavEntryDecorator
+import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigationevent.NavigationEvent
 import androidx.navigationevent.NavigationEventTransitionState
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
@@ -67,8 +71,11 @@ class StackTransitions<T : Any> internal constructor(private val motion: StackMo
 }
 
 @Composable
-fun <T : Any> rememberStackTransitions(backStack: List<T>): StackTransitions<T> {
-    val motion = remember { StackMotionState() }
+fun <T : Any> rememberStackTransitions(backStack: List<T>): StackTransitions<T> =
+    rememberStackTransitions(backStack, remember { StackMotionState() })
+
+@Composable
+internal fun <T : Any> rememberStackTransitions(backStack: List<T>, motion: StackMotionState): StackTransitions<T> {
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val stack = backStack.toList()
@@ -97,6 +104,10 @@ fun <T : Any> rememberStackTransitions(backStack: List<T>): StackTransitions<T> 
 
 @Composable
 private fun StackEntry(motion: StackMotionState, key: Any, content: @Composable () -> Unit) {
+    LocalNavAnimatedContentScope.current.transition.animateFloat(
+        transitionSpec = { tween(OpalMotion.SCREEN_DURATION, easing = LinearEasing) },
+        label = "hold"
+    ) { if (it == EnterExitState.Visible) 1f else 0f }
     val view = LocalView.current
     val scrim = MaterialTheme.colorScheme.scrim
     var size by remember { mutableStateOf(Size.Zero) }
@@ -154,7 +165,7 @@ internal val IdentityPose = Pose()
 private val HiddenPose = Pose(alpha = 0f)
 
 @Stable
-internal class StackMotionState {
+internal class StackMotionState(private val emphasized: Easing = OpalMotion.Emphasized) {
     var density: Density = Density(1f)
     var phase by mutableStateOf(BackPhase.Idle)
         private set
@@ -324,7 +335,7 @@ internal class StackMotionState {
 
     private fun motionPose(top: Boolean): Pose {
         val f = motionFraction
-        val e = OpalMotion.Emphasized.transform(f)
+        val e = emphasized.transform(f)
         val offset = with(density) { OpalMotion.ScreenOffset.toPx() }
         return when (motion) {
             StackMotion.None -> IdentityPose
@@ -388,7 +399,7 @@ internal class StackMotionState {
             }
 
             BackPhase.Commit -> {
-                val e = OpalMotion.Emphasized.transform(f)
+                val e = emphasized.transform(f)
                 val scale = gestureScale + (1f - gestureScale) * e
                 val ty = gestureTy * (1f - e)
                 if (top) {
