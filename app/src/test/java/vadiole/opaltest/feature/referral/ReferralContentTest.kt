@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusManager
@@ -29,6 +30,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import java.time.Duration
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -39,6 +41,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import org.robolectric.shadows.ShadowSystemClock
 import vadiole.opaltest.R
 import vadiole.opaltest.domain.referral.MilestoneStone
 import vadiole.opaltest.domain.referral.ReferralError
@@ -49,6 +52,8 @@ import vadiole.opaltest.feature.claimreveal.ClaimRevealState
 import vadiole.opaltest.feature.claimreveal.RevealContent
 import vadiole.opaltest.feature.claimreveal.RevealPhase
 import vadiole.opaltest.feature.claimreveal.rememberClaimRevealState
+import vadiole.opaltest.ui.theme.OpalMotion.LOADING_DELAY_MILLIS
+import vadiole.opaltest.ui.theme.OpalMotion.LOADING_MIN_MILLIS
 import vadiole.opaltest.ui.theme.OpalTheme
 
 @RunWith(RobolectricTestRunner::class)
@@ -134,16 +139,64 @@ class ReferralContentTest {
         assertTrue(sawBusy)
 
         compose.runOnIdle { reveal.close() }
+        var claimedBeforeLanding = false
         repeat(600) {
             frame()
             assertClaimNeverIdle("closing frame $it")
+            if (reveal.activeKey != null && !reveal.landed) {
+                claimedBeforeLanding = claimedBeforeLanding ||
+                    compose.onAllNodes(hasText("Claimed")).fetchSemanticsNodes().isNotEmpty()
+            }
             if (reveal.activeKey == null) {
+                assertTrue("card flips to claimed once continue is pressed", claimedBeforeLanding)
                 repeat(60) { frame() }
                 assertTrue(compose.onAllNodes(claimButton).fetchSemanticsNodes().isEmpty())
                 return
             }
         }
         error("reveal never closed")
+    }
+
+    @Test
+    fun `claim spinner is skipped for fast claims and held once shown`() {
+        val tier = previewProgram(referrals = 5).tiers.first { it.id == "year" }
+        var action by mutableStateOf(ClaimAction.Idle)
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            OpalTheme {
+                TierCard(tier, 5, action, active = false, reveal = rememberClaimRevealState(), onClaim = {})
+            }
+        }
+        fun advance(millis: Long) {
+            var left = millis
+            while (left > 0) {
+                val step = minOf(left, 16L)
+                ShadowSystemClock.advanceBy(Duration.ofMillis(step))
+                compose.mainClock.advanceTimeBy(step, ignoreFrameDuration = true)
+                left -= step
+            }
+        }
+        fun set(next: ClaimAction) {
+            action = next
+            Snapshot.sendApplyNotifications()
+        }
+        fun spinning() = compose.onAllNodes(claimButton).fetchSemanticsNodes().any(::busy)
+
+        set(ClaimAction.Busy)
+        advance(LOADING_DELAY_MILLIS - 50)
+        assertFalse(spinning())
+        set(ClaimAction.Idle)
+        advance(LOADING_MIN_MILLIS)
+        assertFalse(spinning())
+
+        set(ClaimAction.Busy)
+        advance(LOADING_DELAY_MILLIS + 50)
+        assertTrue(spinning())
+        set(ClaimAction.Idle)
+        advance(LOADING_MIN_MILLIS - 100)
+        assertTrue(spinning())
+        advance(150)
+        assertFalse(spinning())
     }
 
     private fun liveRegions() =

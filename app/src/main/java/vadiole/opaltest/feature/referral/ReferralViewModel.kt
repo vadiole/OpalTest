@@ -17,6 +17,7 @@ import vadiole.opaltest.data.referral.ReferralRepository
 import vadiole.opaltest.domain.Outcome
 import vadiole.opaltest.domain.referral.ReferralError
 import vadiole.opaltest.domain.referral.ReferralProgram
+import vadiole.opaltest.domain.referral.TierStatus
 
 class ReferralViewModel(private val repository: ReferralRepository) : ViewModel() {
     private val mutableState = MutableStateFlow<ReferralState>(ReferralState.Loading)
@@ -65,7 +66,8 @@ class ReferralViewModel(private val repository: ReferralRepository) : ViewModel(
     private fun claim(tierId: String) {
         val ready = state.value as? ReferralState.Ready ?: return
         if (ready.claimingTierId != null) return
-        val reward = ready.program.tiers.firstOrNull { it.id == tierId }?.reward ?: return
+        val reward =
+            ready.program.tiers.firstOrNull { it.id == tierId && it.status == TierStatus.Claimable }?.reward ?: return
         onResult(ReferralResult.ClaimStarted(tierId))
         viewModelScope.launch {
             when (val outcome = repository.claimReward(tierId)) {

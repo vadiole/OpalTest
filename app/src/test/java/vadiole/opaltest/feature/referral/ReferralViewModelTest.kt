@@ -112,6 +112,21 @@ class ReferralViewModelTest {
     }
 
     @Test
+    fun `claiming a tier that is already claimed is ignored`() = runTest {
+        val repository = FakeRepository()
+        val claimed = program(1).let { p ->
+            p.copy(tiers = p.tiers.map { if (it.id == "tier") it.copy(status = TierStatus.Claimed) else it })
+        }
+        val viewModel = loadedViewModel(repository, claimed)
+
+        viewModel.onIntent(ReferralIntent.Claim("tier"))
+        runCurrent()
+
+        assertTrue(repository.claims.isEmpty())
+        assertEquals(ReferralState.Ready(claimed), viewModel.state.value)
+    }
+
+    @Test
     fun `failed claim re-enables claiming without reloading`() = runTest {
         val repository = FakeRepository()
         val viewModel = loadedViewModel(repository)
