@@ -208,7 +208,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         land()
     }
 
-    private fun pickSound(): RevealSound = sound ?: RevealSound.entries.random()
+    private fun pickSound(): RevealSound = sound ?: ShineSounds.next()
 
     private suspend fun land() {
         flight.snapTo(0f)
@@ -326,6 +326,8 @@ fun rememberClaimRevealState(): ClaimRevealState {
 
 internal fun shineSoundDelayMs(sound: RevealSound, scale: Float): Long =
     (SHINE_SOUND_MS * scale - sound.leadMs).toLong().coerceAtLeast(0)
+
+private val ShineSounds = ShuffleBag(RevealSound.entries)
 
 internal val StrongEaseOut = CubicBezierEasing(0.23f, 1f, 0.32f, 1f)
 internal val EnterEase = CubicBezierEasing(0.32f, 0.72f, 0f, 1f)
