@@ -35,7 +35,7 @@
     </plurals>
     <string name="referral_claimed">Récupéré</string>
     <string name="referral_claim">Récupérer</string>
-    <string name="referral_claimed_announcement">Récompense récupérée : %1$s</string>
+    <string name="referral_claimed_announcement">Récompense récupérée : %1$s</string>
     <string name="referral_milestone_loyal">MileStone Fidèle</string>
     <string name="referral_milestone_soulful">MileStone Profond</string>
     <string name="referral_milestone_popular">MileStone Populaire</string>
