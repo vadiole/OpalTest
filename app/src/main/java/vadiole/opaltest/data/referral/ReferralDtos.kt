@@ -10,6 +10,7 @@ data class ReferralProgramDto(
     @SerialName("plan") val plan: String,
     @SerialName("successful_referrals") val successfulReferrals: Int,
     @SerialName("invitee_trial_days") val inviteeTrialDays: Int,
+    @SerialName("invited_by") val invitedBy: String? = null,
     @SerialName("tiers") val tiers: List<RewardTierDto>
 )
 

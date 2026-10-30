@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,6 +26,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
@@ -61,10 +61,14 @@ fun OpalButton(
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .minimumInteractiveComponentSize()
-            .semantics { if (loading) stateDescription = busyDescription }
+            .semantics {
+                if (loading) {
+                    contentDescription = text
+                    stateDescription = busyDescription
+                }
+            }
             .height(metrics.height)
-            .alpha(if (enabled) 1f else DISABLED_ALPHA)
+            .alpha(if (enabled) 1f else OpalTheme.alpha.disabled)
             .clip(OpalTheme.shapes.pill)
             .background(background)
             .clickable(enabled = enabled && !loading, role = Role.Button, onClick = onClick)
@@ -93,8 +97,6 @@ fun OpalButton(
         }
     }
 }
-
-internal const val DISABLED_ALPHA = 0.4f
 
 private class ButtonMetrics(val height: Dp, val padding: PaddingValues, val iconSize: Dp, val textStyle: TextStyle)
 

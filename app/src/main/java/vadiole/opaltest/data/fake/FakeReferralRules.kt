@@ -11,6 +11,7 @@ object FakeReferralRules {
     const val REFERRAL_CODE = "FR333"
     const val MAX_REFERRALS = 999
     private const val INVITEE_TRIAL_DAYS = 30
+    private const val INVITED_BY = "Kenneth"
     private const val FREE_YEAR_TIER_ID = "pro_one_year"
 
     data class TierDefinition(
@@ -59,6 +60,7 @@ object FakeReferralRules {
         plan = if (state.plan == ServerPlan.Pro) "pro" else "free",
         successfulReferrals = state.successfulReferrals,
         inviteeTrialDays = INVITEE_TRIAL_DAYS,
+        invitedBy = INVITED_BY,
         tiers = catalog.filter { it.isVisibleTo(state) }.map { tier ->
             RewardTierDto(
                 id = tier.id,

@@ -34,7 +34,7 @@ Android test task for Opal: a referral rewards screen. Single `:app` module, Jet
 
 ## UI interaction quality
 
-- Hit area ≥ 48dp even when the visual is smaller — expand touch, not visuals.
+- Hit area ≥ 48dp even when the visual is smaller — expand touch, not visuals. Compose core already does this: pointer hit testing extends clickable elements smaller than `ViewConfiguration.minimumTouchTargetSize` (48dp), so don't add `minimumInteractiveComponentSize()` or padding just for touch, since that changes the layout.
 - Haptics on meaningful boundaries (selection change, threshold cross).
 - Prefer spring animations; linear only for cross-fades. Animations must be interruptible.
 - Support predictive back.

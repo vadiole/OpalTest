@@ -16,6 +16,7 @@ fun ReferralProgramDto.toDomain() = ReferralProgram(
     plan = if (plan == "pro") Plan.Pro else Plan.Free,
     successfulReferrals = successfulReferrals.coerceAtLeast(0),
     inviteeTrialDays = inviteeTrialDays,
+    invitedBy = invitedBy?.trim()?.takeIf { it.isNotEmpty() },
     tiers = tiers.mapNotNull { it.toDomain() }.distinctBy { it.id }.sortedBy { it.requiredReferrals }
 )
 

@@ -57,6 +57,12 @@ class ReferralMapperTest {
     }
 
     @Test
+    fun `blank inviter maps to no inviter`() {
+        assertEquals(null, program().copy(invitedBy = "  ").toDomain().invitedBy)
+        assertEquals("Kenneth", program().copy(invitedBy = " Kenneth ").toDomain().invitedBy)
+    }
+
+    @Test
     fun `unknown plan and status fall back to the safest values`() {
         val program = program(
             RewardTierDto("a", 1, "pending_review", RewardDto(type = "mystery")),

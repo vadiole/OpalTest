@@ -6,6 +6,7 @@ data class ReferralProgram(
     val plan: Plan,
     val successfulReferrals: Int,
     val inviteeTrialDays: Int,
+    val invitedBy: String?,
     val tiers: List<RewardTier>
 )
 
