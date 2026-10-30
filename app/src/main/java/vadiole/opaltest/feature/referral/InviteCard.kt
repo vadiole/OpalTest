@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -70,6 +71,7 @@ private fun InviteCardFrame(
         modifier = modifier
             .clip(shape)
             .outlineBorder(OpalTheme.layout.borderWidth, OpalTheme.colors.borderSubtle, shape)
+            .semantics(mergeDescendants = true) {}
     ) {
         OpalImage(
             id = R.drawable.img_invite_card_background,

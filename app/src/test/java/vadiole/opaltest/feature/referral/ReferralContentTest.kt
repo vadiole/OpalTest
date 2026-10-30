@@ -152,6 +152,31 @@ class ReferralContentTest {
     }
 
     @Test
+    fun `invite card reads as one item`() {
+        setContent(ReferralState.Ready(previewProgram()))
+
+        val card = compose.onNode(hasText("Invited by Kenneth")).fetchSemanticsNode()
+        assertEquals(listOf("Opal"), card.config[SemanticsProperties.ContentDescription])
+        assertEquals(listOf("Invited by Kenneth"), card.config[SemanticsProperties.Text].map { it.text })
+        assertInviteTextMergedIntoCard()
+    }
+
+    @Test
+    @Config(qualifiers = "w732dp-h412dp-xxhdpi")
+    fun `compact invite card reads as one item`() {
+        setContent(ReferralState.Ready(previewProgram()))
+
+        assertInviteTextMergedIntoCard()
+    }
+
+    private fun assertInviteTextMergedIntoCard() {
+        val merged = compose.onNode(hasText("Invited by Kenneth")).fetchSemanticsNode()
+        val text = compose.onNode(hasText("Invited by Kenneth"), useUnmergedTree = true).fetchSemanticsNode()
+        assertTrue(merged.id != text.id)
+        assertTrue(merged.config.isMergingSemanticsOfDescendants)
+    }
+
+    @Test
     fun `no inviter hides the invite card`() {
         setContent(ReferralState.Ready(previewProgram().copy(invitedBy = null)))
 
