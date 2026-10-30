@@ -15,7 +15,7 @@ data class FakeServerState(
     @SerialName("plan") val plan: ServerPlan = ServerPlan.Free,
     @SerialName("successful_referrals") val successfulReferrals: Int = 0,
     @SerialName("claimed_tier_ids") val claimedTierIds: Set<String> = emptySet(),
-    @SerialName("latency") val latency: SimulatedLatency = SimulatedLatency.Normal,
+    @SerialName("latency") val latency: SimulatedLatency = SimulatedLatency.None,
     @SerialName("fail_next_load") val failNextLoad: Boolean = false,
     @SerialName("fail_next_claim") val failNextClaim: Boolean = false
 )

@@ -4,6 +4,8 @@ Referral rewards screen for Opal: share an invite link, track successful referra
 
 ## Run
 
+Install the prebuilt release: [opal-referrals.apk](opal-referrals.apk). Or build from source:
+
 ```
 ./gradlew installDebug
 ./gradlew spotlessCheck testDebugUnitTest lintDebug
@@ -24,6 +26,12 @@ Referral rewards screen for Opal: share an invite link, track successful referra
 - On tablets and other wide screens, the code and Share button sit on the left and the rewards list on the right.
 
 ## With more time
+
+- Keep tuning the haptics. They work, but getting them perfect takes many more iterations.
+- Spend much more time polishing all the transitions and animations, the gem reveal most of all. Each one takes many iterations to get right.
+- Improve the horizontal layout. Right now it's a simple adaptation, and I think it can be better.
+- Add claim logic for the other rewards. The 2-year, lifetime and mystery rewards ask the user to contact us, and how they get claimed still needs to be specified.
+- Clean up the codebase. I put most of the time into making the visuals look right, so some of the code is rougher than I'd like.
 
 ## How AI agents were used
 
