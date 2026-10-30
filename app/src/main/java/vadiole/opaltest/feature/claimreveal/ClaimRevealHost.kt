@@ -1,5 +1,6 @@
 package vadiole.opaltest.feature.claimreveal
 
+import android.graphics.Bitmap
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -39,9 +40,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.ImageShader
 import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.scale
@@ -65,10 +69,13 @@ import androidx.compose.ui.unit.min
 import androidx.compose.ui.util.lerp
 import androidx.window.core.layout.WindowSizeClass
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.ln
+import kotlin.random.Random
 import vadiole.opaltest.R
 import vadiole.opaltest.ui.common.OpalButton
+import vadiole.opaltest.ui.theme.OpalColors
 import vadiole.opaltest.ui.theme.OpalTheme
 
 @Composable
@@ -109,8 +116,12 @@ private fun RevealOverlay(state: ClaimRevealState, key: Any, content: RevealCont
     val gem = rememberGemBitmap(content.gem)
     val scrimColor = OpalTheme.colors.background
     val scrimTint = OpalTheme.colors.fillSubtle
-    val lightColor = OpalTheme.colors.glow
-    PredictiveBackHandler(enabled = state.phase != RevealPhase.Closing) { events ->
+    val colors = OpalTheme.colors
+    PredictiveBackHandler(enabled = !state.landed) { events ->
+        if (state.phase == RevealPhase.Closing) {
+            events.collect {}
+            return@PredictiveBackHandler
+        }
         try {
             events.collect { state.onBackProgress(it.progress) }
             state.onBackCommitted()
@@ -156,6 +167,11 @@ private fun RevealOverlay(state: ClaimRevealState, key: Any, content: RevealCont
                     drawGlow(gem, frame, lerp(GLOW_START_SCALE, GLOW_END_SCALE, state.glow.value))
                 }
         )
+        Spacer(
+            Modifier
+                .fillMaxSize()
+                .drawBehind { drawRect(GrainBrush, alpha = GRAIN_ALPHA * state.scrim.value) }
+        )
         RevealLayout(state = state, title = content.title)
         Spacer(
             Modifier
@@ -163,7 +179,7 @@ private fun RevealOverlay(state: ClaimRevealState, key: Any, content: RevealCont
                 .drawBehind {
                     if (state.landed) return@drawBehind
                     val frame = state.gemFrame(key) ?: return@drawBehind
-                    drawGem(state, gem, frame, lightColor)
+                    drawGem(state, gem, frame, colors)
                 }
         )
     }
@@ -301,7 +317,6 @@ private fun ContinueButton(state: ClaimRevealState, modifier: Modifier = Modifie
         onClick = { if (state.items.last().value >= CLICKABLE_VISIBILITY) state.close() },
         modifier = modifier
             .revealStagger(state, 2)
-            .pressScale()
     )
 }
 
@@ -326,10 +341,10 @@ private fun ClaimRevealState.gemFrame(key: Any): Rect? {
     val source = sourceRect(key)?.gemCrop() ?: target
     val progress = displayedFlight()
     val size = exp(lerp(ln(source.width.coerceAtLeast(1f)), ln(target.width.coerceAtLeast(1f)), progress))
-    return Rect(center = arc(source.center, target.center, progress), radius = size / 2f)
+    return Rect(center = arc(source.center, target.center, progress, pathBend), radius = size / 2f)
 }
 
-private fun DrawScope.drawGem(state: ClaimRevealState, gem: ImageBitmap, frame: Rect, lightColor: Color) {
+private fun DrawScope.drawGem(state: ClaimRevealState, gem: ImageBitmap, frame: Rect, colors: OpalColors) {
     val light = state.charge.value
     val sweep = state.sweep.value
     val sweeping = sweep > 0f && sweep < 1f
@@ -345,8 +360,8 @@ private fun DrawScope.drawGem(state: ClaimRevealState, gem: ImageBitmap, frame: 
             if (light >= MIN_LIGHT) {
                 drawRect(
                     brush = Brush.radialGradient(
-                        0f to Color.White.copy(alpha = LIGHT_CORE_ALPHA * light),
-                        0.45f to lightColor.copy(alpha = LIGHT_EDGE_ALPHA * light),
+                        0f to colors.content.copy(alpha = LIGHT_CORE_ALPHA * light),
+                        0.45f to colors.glow.copy(alpha = LIGHT_EDGE_ALPHA * light),
                         1f to Color.Transparent,
                         center = Offset(bounds.width * GEM_CENTER_X, bounds.height * GEM_CENTER_Y),
                         radius = bounds.width * LIGHT_RADIUS
@@ -355,14 +370,14 @@ private fun DrawScope.drawGem(state: ClaimRevealState, gem: ImageBitmap, frame: 
                 )
             }
             if (sweeping) {
-                drawRect(sweepBrush(bounds.size, sweep), blendMode = BlendMode.SrcAtop)
+                drawRect(sweepBrush(bounds.size, sweep, colors), blendMode = BlendMode.SrcAtop)
             }
             drawIntoCanvas { it.restore() }
         }
     }
 }
 
-private fun sweepBrush(size: Size, progress: Float): Brush {
+private fun sweepBrush(size: Size, progress: Float, colors: OpalColors): Brush {
     val direction = SweepDirection * size.width
     val center = lerp(
         Offset(size.width / 2f, size.height * GEM_CENTER_Y) - direction * SWEEP_TRAVEL,
@@ -372,11 +387,11 @@ private fun sweepBrush(size: Size, progress: Float): Brush {
     val half = direction * SWEEP_HALF_WIDTH
     return Brush.linearGradient(
         0f to Color.Transparent,
-        0.28f to Color.White.copy(alpha = SWEEP_SHEEN_ALPHA),
-        0.44f to SweepWarm.copy(alpha = SWEEP_FRINGE_ALPHA),
-        0.5f to Color.White.copy(alpha = SWEEP_CORE_ALPHA),
-        0.56f to SweepCool.copy(alpha = SWEEP_FRINGE_ALPHA),
-        0.72f to Color.White.copy(alpha = SWEEP_SHEEN_ALPHA),
+        0.28f to colors.content.copy(alpha = SWEEP_SHEEN_ALPHA),
+        0.44f to colors.sheenWarm.copy(alpha = SWEEP_FRINGE_ALPHA),
+        0.5f to colors.content.copy(alpha = SWEEP_CORE_ALPHA),
+        0.56f to colors.sheenCool.copy(alpha = SWEEP_FRINGE_ALPHA),
+        0.72f to colors.content.copy(alpha = SWEEP_SHEEN_ALPHA),
         1f to Color.Transparent,
         start = center - half,
         end = center + half
@@ -414,8 +429,9 @@ private fun DrawScope.drawAmbient(gem: ImageBitmap, frame: Rect, glow: Float) {
     )
 }
 
-private fun arc(start: Offset, end: Offset, t: Float): Offset {
-    val control = lerp((start + end) / 2f, Offset(start.x, end.y), ARC_LIFT)
+private fun arc(start: Offset, end: Offset, t: Float, bend: Float): Offset {
+    val corner = if (bend >= 0f) Offset(end.x, start.y) else Offset(start.x, end.y)
+    val control = lerp((start + end) / 2f, corner, abs(bend))
     val u = 1f - t
     return start * (u * u) + control * (2f * u * t) + end * (t * t)
 }
@@ -454,12 +470,20 @@ private const val SWEEP_SHEEN_ALPHA = 0.05f
 private const val SWEEP_FRINGE_ALPHA = 0.13f
 private const val SWEEP_CORE_ALPHA = 0.32f
 private val SweepDirection = Offset(0.86f, 0.5f)
-private val SweepWarm = Color(0xFFFFE1F2)
-private val SweepCool = Color(0xFFDDF8FF)
+private val GrainBrush: ShaderBrush by lazy {
+    val random = Random(GRAIN_SEED)
+    val pixels = IntArray(GRAIN_SIZE * GRAIN_SIZE) { if (random.nextBoolean()) GRAIN_LIGHT else GRAIN_DARK }
+    val bitmap = Bitmap.createBitmap(pixels, GRAIN_SIZE, GRAIN_SIZE, Bitmap.Config.ARGB_8888)
+    ShaderBrush(ImageShader(bitmap.asImageBitmap(), TileMode.Repeated, TileMode.Repeated))
+}
+private const val GRAIN_SIZE = 128
+private const val GRAIN_SEED = 7
+private const val GRAIN_ALPHA = 0.04f
+private const val GRAIN_LIGHT = 0xFFFFFFFF.toInt()
+private const val GRAIN_DARK = 0xFF000000.toInt()
 internal val GlowSaturation = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(1.6f) })
 private val AmbientSaturation = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0.5f) })
 private val BACKDROP_BLUR = 14.dp
-private const val ARC_LIFT = 0.45f
 private const val CLICKABLE_VISIBILITY = 0.5f
 private val TEXT_RISE = 12.dp
 private val MAX_GEM_SIZE = 320.dp

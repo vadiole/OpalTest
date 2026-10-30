@@ -3,6 +3,7 @@ package vadiole.opaltest.feature.claimreveal
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
@@ -43,7 +44,8 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
     internal var reducedMotion by mutableStateOf(false)
         private set
     var timeScale by mutableFloatStateOf(1f)
-    var sound by mutableStateOf(RevealSound.Shine1)
+    var sound: RevealSound? by mutableStateOf(null)
+    var pathBend by mutableFloatStateOf(DEFAULT_PATH_BEND)
 
     internal val flight = Animatable(0f, visibilityThreshold = 0.0005f)
     internal val scrim = Animatable(0f)
@@ -88,6 +90,11 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         run {
             coroutineScope {
                 items.forEach { launch { it.animateTo(0f, tween(ITEM_EXIT_MS, easing = StrongEaseOut)) } }
+                launch { charge.animateTo(0f, tween(ITEM_EXIT_MS, easing = StrongEaseOut)) }
+                if (sweep.value > 0f && sweep.value < 1f) {
+                    val remaining = ((1f - sweep.value) * SWEEP_MS).toInt().coerceAtMost(SWEEP_EXIT_MS)
+                    launch { sweep.animateTo(1f, tween(remaining, easing = LinearEasing)) }
+                }
                 if (reducedMotion) closeReduced() else closeFull()
             }
             finish()
@@ -111,8 +118,9 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         ticks.cancel()
         launch { sweep.animateTo(1f, tween(SWEEP_MS, easing = SweepEase)) }
         launch {
-            delay((SWEEP_PEAK_MS * runScale - sound.leadMs).toLong().coerceAtLeast(0))
-            feedback?.shine(sound)
+            val shine = pickSound()
+            delay((SWEEP_PEAK_MS * runScale - shine.leadMs).toLong().coerceAtLeast(0))
+            feedback?.shine(shine)
         }
         launch {
             delay(scaled(SWEEP_PEAK_MS))
@@ -154,7 +162,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         launch { scrim.animateTo(1f, tween(REDUCED_FADE_MS)) }
         launch { glow.animateTo(1f, tween(REDUCED_FADE_MS)) }
         fade.animateTo(1f, tween(REDUCED_FADE_MS))
-        feedback?.shine(sound)
+        feedback?.shine(pickSound())
         feedback?.peak()
         phase = RevealPhase.Revealed
         revealItems()
@@ -205,15 +213,15 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         }
     }
 
+    private fun pickSound(): RevealSound = sound ?: RevealSound.entries.random()
+
     private suspend fun land() {
         flight.snapTo(0f)
         landed = true
         feedback?.arrive()
     }
 
-    internal fun onBackProgress(progress: Float) {
-        scope.launch { back.snapTo(progress) }
-    }
+    internal suspend fun onBackProgress(progress: Float) = back.snapTo(progress)
 
     internal fun onBackCommitted() {
         val shrink = displayedFlight()
@@ -251,10 +259,10 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
     }
 
     private suspend fun finish() {
-        reset()
         activeKey = null
         content = null
         target = null
+        reset()
     }
 
     private fun run(block: suspend CoroutineScope.() -> Unit) {
@@ -274,7 +282,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
             save = { state ->
                 val content = state.content?.takeIf { !state.landed && state.phase != RevealPhase.Closing }
                 listOf(
-                    state.sound.ordinal,
+                    state.sound?.ordinal,
                     state.timeScale,
                     content?.let { state.activeKey },
                     content?.gem,
@@ -283,7 +291,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
             },
             restore = { saved ->
                 ClaimRevealState(scope).apply {
-                    sound = RevealSound.entries[saved[0] as Int]
+                    sound = (saved[0] as Int?)?.let { RevealSound.entries[it] }
                     timeScale = saved[1] as Float
                     val key = saved[2]
                     if (key != null) restore(key, RevealContent(gem = saved[3] as Int, title = saved[4] as String))
@@ -312,10 +320,12 @@ private const val CHARGE_OUT_MS = 900
 private const val GLOW_DELAY_MS = 120
 private const val GLOW_IN_MS = 1100
 private const val FLIGHT_DELAY_MS = 200
+private const val DEFAULT_PATH_BEND = 0.75f
 private const val SWEEP_MS = 2800
 private const val SWEEP_REPEAT_MS = 10_000
 private const val SWEEP_AFTER_BUTTON_MS = 2000
 private const val SWEEP_PEAK_MS = SWEEP_MS / 2
+private const val SWEEP_EXIT_MS = 400
 private const val GLOW_OUT_DELAY_MS = 90
 private const val GLOW_OUT_MS = 900
 private const val SCRIM_OUT_DELAY_MS = 120

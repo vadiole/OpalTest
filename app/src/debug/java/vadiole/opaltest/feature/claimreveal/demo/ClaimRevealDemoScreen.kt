@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -51,7 +52,6 @@ import vadiole.opaltest.feature.claimreveal.ClaimedGemGlow
 import vadiole.opaltest.feature.claimreveal.RevealContent
 import vadiole.opaltest.feature.claimreveal.RevealSound
 import vadiole.opaltest.feature.claimreveal.claimRevealSource
-import vadiole.opaltest.feature.claimreveal.pressScale
 import vadiole.opaltest.feature.claimreveal.rememberClaimRevealState
 import vadiole.opaltest.feature.claimreveal.revealImage
 import vadiole.opaltest.feature.claimreveal.thumbnail
@@ -98,6 +98,7 @@ fun ClaimRevealDemoScreen(modifier: Modifier = Modifier) {
                 val sound = soundKeys[event.key]
                 when {
                     sound != null -> reveal.sound = sound
+                    event.key == Key.Zero -> reveal.sound = null
                     event.key == Key.S -> reveal.timeScale = if (reveal.timeScale == 1f) SLOW_MOTION else 1f
                     event.key == Key.R -> replay()
                     else -> return@onPreviewKeyEvent false
@@ -131,8 +132,7 @@ fun ClaimRevealDemoScreen(modifier: Modifier = Modifier) {
                     text = stringResource(R.string.claim_reveal_demo_reset),
                     onClick = { claimed = emptyList() },
                     style = OpalButtonStyle.Primary,
-                    size = OpalButtonSize.Small,
-                    modifier = Modifier.pressScale()
+                    size = OpalButtonSize.Small
                 )
             }
         }
@@ -214,8 +214,7 @@ private fun DemoTierCard(
                         text = stringResource(R.string.claim_reveal_demo_claim),
                         onClick = onClaim,
                         style = OpalButtonStyle.Primary,
-                        size = OpalButtonSize.Small,
-                        modifier = Modifier.pressScale()
+                        size = OpalButtonSize.Small
                     )
                 }
             }
@@ -232,6 +231,11 @@ private fun DemoPanel(reveal: ClaimRevealState, onReplay: () -> Unit) {
             color = OpalTheme.colors.contentSecondary
         )
         Row(horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall)) {
+            OpalChip(
+                text = stringResource(R.string.claim_reveal_demo_random),
+                selected = reveal.sound == null,
+                onClick = { reveal.sound = null }
+            )
             soundKeys.values.forEach { sound ->
                 OpalChip(
                     text = sound.name.takeLast(1),
@@ -248,6 +252,12 @@ private fun DemoPanel(reveal: ClaimRevealState, onReplay: () -> Unit) {
             )
             OpalChip(text = stringResource(R.string.claim_reveal_demo_replay), selected = false, onClick = onReplay)
         }
+        Text(
+            text = stringResource(R.string.claim_reveal_demo_path, reveal.pathBend),
+            style = OpalTheme.typography.caption,
+            color = OpalTheme.colors.contentSecondary
+        )
+        Slider(value = reveal.pathBend, onValueChange = { reveal.pathBend = it }, valueRange = -1f..1f)
         Text(
             text = stringResource(R.string.claim_reveal_demo_hint),
             style = OpalTheme.typography.caption,

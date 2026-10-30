@@ -65,7 +65,7 @@ internal class RevealFeedback(context: Context) {
 
 private val TouchAttributes = VibrationAttributes.createForUsage(VibrationAttributes.USAGE_TOUCH)
 internal const val SOUND_RATE = 0.5f
-private const val VOLUME = 0.48f
+private const val VOLUME = 0.144f
 private const val CLAIM_SCALE = 0.5f
 private const val TRAVEL_MIN_SCALE = 0.12f
 private const val TRAVEL_MAX_SCALE = 0.35f
