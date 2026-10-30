@@ -13,8 +13,11 @@ Maintained by the gardener agent. See [WORKFLOW.md](WORKFLOW.md).
 | Date | Range | Notes |
 |---|---|---|
 | 2026-10-30 | `d36907c..eeb7ab9` | Project skeleton only. No feature code yet, so nothing to garden. |
+| 2026-10-30 | `eeb7ab9..4501dbc` | Referral data layer, fake backend, Nav3 with Console and Referral routes. Clean: typed errors, rethrows CancellationException, DTO→domain mapping drops invalid tiers, tested. The screens are placeholders and the main agent is still working on them. No action needed. |
 
 ## Active
+
+- 2026-10-30 `gardening/nav-transitions` → PR #3, awaiting user review: Port the Unicode app's `Nav.kt` push, pop and predictive-back transitions to Nav3 (requested by the user). Tokens are in `ui/theme/OpalMotion.kt`. A `NavEntryDecorator` in `ui/common/StackTransitions.kt` draws predictive back, while Nav3's predictive spec is a timed no-op. Known gaps: Nav3 shortens the commit fade and the cancel duration in proportion to back progress, push during a back commit snaps, and there's no RTL handling. Risk: it relies on Nav3/navigationevent predictive-back internals. The user checked the animations on their phone.
 
 ## Findings
 
@@ -22,4 +25,8 @@ Maintained by the gardener agent. See [WORKFLOW.md](WORKFLOW.md).
 
 ## Deferred
 
+- `AppContainer.referralDebugControls` exposes the fake backend through the app-wide container. A real backend would need a no-op or debug-only binding. Minor; revisit if a real API ever lands.
+
 ## Patterns
+
+- Sub-agents must not wait on or launch emulators. The `Shared_API_37` qemu can run without being attached to adb, so a wait loop hangs forever. Use the user's phone or skip device verification and say so.
