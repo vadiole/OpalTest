@@ -123,7 +123,7 @@ internal fun TierCard(
                         OpalProgressBar(
                             progress = tier.progress(successfulReferrals),
                             modifier = Modifier
-                                .widthIn(max = 179.dp)
+                                .widthIn(max = ReferralDimens.progressMaxWidth)
                                 .fillMaxWidth()
                         )
                     }
@@ -187,7 +187,7 @@ private fun TierArtwork(reward: Reward, featured: Boolean, claimed: Boolean, rev
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .size(100.dp)
+            .size(ReferralDimens.tierArtworkSize)
             .clip(OpalTheme.shapes.medium)
             .then(if (featured) Modifier else Modifier.background(OpalTheme.colors.fillSubtle))
     ) {

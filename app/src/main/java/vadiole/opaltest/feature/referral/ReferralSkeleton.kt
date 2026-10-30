@@ -29,15 +29,32 @@ import vadiole.opaltest.ui.theme.OpalTheme
 @Composable
 internal fun Loading(headerState: ScrollState, listState: ScrollState) {
     OpalSkeleton(description = stringResource(R.string.referral_loading), modifier = Modifier.fillMaxSize()) {
-        if (isTwoPane()) {
-            Row(Modifier.fillMaxSize()) {
-                SkeletonPane(Pane.Start, headerState, Modifier.weight(1f)) { HeaderSkeleton() }
+        when (paneLayout()) {
+            PaneLayout.Single -> SkeletonPane(Pane.Single, listState, Modifier.fillMaxWidth()) {
+                InviteSkeleton()
+                CodeSkeleton()
+                ShareSkeleton()
+                TiersSkeleton()
+            }
+
+            PaneLayout.TwoPane -> Row(Modifier.fillMaxSize()) {
+                SkeletonPane(Pane.Start, headerState, Modifier.weight(1f)) {
+                    InviteSkeleton()
+                    CodeSkeleton()
+                    ShareSkeleton()
+                }
                 SkeletonPane(Pane.End, listState, Modifier.weight(1f)) { TiersSkeleton() }
             }
-        } else {
-            SkeletonPane(Pane.Single, listState, Modifier.fillMaxWidth()) {
-                HeaderSkeleton()
-                TiersSkeleton()
+
+            PaneLayout.ShortTwoPane -> Row(Modifier.fillMaxSize()) {
+                SkeletonPane(Pane.Start, headerState, Modifier.weight(1f), Alignment.CenterVertically) {
+                    CodeSkeleton()
+                    ShareSkeleton()
+                }
+                SkeletonPane(Pane.End, listState, Modifier.weight(1f)) {
+                    InviteSkeleton()
+                    TiersSkeleton()
+                }
             }
         }
     }
@@ -48,11 +65,12 @@ private fun SkeletonPane(
     pane: Pane,
     scrollState: ScrollState,
     modifier: Modifier = Modifier,
+    verticalAlignment: Alignment.Vertical = Alignment.Top,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xLarge),
+        horizontalAlignment = paneAlignment(pane),
+        verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xLarge, verticalAlignment),
         modifier = modifier
             .fillMaxHeight()
             .verticalScroll(scrollState)
@@ -62,11 +80,16 @@ private fun SkeletonPane(
 }
 
 @Composable
-private fun HeaderSkeleton() {
-    SkeletonBlock(paneItemModifier.height(194.dp), OpalTheme.shapes.large)
+private fun InviteSkeleton() {
+    SkeletonBlock(paneItemModifier.height(ReferralDimens.inviteCardHeight), OpalTheme.shapes.large)
+}
+
+@Composable
+private fun CodeSkeleton() {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.large)
+        verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.large),
+        modifier = paneItemModifier
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -80,12 +103,16 @@ private fun HeaderSkeleton() {
             verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small)
         ) {
             SkeletonLine(OpalTheme.typography.headline, 140.dp)
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                repeat(SKELETON_CODE_LENGTH) { SkeletonBlock(Modifier.size(width = 44.dp, height = 56.dp)) }
+            Row(horizontalArrangement = Arrangement.spacedBy(ReferralDimens.codeCellGap)) {
+                repeat(SKELETON_CODE_LENGTH) { SkeletonBlock(Modifier.size(ReferralDimens.codeCell)) }
             }
         }
     }
-    SkeletonBlock(paneItemModifier.height(50.dp), OpalTheme.shapes.pill)
+}
+
+@Composable
+private fun ShareSkeleton() {
+    SkeletonBlock(paneItemModifier.height(OpalTheme.layout.buttonHeightLarge), OpalTheme.shapes.pill)
 }
 
 @Composable
@@ -95,7 +122,7 @@ private fun TiersSkeleton() {
         modifier = paneItemModifier
     ) {
         repeat(SKELETON_TIERS) { index ->
-            if (index > 0) Spacer(Modifier.height(32.dp))
+            if (index > 0) Spacer(Modifier.height(ReferralDimens.tierConnectorHeight))
             TierCardSkeleton()
         }
     }
@@ -108,7 +135,7 @@ private fun TierCardSkeleton() {
             horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.large),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            SkeletonBlock(Modifier.size(100.dp), OpalTheme.shapes.medium)
+            SkeletonBlock(Modifier.size(ReferralDimens.tierArtworkSize), OpalTheme.shapes.medium)
             Column(
                 verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small),
                 modifier = Modifier
@@ -124,9 +151,9 @@ private fun TierCardSkeleton() {
                 }
                 SkeletonBlock(
                     Modifier
-                        .widthIn(max = 179.dp)
+                        .widthIn(max = ReferralDimens.progressMaxWidth)
                         .fillMaxWidth()
-                        .height(6.dp),
+                        .height(OpalTheme.layout.progressBarHeight),
                     OpalTheme.shapes.pill
                 )
             }

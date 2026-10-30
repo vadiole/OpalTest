@@ -116,14 +116,14 @@ private class ButtonMetrics(val height: Dp, val padding: PaddingValues, val icon
 
 private fun OpalButtonSize.metrics(): ButtonMetrics = when (this) {
     OpalButtonSize.Large -> ButtonMetrics(
-        height = 50.dp,
+        height = OpalTheme.layout.buttonHeightLarge,
         padding = PaddingValues(horizontal = OpalTheme.spacing.mediumLarge),
         iconSize = OpalTheme.iconSize.medium,
         textStyle = OpalTheme.typography.body
     )
 
     OpalButtonSize.Small -> ButtonMetrics(
-        height = 40.dp,
+        height = OpalTheme.layout.buttonHeightSmall,
         padding = PaddingValues(horizontal = OpalTheme.spacing.small),
         iconSize = OpalTheme.iconSize.small,
         textStyle = OpalTheme.typography.calloutMedium

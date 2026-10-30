@@ -43,6 +43,10 @@ object OpalAlpha {
 object OpalLayout {
     val maxContentWidth = 480.dp
     val iconButtonSize = 44.dp
+    val topBarHeight = OpalSpacing.small * 2 + iconButtonSize
+    val buttonHeightLarge = 50.dp
+    val buttonHeightSmall = 40.dp
+    val progressBarHeight = 6.dp
     val topBlurRadius = 16.dp
     val topBlurFadeDistance = 32.dp
 }
