@@ -1,6 +1,8 @@
-package vadiole.opaltest.data.fake
+package vadiole.opaltest.data.debug
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import vadiole.opaltest.domain.referral.Plan
 
 interface ReferralDebugControls {
@@ -30,3 +32,15 @@ data class ReferralDebugState(
     val failNextLoad: Boolean,
     val failNextClaim: Boolean
 )
+
+@Serializable
+enum class SimulatedLatency(val millis: Long) {
+    @SerialName("none")
+    None(0),
+
+    @SerialName("normal")
+    Normal(800),
+
+    @SerialName("slow")
+    Slow(3000)
+}
