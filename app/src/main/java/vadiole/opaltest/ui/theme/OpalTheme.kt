@@ -13,6 +13,7 @@ object OpalTheme {
     val spacing = OpalSpacing
     val shapes = OpalShapes
     val iconSize = OpalIconSize
+    val layout = OpalLayout
 }
 
 @Composable

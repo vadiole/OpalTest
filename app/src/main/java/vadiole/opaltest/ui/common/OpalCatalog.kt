@@ -69,7 +69,7 @@ private fun OpalCatalog(onBack: () -> Unit, modifier: Modifier = Modifier) {
         Column(
             verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xLarge),
             modifier = Modifier
-                .widthIn(max = 600.dp)
+                .widthIn(max = OpalTheme.layout.maxContentWidth)
                 .verticalScroll(rememberScrollState())
                 .safeDrawingPadding()
                 .padding(horizontal = OpalTheme.spacing.mediumLarge, vertical = OpalTheme.spacing.small)
