@@ -2,6 +2,12 @@
 
 Referral rewards screen for Opal: share an invite link, track successful referrals, and claim tiered rewards. See the [brief](docs/BRIEF.md) and [design](docs/design/referral-screen.png).
 
+<img width="250" alt="Screenshot_20261030-162228" src="https://github.com/user-attachments/assets/0a087018-b3ba-4d2c-b5dc-a2ee9835456a" />
+<img width="250" alt="Screenshot_20261030-162240" src="https://github.com/user-attachments/assets/785bb408-8afd-474e-a419-6ea284af2b77" />
+<img width="250" alt="Screenshot_20261030-162247" src="https://github.com/user-attachments/assets/8c965d2f-0f8a-473c-8a72-7866d4bb181d" />
+<img width="750" alt="Screenshot_20261030-162314" src="https://github.com/user-attachments/assets/0a12769d-c838-4eac-9c45-344a74e868e3" />
+
+
 ## Run
 
 Install the prebuilt release: [opal-referrals.apk](opal-referrals.apk). Or build from source:
@@ -29,9 +35,11 @@ Install the prebuilt release: [opal-referrals.apk](opal-referrals.apk). Or build
 
 - Keep tuning the haptics. They work, but getting them perfect takes many more iterations.
 - Spend much more time polishing all the transitions and animations, the gem reveal most of all. Each one takes many iterations to get right.
+- Make claiming even more satisfying: shaders, animations, better sound. Make it so people screenshot and post it on socials:)
 - Improve the horizontal layout. Right now it's a simple adaptation, and I think it can be better.
 - Add claim logic for the other rewards. The 2-year, lifetime and mystery rewards ask the user to contact us, and how they get claimed still needs to be specified.
 - Clean up the codebase. I put most of the time into making the visuals look right, so some of the code is rougher than I'd like.
+- Invest more time into things that matter long term, screenshot tests, architecture, etc.
 
 ## How AI agents were used
 
