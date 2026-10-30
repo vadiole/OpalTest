@@ -320,12 +320,8 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
                 ClaimRevealState(scope).apply {
                     sound = (saved[0] as Int?)?.let { RevealSound.entries[it] }
                     timeScale = saved[1] as Float
-                    val key = saved[2]
-                    if (key !=
-                        null
-                    ) {
-                        restore(ActiveReveal(key, RevealContent(gem = saved[3] as Int, title = saved[4] as Int)))
-                    }
+                    val key = saved[2] ?: return@apply
+                    restore(ActiveReveal(key, RevealContent(gem = saved[3] as Int, title = saved[4] as Int)))
                 }
             }
         )
