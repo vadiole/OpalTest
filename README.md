@@ -6,9 +6,9 @@ Install: [opal-referrals.apk](opal-referrals.apk)
 
 > A more polished version, made after the 4-hour time slot: [overtime-polish branch](https://github.com/vadiole/OpalTest/tree/overtime-polish) · [opal-referrals-extra.apk](opal-referrals-extra.apk)
 
-<img width="250" alt="Screenshot_20261030-162228" src="https://github.com/user-attachments/assets/0a087018-b3ba-4d2c-b5dc-a2ee9835456a" />
-<img width="250" alt="Screenshot_20261030-162240" src="https://github.com/user-attachments/assets/785bb408-8afd-474e-a419-6ea284af2b77" />
-<img width="250" alt="Screenshot_20261030-162247" src="https://github.com/user-attachments/assets/8c965d2f-0f8a-473c-8a72-7866d4bb181d" />
+<img width="250" alt="Screenshot_20261030-222504" src="https://github.com/user-attachments/assets/08ca56fa-ac04-4ac5-846c-bd44ae23b4ee" />
+<img width="250" alt="Screenshot_20261030-222544" src="https://github.com/user-attachments/assets/1e8fddef-cef6-4909-b777-9ddf35b2c604" />
+<img width="250" alt="Screenshot_20261030-222610" src="https://github.com/user-attachments/assets/9b983a23-1982-4f24-815c-d32cf2cc0d71" />
 
 ## Architecture
 
