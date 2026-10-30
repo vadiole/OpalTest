@@ -13,11 +13,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.unit.dp
+import kotlin.math.PI
 import kotlin.math.cos
+import kotlin.math.floor
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.sin
 import kotlinx.coroutines.flow.collectLatest
 import vadiole.opaltest.ui.theme.OpalTheme
 
@@ -26,6 +29,7 @@ internal fun GemSparkles(state: ClaimRevealState, frame: () -> Rect?, modifier: 
     val colors = OpalTheme.colors
     val shader = remember { RuntimeShader(SparkleShader) }
     val brush = remember(shader) { ShaderBrush(shader) }
+    val motes = remember { FloatArray(SPARKLE_COUNT * MOTE_STRIDE) }
     val core = colors.content.toArgb()
     val tint = colors.glow.toArgb()
     val time = remember { mutableFloatStateOf(0f) }
@@ -49,90 +53,113 @@ internal fun GemSparkles(state: ClaimRevealState, frame: () -> Rect?, modifier: 
                 val visible = state.sparkle.value * (1f - state.back.value)
                 if (visible <= 0f) return@drawBehind
                 val gem = frame() ?: return@drawBehind
+                val bounds = placeSparkles(time.floatValue, gem.width, density, motes) ?: return@drawBehind
                 val center = gem.gemCenter()
-                val star = SPARKLE_MAX_SIZE.toPx()
-                val reach = gem.width * SPARKLE_END_RADIUS + star
-                val drop = gem.width * SPARKLE_END_RADIUS * cos(SPARKLE_BOTTOM_GAP / 2f) + star
                 shader.setFloatUniform("center", center.x, center.y)
-                shader.setFloatUniform("unit", gem.width)
-                shader.setFloatUniform("density", density)
-                shader.setFloatUniform("time", time.floatValue)
+                shader.setFloatUniform("motes", motes)
                 shader.setColorUniform("core", core)
                 shader.setColorUniform("tint", tint)
                 drawRect(
                     brush = brush,
-                    topLeft = center - Offset(reach, reach),
-                    size = Size(reach * 2f, reach + drop),
+                    topLeft = center + bounds.topLeft,
+                    size = bounds.size,
                     alpha = visible * SPARKLE_ALPHA
                 )
             }
     )
 }
 
-private const val SPARKLE_COUNT = 22
-private const val SPARKLE_LIFE_S = 4.6f
-private const val SPARKLE_LIFE_VARIANCE = 0.3f
+internal fun placeSparkles(time: Float, unit: Float, density: Float, motes: FloatArray): Rect? {
+    var left = Float.POSITIVE_INFINITY
+    var top = Float.POSITIVE_INFINITY
+    var right = Float.NEGATIVE_INFINITY
+    var bottom = Float.NEGATIVE_INFINITY
+    for (i in 0 until SPARKLE_COUNT) {
+        val seed = i + 1f
+        val at = i * MOTE_STRIDE
+        motes[at + 2] = 0f
+        val life = SPARKLE_LIFE_S * lerp(1f - SPARKLE_LIFE_VARIANCE, 1f + SPARKLE_LIFE_VARIANCE, hash(seed * 1.7f))
+        val age = time - hash(seed * 3.1f) * life
+        if (age < 0f) continue
+        val cycle = floor(age / life)
+        val progress = age / life - cycle
+        val angle = 2f * PI.toFloat() * (i + hash(seed * 5.3f + cycle * 11.7f)) / SPARKLE_COUNT
+        val dx = sin(angle)
+        val dy = cos(angle)
+        val reach = if (dy > 0f) SPARKLE_DOWN_RADIUS else SPARKLE_UP_RADIUS
+        val grain = hash(seed * 7.9f + cycle * 2.3f)
+        val size = density * lerp(SPARKLE_MIN_SIZE_DP, SPARKLE_MAX_SIZE_DP, grain * grain)
+        val fade = smoothstep(0f, SPARKLE_FADE_IN, progress) * (1f - smoothstep(SPARKLE_FADE_OUT, 1f, progress))
+        val brightness = lerp(SPARKLE_MIN_BRIGHTNESS, 1f, hash(seed * 9.7f + cycle * 4.1f))
+        val x = dx * unit * lerp(SPARKLE_START_RADIUS, SPARKLE_SIDE_RADIUS, progress)
+        val y = dy * unit * lerp(SPARKLE_START_RADIUS, reach, progress)
+        motes[at] = x
+        motes[at + 1] = y
+        motes[at + 2] = size
+        motes[at + 3] = fade * brightness
+        left = min(left, x - size)
+        top = min(top, y - size)
+        right = max(right, x + size)
+        bottom = max(bottom, y + size)
+    }
+    return if (left < right) Rect(left, top, right, bottom) else null
+}
+
+private fun hash(value: Float): Float {
+    var p = fract(value * 0.1031f)
+    p *= p + 33.33f
+    p *= p + p
+    return fract(p)
+}
+
+private fun lerp(from: Float, to: Float, fraction: Float): Float = from + (to - from) * fraction
+
+private fun fract(value: Float): Float = value - floor(value)
+
+private fun smoothstep(from: Float, to: Float, value: Float): Float {
+    val t = ((value - from) / (to - from)).coerceIn(0f, 1f)
+    return t * t * (3f - 2f * t)
+}
+
+internal const val SPARKLE_COUNT = 52
+internal const val SPARKLE_DOWN_RADIUS = 0.54f
+internal const val SPARKLE_MAX_SIZE_DP = 7f
+private const val MOTE_STRIDE = 4
+private const val SPARKLE_LIFE_S = 8.4f
+private const val SPARKLE_LIFE_VARIANCE = 0.25f
 private const val SPARKLE_START_RADIUS = 0.18f
-private const val SPARKLE_END_RADIUS = 0.8f
-private const val SPARKLE_BOTTOM_GAP = 1.9f
-private const val SPARKLE_FADE_IN = 0.18f
-private const val SPARKLE_FADE_OUT = 0.5f
-private const val SPARKLE_MIN_SIZE_DP = 4f
-private const val SPARKLE_MAX_SIZE_DP = 11f
-private val SPARKLE_MAX_SIZE = SPARKLE_MAX_SIZE_DP.dp
-private const val SPARKLE_RAY_STRENGTH = 0.55f
-private const val SPARKLE_CORE_SHARPNESS = 22f
-private const val SPARKLE_TWINKLE = 0.6f
-private const val SPARKLE_TWINKLE_RATE = 5f
-private const val SPARKLE_ALPHA = 0.9f
+private const val SPARKLE_SIDE_RADIUS = 0.66f
+private const val SPARKLE_UP_RADIUS = 0.8f
+private const val SPARKLE_FADE_IN = 0.15f
+private const val SPARKLE_FADE_OUT = 0.55f
+private const val SPARKLE_MIN_SIZE_DP = 3f
+private const val SPARKLE_MIN_BRIGHTNESS = 0.45f
+private const val SPARKLE_CORE_SHARPNESS = 10f
+private const val SPARKLE_CORE_STRENGTH = 0.5f
+private const val SPARKLE_ALPHA = 0.85f
 private const val NANOS_PER_SECOND = 1_000_000_000f
 
 private val SparkleShader = """
     uniform float2 center;
-    uniform float unit;
-    uniform float density;
-    uniform float time;
+    uniform float4 motes[$SPARKLE_COUNT];
     layout(color) uniform half4 core;
     layout(color) uniform half4 tint;
 
-    float hash(float p) {
-        p = fract(p * 0.1031);
-        p *= p + 33.33;
-        p *= p + p;
-        return fract(p);
-    }
-
     half4 main(float2 position) {
         float2 offset = position - center;
-        float away = length(offset);
         float light = 0.0;
         float heat = 0.0;
         for (int i = 0; i < $SPARKLE_COUNT; i++) {
-            float seed = float(i) + 1.0;
-            float life = $SPARKLE_LIFE_S * (1.0 + $SPARKLE_LIFE_VARIANCE * (2.0 * hash(seed * 1.7) - 1.0));
-            float age = time - hash(seed * 3.1) * life;
-            if (age < 0.0) continue;
-            float cycle = floor(age / life);
-            float progress = age / life - cycle;
-            float radius = unit * mix($SPARKLE_START_RADIUS, $SPARKLE_END_RADIUS, progress);
-            float grain = hash(seed * 7.9 + cycle * 2.3);
-            float size = density * mix($SPARKLE_MIN_SIZE_DP, $SPARKLE_MAX_SIZE_DP, grain);
-            if (abs(away - radius) >= size) continue;
-            float angle = $SPARKLE_BOTTOM_GAP * 0.5 + (6.2831853 - $SPARKLE_BOTTOM_GAP) * hash(seed * 5.3 + cycle * 11.7);
-            float2 q = (offset - float2(sin(angle), cos(angle)) * radius) / size;
+            float4 mote = motes[i];
+            float2 q = offset - mote.xy;
             float d2 = dot(q, q);
-            if (d2 >= 1.0) continue;
-            float fade = smoothstep(0.0, $SPARKLE_FADE_IN, progress) * (1.0 - smoothstep($SPARKLE_FADE_OUT, 1.0, progress));
-            float rate = $SPARKLE_TWINKLE_RATE * (0.6 + 0.8 * hash(seed * 9.7));
-            float twinkle = 1.0 - $SPARKLE_TWINKLE * (0.5 + 0.5 * sin(time * rate + 6.2831853 * hash(seed * 13.1)));
-            float2 a = abs(q);
-            float rays = exp(-a.x * 18.0) * (1.0 - a.y) * (1.0 - a.y) + exp(-a.y * 18.0) * (1.0 - a.x) * (1.0 - a.x);
-            float halo = (1.0 - d2) * (1.0 - d2) * 0.25;
-            float hot = exp(-d2 * $SPARKLE_CORE_SHARPNESS);
-            float ray = rays * $SPARKLE_RAY_STRENGTH * smoothstep(0.35, 0.8, grain);
-            float strength = fade * twinkle;
-            light += strength * (hot + ray + halo);
-            heat += strength * hot;
+            float r2 = mote.z * mote.z;
+            if (d2 >= r2) continue;
+            float d = d2 / r2;
+            float soft = (1.0 - d) * (1.0 - d) * (1.0 - d);
+            float hot = exp(-d * $SPARKLE_CORE_SHARPNESS) * $SPARKLE_CORE_STRENGTH;
+            light += mote.w * (soft + hot);
+            heat += mote.w * hot;
         }
         float alpha = min(light, 1.0);
         float white = light > 0.0 ? min(heat / light, 1.0) : 0.0;

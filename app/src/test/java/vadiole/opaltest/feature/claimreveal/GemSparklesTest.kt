@@ -6,12 +6,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import java.io.File
+import kotlin.math.PI
+import kotlin.math.atan2
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -45,34 +49,42 @@ class GemSparklesTest {
         assertTrue("sparkles should be fading in, $rising", rising > 0f && rising < 1f)
         reveal.advance(1500)
         assertEquals(1f, reveal.state.sparkle.value, 0f)
-        reveal.advance(2000)
-        reveal.capture("claim_reveal_sparkles")
     }
 
     @Test
-    fun `stars drift beyond the gem slot but stay above the title`() {
+    fun `motes spread around the gem and stay clear of the title`() {
         val reveal = SparkleReveal(compose)
         reveal.awaitRevealed()
-        reveal.advance(3000)
-        val sparkling = reveal.capture("claim_reveal_sparkles_on")
+        val frames = listOf(2500L, 3000L, 3500L).mapIndexed { index, millis ->
+            reveal.advance(millis)
+            reveal.capture("claim_reveal_sparkles_$index")
+        }
         compose.runOnIdle { runBlocking { reveal.state.sparkle.snapTo(0f) } }
         reveal.frame()
         val plain = reveal.capture("claim_reveal_sparkles_off")
         val slot = reveal.state.target!!
-        var beyond = 0
-        var below = 0
-        for (y in 0 until plain.height) {
-            for (x in 0 until plain.width) {
-                if (sparkling.getPixel(x, y) == plain.getPixel(x, y)) continue
-                if (y >= slot.bottom) {
-                    below++
-                } else if (!slot.contains(Offset(x + 0.5f, y + 0.5f))) {
-                    beyond++
+        val title = reveal.titleBounds()
+        val stoneBottom = slot.top + slot.height * 0.8f
+        var left = 0
+        var right = 0
+        var under = 0
+        var onTitle = 0
+        frames.forEach { sparkling ->
+            for (y in 0 until plain.height) {
+                for (x in 0 until plain.width) {
+                    if (sparkling.getPixel(x, y) == plain.getPixel(x, y)) continue
+                    val pixel = Offset(x + 0.5f, y + 0.5f)
+                    when {
+                        title.contains(pixel) || y >= title.top -> onTitle++
+                        x < slot.left -> left++
+                        x >= slot.right -> right++
+                        y > stoneBottom -> under++
+                    }
                 }
             }
         }
-        assertTrue("no stars outside the gem slot", beyond > 0)
-        assertEquals("stars reached the title", 0, below)
+        assertTrue("left $left, right $right, under $under", left > 0 && right > 0 && under > 0)
+        assertEquals("motes reached the title", 0, onTitle)
     }
 
     @Test
@@ -115,7 +127,20 @@ class GemSparklesLandscapeTest {
         reveal.awaitRevealed()
         reveal.advance(3500)
         assertEquals(1f, reveal.state.sparkle.value, 0f)
-        reveal.capture("claim_reveal_sparkles_landscape")
+        val sparkling = reveal.capture("claim_reveal_sparkles_landscape")
+        reveal.advance(3000)
+        reveal.capture("claim_reveal_sparkles_landscape_later")
+        compose.runOnIdle { runBlocking { reveal.state.sparkle.snapTo(0f) } }
+        reveal.frame()
+        val plain = reveal.capture("claim_reveal_sparkles_landscape_off")
+        val title = reveal.titleBounds()
+        var onTitle = 0
+        for (y in title.top.toInt() until title.bottom.toInt().coerceAtMost(plain.height)) {
+            for (x in title.left.toInt() until title.right.toInt().coerceAtMost(plain.width)) {
+                if (sparkling.getPixel(x, y) != plain.getPixel(x, y)) onTitle++
+            }
+        }
+        assertEquals("motes reached the title", 0, onTitle)
     }
 }
 
@@ -137,6 +162,40 @@ class GemSparklesReducedMotionTest {
 
     private object NoMotion : MotionDurationScale {
         override val scaleFactor = 0f
+    }
+}
+
+class SparkleFieldTest {
+    private val motes = FloatArray(SPARKLE_COUNT * 4)
+
+    @Test
+    fun `motes never travel further down than the downward reach`() {
+        val limit = SPARKLE_DOWN_RADIUS * UNIT + SPARKLE_MAX_SIZE_DP
+        for (step in 0..2400) {
+            placeSparkles(step * 0.05f, UNIT, 1f, motes)
+            for (i in 0 until SPARKLE_COUNT) {
+                val bottom = motes[i * 4 + 1] + motes[i * 4 + 2]
+                assertTrue("mote $i at ${step * 0.05f}s reached $bottom", bottom <= limit + 0.01f)
+            }
+        }
+    }
+
+    @Test
+    fun `live motes cover every direction around the gem`() {
+        for (time in listOf(10f, 25f, 40f)) {
+            val octants = IntArray(8)
+            placeSparkles(time, UNIT, 1f, motes)
+            for (i in 0 until SPARKLE_COUNT) {
+                if (motes[i * 4 + 3] < 0.2f) continue
+                val angle = atan2(motes[i * 4 + 1], motes[i * 4]) + PI.toFloat()
+                octants[(angle / (PI.toFloat() / 4f)).toInt().coerceAtMost(7)]++
+            }
+            assertTrue("octants at ${time}s: ${octants.toList()}", octants.all { it >= 2 })
+        }
+    }
+
+    private companion object {
+        const val UNIT = 1000f
     }
 }
 
@@ -186,6 +245,9 @@ private class SparkleReveal(private val compose: ComposeContentTestRule) {
         }
         error("reveal never settled")
     }
+
+    fun titleBounds(): Rect = compose.onNodeWithText("Loyal MileStone", substring = true, useUnmergedTree = true)
+        .fetchSemanticsNode().boundsInRoot
 
     fun capture(name: String): Bitmap {
         val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
