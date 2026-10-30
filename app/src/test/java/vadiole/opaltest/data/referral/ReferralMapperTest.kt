@@ -25,7 +25,7 @@ class ReferralMapperTest {
 
     @Test
     fun `maps every reward in the fake catalog`() {
-        val program = FakeReferralRules.program(FakeServerState(successfulReferrals = 3)).toDomain()
+        val program = FakeReferralRules.program(FakeServerState(successfulReferrals = 3)).toDomain()!!
 
         assertEquals(FakeReferralRules.catalog.size, program.tiers.size)
         assertEquals(
@@ -60,15 +60,21 @@ class ReferralMapperTest {
             RewardTierDto("unknown_stone", 5, "locked", RewardDto(type = "milestone", stone = "ruby")),
             RewardTierDto("zero", 0, "locked", RewardDto(type = "mystery")),
             RewardTierDto("a", 1, "claimed", RewardDto(type = "milestone", stone = "loyal"))
-        ).toDomain()
+        ).toDomain()!!
 
         assertEquals(listOf("a", "b"), program.tiers.map { it.id })
     }
 
     @Test
     fun `blank inviter maps to no inviter`() {
-        assertEquals(null, program().copy(invitedBy = "  ").toDomain().invitedBy)
-        assertEquals("Kenneth", program().copy(invitedBy = " Kenneth ").toDomain().invitedBy)
+        assertEquals(null, program().copy(invitedBy = "  ").toDomain()!!.invitedBy)
+        assertEquals("Kenneth", program().copy(invitedBy = " Kenneth ").toDomain()!!.invitedBy)
+    }
+
+    @Test
+    fun `blank code maps to no program`() {
+        assertEquals(null, program().copy(referralCode = " ").toDomain())
+        assertEquals("FR333", program().copy(referralCode = " FR333 ").toDomain()?.code)
     }
 
     @Test
@@ -76,7 +82,7 @@ class ReferralMapperTest {
         val program = program(
             RewardTierDto("a", 1, "pending_review", RewardDto(type = "mystery")),
             plan = "enterprise"
-        ).toDomain()
+        ).toDomain()!!
 
         assertEquals(Plan.Free, program.plan)
         assertEquals(TierStatus.Locked, program.tiers.single().status)
@@ -87,7 +93,7 @@ class ReferralMapperTest {
         val program = program(
             RewardTierDto("a", 5, "locked", RewardDto(type = "pro_access", term = "one_year", fulfillment = "manual")),
             RewardTierDto("a", 5, "locked", RewardDto(type = "pro_access", term = "one_year"))
-        ).toDomain()
+        ).toDomain()!!
 
         assertEquals(Fulfillment.ContactSupport, (program.tiers.single().reward as Reward.ProAccess).fulfillment)
     }
@@ -104,7 +110,7 @@ class ReferralMapperTest {
                     reward = RewardDto(type = "pro_access", term = "lifetime", value = MoneyDto(39900, code))
                 )
             }.toTypedArray()
-        ).toDomain()
+        ).toDomain()!!
 
         assertEquals(
             listOf(null, null, null, null, Money(39900, Currency.getInstance("EUR"))),
