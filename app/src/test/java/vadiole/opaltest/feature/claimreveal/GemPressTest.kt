@@ -226,8 +226,13 @@ class GemPressTest {
     fun `pressed frame keeps the glow`() {
         setContent()
         awaitRevealed()
-        advance(2000)
-        compose.runOnIdle { runBlocking { state.sparkle.snapTo(0f) } }
+        repeat(1000) { if (state.sweep.isRunning || state.sparkle.isRunning) frame() }
+        compose.runOnIdle {
+            runBlocking {
+                state.sparkle.snapTo(0f)
+                state.sweep.snapTo(1f)
+            }
+        }
         frame()
         val rest = capture("claim_reveal_gem_rest")
         down(gemCenter())

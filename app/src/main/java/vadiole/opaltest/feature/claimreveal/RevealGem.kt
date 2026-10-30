@@ -133,7 +133,8 @@ internal fun ClaimRevealState.gemFrame(key: Any): Rect? {
 private fun DrawScope.drawGem(state: ClaimRevealState, gem: ImageBitmap, frame: Rect, colors: OpalColors) {
     val light = state.charge.value
     val sweep = state.sweep.value
-    val sweeping = sweep > 0f && sweep < 1f
+    val sweepAlpha = state.sweepFade.value
+    val sweeping = sweep > 0f && sweep < 1f && sweepAlpha > 0f
     translate(frame.left, frame.top) {
         scale(frame.width / gem.width, pivot = Offset.Zero) {
             if (light < MIN_LIGHT && !sweeping) {
@@ -156,7 +157,7 @@ private fun DrawScope.drawGem(state: ClaimRevealState, gem: ImageBitmap, frame: 
                 )
             }
             if (sweeping) {
-                drawRect(sweepBrush(bounds.size, sweep, colors), blendMode = BlendMode.SrcAtop)
+                drawRect(sweepBrush(bounds.size, sweep, colors), alpha = sweepAlpha, blendMode = BlendMode.SrcAtop)
             }
             drawIntoCanvas { it.restore() }
         }

@@ -323,6 +323,54 @@ class ClaimRevealHostTest {
         compose.onNodeWithText(UNDERNEATH).assertIsNotFocused()
     }
 
+    @Test
+    fun `the shine sweeps once and continue does not wait for it`() {
+        setButtonContent()
+        open()
+        awaitGem()
+        var started = false
+        var finished = false
+        var buttonBeforeFinish = false
+        var replays = 0
+        var last = 0f
+        repeat(1250) {
+            frame()
+            val sweep = state.sweep.value
+            if (sweep > 0f) started = true
+            if (sweep < last) replays++
+            if (sweep >= 1f) finished = true
+            if (!finished && state.items.last().value >= 1f) buttonBeforeFinish = true
+            last = sweep
+        }
+        assertTrue(started && finished)
+        assertEquals(0, replays)
+        assertTrue("continue waited for the shine", buttonBeforeFinish)
+        compose.runOnIdle { state.close() }
+        awaitFinished()
+    }
+
+    @Test
+    fun `closing mid sweep fades the shine out in place`() {
+        setButtonContent()
+        open()
+        awaitGem()
+        var frames = 0
+        while (state.sweep.value < 0.5f && frames++ < 1000) frame()
+        val before = state.sweep.value
+        assertTrue("sweep $before", before > 0f && before < 1f)
+        capture("claim_reveal_sweep_mid")
+        compose.runOnIdle { state.close() }
+        advance(160)
+        capture("claim_reveal_sweep_closing")
+        val fading = state.sweepFade.value
+        assertTrue("shine should be fading, $fading", fading > 0f && fading < 1f)
+        assertEquals(before, state.sweep.value, 0.02f)
+        advance(320)
+        assertEquals(0f, state.sweepFade.value, 0f)
+        awaitFinished()
+        assertEquals(1f, state.sweepFade.value, 0f)
+    }
+
     private fun capture(name: String): Bitmap {
         val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
         val output = File("build/screenshots/$name.png").apply { parentFile?.mkdirs() }

@@ -125,7 +125,7 @@ private fun smoothstep(from: Float, to: Float, value: Float): Float {
 
 internal const val SPARKLE_COUNT = 52
 internal const val SPARKLE_DOWN_RADIUS = 0.54f
-internal const val SPARKLE_MAX_SIZE_DP = 7f
+internal const val SPARKLE_MAX_SIZE_DP = 4.2f
 private const val MOTE_STRIDE = 4
 private const val SPARKLE_LIFE_S = 8.4f
 private const val SPARKLE_LIFE_VARIANCE = 0.25f
