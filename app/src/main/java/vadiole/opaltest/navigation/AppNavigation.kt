@@ -8,7 +8,6 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
-import androidx.navigation3.ui.NavDisplay
 import kotlinx.serialization.Serializable
 import vadiole.opaltest.feature.console.ConsoleScreen
 import vadiole.opaltest.feature.referral.ReferralScreen
@@ -33,18 +32,15 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             backStack.removeAt(backStack.lastIndex)
         }
     }
-    NavDisplay(
+    StackNavDisplay(
         backStack = backStack,
-        modifier = modifier.background(OpalTheme.colors.background),
+        transitions = transitions,
         onBack = navigateBack,
+        modifier = modifier.background(OpalTheme.colors.background),
         entryDecorators = listOf(
             rememberSaveableStateHolderNavEntryDecorator(),
-            rememberViewModelStoreNavEntryDecorator(),
-            transitions.decorator
+            rememberViewModelStoreNavEntryDecorator()
         ),
-        transitionSpec = { transitions.hold() },
-        popTransitionSpec = { transitions.hold() },
-        predictivePopTransitionSpec = { transitions.hold() },
         entryProvider = entryProvider {
             entry<ConsoleRoute> {
                 ConsoleScreen(onOpenReferrals = { navigate(ReferralRoute) })
