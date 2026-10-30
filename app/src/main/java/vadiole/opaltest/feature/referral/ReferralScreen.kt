@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -20,7 +21,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -73,6 +73,9 @@ import vadiole.opaltest.ui.common.OpalCard
 import vadiole.opaltest.ui.common.OpalGlow
 import vadiole.opaltest.ui.common.OpalIconButton
 import vadiole.opaltest.ui.common.OpalProgressBar
+import vadiole.opaltest.ui.common.OpalSkeleton
+import vadiole.opaltest.ui.common.SkeletonBlock
+import vadiole.opaltest.ui.common.SkeletonLine
 import vadiole.opaltest.ui.common.brushTint
 import vadiole.opaltest.ui.theme.OpalTheme
 
@@ -135,13 +138,8 @@ fun ReferralContent(
         val program = state.program
         when {
             program != null -> Program(program, state.claimingTierId, onIntent)
-
             state.loadError != null -> LoadError(onRetry = { onIntent(ReferralIntent.Retry) })
-
-            else -> CircularProgressIndicator(
-                color = OpalTheme.colors.content,
-                modifier = Modifier.align(Alignment.Center)
-            )
+            else -> Loading()
         }
         OpalIconButton(
             icon = R.drawable.ic_arrow_back,
@@ -513,6 +511,104 @@ private fun LoadError(onRetry: () -> Unit) {
     }
 }
 
+@Composable
+private fun Loading() {
+    OpalSkeleton(description = stringResource(R.string.referral_loading), modifier = Modifier.fillMaxSize()) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xLarge),
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .safeDrawingPadding()
+                .padding(
+                    start = OpalTheme.spacing.mediumLarge,
+                    end = OpalTheme.spacing.mediumLarge,
+                    top = 72.dp,
+                    bottom = OpalTheme.spacing.medium
+                )
+                .wrapContentWidth()
+                .widthIn(max = OpalTheme.layout.maxContentWidth)
+        ) {
+            SkeletonBlock(
+                Modifier
+                    .fillMaxWidth()
+                    .height(194.dp),
+                OpalTheme.shapes.large
+            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.large)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall)
+                ) {
+                    SkeletonLine(OpalTheme.typography.headline, 220.dp)
+                    SkeletonLine(OpalTheme.typography.callout, 260.dp)
+                }
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small)
+                ) {
+                    SkeletonLine(OpalTheme.typography.headline, 140.dp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        repeat(SKELETON_CODE_LENGTH) { SkeletonBlock(Modifier.size(width = 44.dp, height = 56.dp)) }
+                    }
+                }
+            }
+            SkeletonBlock(
+                Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                OpalTheme.shapes.pill
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xxSmall)) {
+                repeat(SKELETON_TIERS) { index ->
+                    if (index > 0) Spacer(Modifier.height(32.dp))
+                    TierCardSkeleton()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TierCardSkeleton() {
+    OpalCard(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.large),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SkeletonBlock(Modifier.size(100.dp), OpalTheme.shapes.medium)
+            Column(
+                verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(vertical = OpalTheme.spacing.xxSmall)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xxxSmall)) {
+                    SkeletonLine(OpalTheme.typography.caption, 64.dp)
+                    Column {
+                        SkeletonLine(OpalTheme.typography.body, 120.dp)
+                        SkeletonLine(OpalTheme.typography.caption, 160.dp)
+                    }
+                }
+                SkeletonBlock(
+                    Modifier
+                        .widthIn(max = 179.dp)
+                        .fillMaxWidth()
+                        .height(6.dp),
+                    OpalTheme.shapes.pill
+                )
+            }
+        }
+    }
+}
+
+private const val SKELETON_CODE_LENGTH = 5
+private const val SKELETON_TIERS = 3
+
 internal fun previewProgram(plan: Plan = Plan.Free, referrals: Int = 3): ReferralProgram {
     fun tier(id: String, required: Int, reward: Reward, claimed: Boolean = false) = RewardTier(
         id = id,
@@ -597,6 +693,14 @@ private fun ReferralContentTabletPreview() {
 @Preview(widthDp = 402, heightDp = 874)
 @Composable
 private fun ReferralContentLoadingPreview() {
+    OpalTheme {
+        ReferralContent(state = ReferralState(), onIntent = {}, onBack = {})
+    }
+}
+
+@Preview(widthDp = 874, heightDp = 402)
+@Composable
+private fun ReferralContentLoadingLandscapePreview() {
     OpalTheme {
         ReferralContent(state = ReferralState(), onIntent = {}, onBack = {})
     }

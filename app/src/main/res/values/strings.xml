@@ -39,6 +39,7 @@
     <string name="referral_with_value">%1$s (%2$s value)</string>
     <string name="referral_mystery">Mystery gift</string>
     <string name="referral_mystery_description">Contact us to receive a life changing gift from Opal</string>
+    <string name="referral_loading">Loading your rewards</string>
     <string name="referral_load_failed">Couldn’t load your rewards.</string>
     <string name="referral_retry">Try again</string>
     <string name="referral_claim_failed_network">No connection. Try claiming again.</string>
