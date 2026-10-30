@@ -4,6 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
@@ -54,6 +55,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
     internal val fade = Animatable(1f)
     internal val items = List(ITEM_STARTS_MS.size) { Animatable(0f) }
     internal val back = Animatable(0f)
+    internal val press = Animatable(1f, visibilityThreshold = PRESS_THRESHOLD)
 
     internal var target: Rect? by mutableStateOf(null)
     internal var host: LayoutCoordinates? = null
@@ -217,6 +219,15 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         scope.launch { back.animateTo(0f, spring(dampingRatio = 1f, stiffness = 400f)) }
     }
 
+    internal fun pressGem() {
+        if (phase != RevealPhase.Revealed || reducedMotion) return
+        scope.launch(TimeScale(runScale)) { press.animateTo(PRESSED_SCALE, PressDownSpring) }
+    }
+
+    internal fun releaseGem() {
+        scope.launch(TimeScale(runScale)) { press.animateTo(1f, PressReleaseSpring) }
+    }
+
     internal fun displayedFlight(): Float = flight.value * (1f - BACK_SHRINK * back.value)
 
     internal fun registerSource(key: Any, coordinates: LayoutCoordinates) {
@@ -233,6 +244,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         listOf(flight, scrim, glow, charge, sweep, back).forEach { it.snapTo(0f) }
         items.forEach { it.snapTo(0f) }
         fade.snapTo(1f)
+        press.snapTo(1f)
         landed = false
         phase = RevealPhase.Opening
     }
@@ -292,6 +304,18 @@ internal val StrongEaseInOut = CubicBezierEasing(0.77f, 0f, 0.175f, 1f)
 private val SweepEase = CubicBezierEasing(0.65f, 0f, 0.35f, 1f)
 
 private val FlightOutSpring = spring(dampingRatio = 0.86f, stiffness = 60f, visibilityThreshold = 0.0005f)
+private const val PRESSED_SCALE = 0.95f
+private const val PRESS_THRESHOLD = 0.0005f
+private val PressDownSpring = spring(
+    dampingRatio = Spring.DampingRatioNoBouncy,
+    stiffness = Spring.StiffnessMedium,
+    visibilityThreshold = PRESS_THRESHOLD
+)
+private val PressReleaseSpring = spring(
+    dampingRatio = 0.5f,
+    stiffness = Spring.StiffnessMediumLow,
+    visibilityThreshold = PRESS_THRESHOLD
+)
 
 private const val SCRIM_IN_MS = 520
 private const val CHARGE_IN_MS = 380

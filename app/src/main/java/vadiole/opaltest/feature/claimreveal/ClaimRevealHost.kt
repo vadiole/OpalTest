@@ -49,6 +49,8 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onPlaced
@@ -176,7 +178,7 @@ private fun RevealOverlay(state: ClaimRevealState, key: Any, content: RevealCont
                 .drawBehind {
                     if (state.landed) return@drawBehind
                     val frame = state.gemFrame(key) ?: return@drawBehind
-                    drawGem(state, gem, frame, colors)
+                    scale(state.press.value, pivot = frame.gemCenter()) { drawGem(state, gem, frame, colors) }
                 }
         )
     }
@@ -271,6 +273,7 @@ private fun WideReveal(state: ClaimRevealState, title: String, gemSize: Dp, modi
 
 @Composable
 private fun GemSlot(state: ClaimRevealState, size: Dp) {
+    val pressable = state.phase == RevealPhase.Revealed && !state.reducedMotion
     Spacer(
         Modifier
             .size(size)
@@ -278,7 +281,23 @@ private fun GemSlot(state: ClaimRevealState, size: Dp) {
                 val host = state.host?.takeIf { it.isAttached } ?: return@onGloballyPositioned
                 state.target = host.localBoundingBoxOf(coordinates, clipBounds = false)
             }
+            .pointerInput(state, pressable) { if (pressable) trackGemPress(state) }
     )
+}
+
+private suspend fun PointerInputScope.trackGemPress(state: ClaimRevealState) = awaitEachGesture {
+    val down = awaitFirstDown(requireUnconsumed = false)
+    if (down.position.x !in size.width * STONE_LEFT..size.width * STONE_RIGHT) return@awaitEachGesture
+    state.pressGem()
+    try {
+        while (true) {
+            val change = awaitPointerEvent(PointerEventPass.Final).changes.firstOrNull { it.id == down.id } ?: break
+            if (!change.pressed || change.isConsumed) break
+            if ((change.position - down.position).getDistance() > viewConfiguration.touchSlop) break
+        }
+    } finally {
+        state.releaseGem()
+    }
 }
 
 @Composable
@@ -426,6 +445,8 @@ private fun arc(start: Offset, end: Offset, t: Float, bend: Float): Offset {
     val u = 1f - t
     return start * (u * u) + control * (2f * u * t) + end * (t * t)
 }
+
+private fun Rect.gemCenter(): Offset = Offset(left + width * GEM_CENTER_X, top + height * GEM_CENTER_Y)
 
 private fun Rect.gemCrop(): Rect = Rect(
     left = left + width * GEM_CROP_LEFT,
