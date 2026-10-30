@@ -45,6 +45,7 @@ object OpalMotion {
     val CrossFade: TweenSpec<Float> = tween(durationMillis = 250, easing = LinearEasing)
 
     const val POP_START_SCALE = 0.6f
+    const val SPINNER_START_SCALE = 0.8f
     val StateSpring: SpringSpec<Float> = spring(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow)
     val SizeSpring: SpringSpec<IntSize> = spring(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow)
     val SlideSpring: SpringSpec<IntOffset> = spring(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow)

@@ -14,7 +14,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -56,6 +55,7 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import vadiole.opaltest.ui.theme.OpalMotion
+import vadiole.opaltest.ui.theme.OpalTheme
 
 @Stable
 class StackTransitions<T : Any> internal constructor(private val motion: StackMotionState) {
@@ -149,7 +149,7 @@ private fun StackEntry(motion: StackMotionState, key: Any, content: @Composable 
         label = "hold"
     ) { if (it == EnterExitState.Visible) 1f else 0f }
     val view = LocalView.current
-    val scrim = MaterialTheme.colorScheme.scrim
+    val scrim = OpalTheme.colors.background
     var size by remember { mutableStateOf(Size.Zero) }
     val pose by remember(motion, key, view) {
         derivedStateOf { motion.pose(key, size, displayCornerRadius(view, motion.density)) }

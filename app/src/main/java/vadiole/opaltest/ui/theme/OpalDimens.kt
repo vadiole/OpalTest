@@ -26,7 +26,6 @@ object OpalShapes {
 object OpalIconSize {
     val small = 20.dp
     val medium = 24.dp
-    val large = 28.dp
 }
 
 object OpalAlpha {
