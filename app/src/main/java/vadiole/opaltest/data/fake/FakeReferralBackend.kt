@@ -14,6 +14,7 @@ class FakeReferralBackend(private val store: DataStore<FakeServerState>) : Refer
         ReferralDebugState(
             plan = state.plan.toPlan(),
             successfulReferrals = state.successfulReferrals,
+            maxReferrals = FakeReferralRules.MAX_REFERRALS,
             claimedTiers = state.claimedTierIds.size,
             nextTierAt = FakeReferralRules.nextTierAt(state),
             latency = state.latency,

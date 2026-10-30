@@ -402,6 +402,7 @@ private fun Controls(
                     onClick = { onIntent(ConsoleIntent.AddFriend) },
                     style = OpalButtonStyle.Outlined,
                     size = OpalButtonSize.Small,
+                    enabled = debug.successfulReferrals < debug.maxReferrals,
                     modifier = Modifier.semantics { contentDescription = addDescription }
                 )
                 OpalButton(
@@ -560,6 +561,7 @@ private fun rememberNumberFormat(maxFractionDigits: Int = 0): NumberFormat {
 private val previewDebug = ReferralDebugState(
     plan = Plan.Free,
     successfulReferrals = 3,
+    maxReferrals = 999,
     claimedTiers = 1,
     nextTierAt = 5,
     latency = SimulatedLatency.Normal,
@@ -595,7 +597,7 @@ private fun ConsoleAllUnlockedPreview() {
     OpalTheme {
         ConsoleContent(
             state = ConsoleState(
-                ConsoleLoad.Ready(previewDebug.copy(successfulReferrals = 12_345, claimedTiers = 7, nextTierAt = null))
+                ConsoleLoad.Ready(previewDebug.copy(successfulReferrals = 999, claimedTiers = 7, nextTierAt = null))
             ),
             onIntent = {}
         )
