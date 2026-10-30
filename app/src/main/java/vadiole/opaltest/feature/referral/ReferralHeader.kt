@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import kotlin.math.ceil
 import vadiole.opaltest.R
 import vadiole.opaltest.domain.referral.ReferralProgram
+import vadiole.opaltest.ui.common.formatCount
 import vadiole.opaltest.ui.common.opalRipple
 import vadiole.opaltest.ui.common.pressFeedback
 import vadiole.opaltest.ui.theme.OpalTheme

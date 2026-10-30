@@ -8,6 +8,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import java.time.Duration
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Rule
@@ -15,6 +16,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowSystemClock
 import vadiole.opaltest.ui.theme.OpalMotion.LOADING_DELAY_MILLIS
 import vadiole.opaltest.ui.theme.OpalMotion.LOADING_MIN_MILLIS
 
@@ -46,7 +48,15 @@ class PacedPhaseTest {
         Snapshot.sendApplyNotifications()
     }
 
-    private fun advance(millis: Long) = compose.mainClock.advanceTimeBy(millis)
+    private fun advance(millis: Long) {
+        var left = millis
+        while (left > 0) {
+            val step = minOf(left, FRAME_MILLIS)
+            ShadowSystemClock.advanceBy(Duration.ofMillis(step))
+            compose.mainClock.advanceTimeBy(step, ignoreFrameDuration = true)
+            left -= step
+        }
+    }
 
     @Test
     fun `fast load skips the loading phase`() {
@@ -75,6 +85,21 @@ class PacedPhaseTest {
     }
 
     @Test
+    fun `minimum loading time counts from when loading appeared`() {
+        setUp(Phase.Loading)
+        advance(LOADING_DELAY_MILLIS + 50)
+        assertEquals(Phase.Loading, shown)
+
+        advance(LOADING_MIN_MILLIS - 150)
+        moveTo(Phase.Ready)
+        advance(50)
+        assertEquals(Phase.Loading, shown)
+
+        advance(100)
+        assertEquals(Phase.Ready, shown)
+    }
+
+    @Test
     fun `retry keeps the previous phase until the delay passes`() {
         setUp(Phase.Failed)
         advance(1_000)
@@ -91,5 +116,9 @@ class PacedPhaseTest {
     fun `inspection mode shows loading right away`() {
         setUp(Phase.Loading, inspection = true)
         assertEquals(Phase.Loading, history.first())
+    }
+
+    private companion object {
+        const val FRAME_MILLIS = 16L
     }
 }

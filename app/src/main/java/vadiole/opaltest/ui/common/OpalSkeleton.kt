@@ -81,7 +81,7 @@ private fun Modifier.shimmer(progress: State<Float>, highlight: Color): Modifier
 }
 
 @Composable
-fun SkeletonBlock(modifier: Modifier = Modifier, shape: Shape = OpalTheme.shapes.small) {
+fun OpalSkeletonBlock(modifier: Modifier = Modifier, shape: Shape = OpalTheme.shapes.small) {
     Box(
         modifier
             .clip(shape)
@@ -90,10 +90,10 @@ fun SkeletonBlock(modifier: Modifier = Modifier, shape: Shape = OpalTheme.shapes
 }
 
 @Composable
-fun SkeletonLine(style: TextStyle, width: Dp, modifier: Modifier = Modifier) {
+fun OpalSkeletonLine(style: TextStyle, width: Dp, modifier: Modifier = Modifier) {
     val (lineHeight, glyphHeight) = with(LocalDensity.current) { style.lineHeight.toDp() to style.fontSize.toDp() }
     Box(contentAlignment = Alignment.CenterStart, modifier = modifier.height(lineHeight)) {
-        SkeletonBlock(Modifier.size(width, glyphHeight * 0.75f), OpalTheme.shapes.pill)
+        OpalSkeletonBlock(Modifier.size(width, glyphHeight * 0.75f), OpalTheme.shapes.pill)
     }
 }
 
@@ -103,11 +103,11 @@ private fun OpalSkeletonPreview() {
     OpalTheme {
         OpalSkeleton(description = "Loading", modifier = Modifier.padding(OpalTheme.spacing.mediumLarge)) {
             Row(horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.medium)) {
-                SkeletonBlock(Modifier.size(100.dp), OpalTheme.shapes.medium)
+                OpalSkeletonBlock(Modifier.size(100.dp), OpalTheme.shapes.medium)
                 Column(Modifier.width(200.dp)) {
-                    SkeletonLine(OpalTheme.typography.body, 160.dp)
-                    SkeletonLine(OpalTheme.typography.caption, 120.dp)
-                    SkeletonBlock(Modifier.fillMaxWidth().height(40.dp), OpalTheme.shapes.pill)
+                    OpalSkeletonLine(OpalTheme.typography.body, 160.dp)
+                    OpalSkeletonLine(OpalTheme.typography.caption, 120.dp)
+                    OpalSkeletonBlock(Modifier.fillMaxWidth().height(40.dp), OpalTheme.shapes.pill)
                 }
             }
         }
