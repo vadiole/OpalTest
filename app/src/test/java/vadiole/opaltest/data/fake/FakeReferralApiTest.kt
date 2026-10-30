@@ -15,7 +15,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import vadiole.opaltest.data.debug.ReferralDebugState
+import vadiole.opaltest.domain.Outcome
 import vadiole.opaltest.domain.referral.Plan
+import vadiole.opaltest.domain.referral.ReferralError
 
 class FakeReferralApiTest {
     @get:Rule
@@ -23,13 +26,16 @@ class FakeReferralApiTest {
 
     private val file: File by lazy { File(folder.root, "state.json") }
 
-    private fun TestScope.backend(job: Job = Job(backgroundScope.coroutineContext[Job])) = FakeReferralBackend(
-        DataStoreFactory.create(
-            serializer = FakeServerStateSerializer,
-            scope = CoroutineScope(backgroundScope.coroutineContext + job),
-            produceFile = { file }
+    private fun TestScope.backend(job: Job = Job(backgroundScope.coroutineContext[Job]), storage: File = file) =
+        FakeReferralBackend(
+            DataStoreFactory.create(
+                serializer = FakeServerStateSerializer,
+                scope = CoroutineScope(backgroundScope.coroutineContext + job),
+                produceFile = { storage }
+            )
         )
-    )
+
+    private suspend fun FakeReferralBackend.debugState(): ReferralDebugState = (state.first() as Outcome.Success).value
 
     @Test
     fun `fail next load fails once then recovers`() = runTest {
@@ -38,7 +44,7 @@ class FakeReferralApiTest {
         backend.setFailNextLoad(true)
 
         assertTrue(runCatching { api.getProgram() }.exceptionOrNull() is IOException)
-        assertFalse(backend.state.first().failNextLoad)
+        assertFalse(backend.debugState().failNextLoad)
         assertEquals(FakeReferralRules.REFERRAL_CODE, api.getProgram().referralCode)
     }
 
@@ -50,9 +56,17 @@ class FakeReferralApiTest {
         FakeReferralApi(first).claimReward("pro_one_year")
         job.cancelAndJoin()
 
-        val state = backend().state.first()
+        val state = backend().debugState()
 
         assertEquals(Plan.Pro, state.plan)
         assertEquals(1, state.claimedTiers)
+    }
+
+    @Test
+    fun `unreadable storage surfaces as a typed failure`() = runTest {
+        val backend = backend(storage = folder.newFolder())
+
+        assertEquals(Outcome.Failure(ReferralError.Network), backend.state.first())
+        assertEquals(Outcome.Failure(ReferralError.Network), backend.setPlan(Plan.Pro))
     }
 }

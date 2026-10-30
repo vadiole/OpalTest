@@ -1,6 +1,5 @@
 package vadiole.opaltest.feature.console
 
-import android.os.SystemClock
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -37,11 +36,8 @@ import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -49,7 +45,6 @@ import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -72,7 +67,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.window.core.layout.WindowSizeClass
 import java.text.NumberFormat
 import kotlin.time.Duration.Companion.milliseconds
-import kotlinx.coroutines.delay
 import vadiole.opaltest.R
 import vadiole.opaltest.container
 import vadiole.opaltest.data.debug.ReferralDebugState
@@ -87,6 +81,7 @@ import vadiole.opaltest.ui.common.OpalSkeleton
 import vadiole.opaltest.ui.common.OpalToggleChip
 import vadiole.opaltest.ui.common.SkeletonBlock
 import vadiole.opaltest.ui.common.SkeletonLine
+import vadiole.opaltest.ui.common.rememberPacedPhase
 import vadiole.opaltest.ui.theme.OpalMotion
 import vadiole.opaltest.ui.theme.OpalTheme
 
@@ -191,11 +186,10 @@ fun ConsoleContent(state: ConsoleState, onIntent: (ConsoleIntent) -> Unit, modif
     }
 }
 
-private enum class Shown { Blank, Loading, Failed, Ready }
+private enum class Shown { Loading, Failed, Ready }
 
-private val ConsoleLoad?.shown: Shown
+private val ConsoleLoad.shown: Shown
     get() = when (this) {
-        null -> Shown.Blank
         ConsoleLoad.Loading -> Shown.Loading
         ConsoleLoad.Failed -> Shown.Failed
         is ConsoleLoad.Ready -> Shown.Ready
@@ -204,30 +198,9 @@ private val ConsoleLoad?.shown: Shown
 @Composable
 private fun rememberShownLoad(load: ConsoleLoad): ConsoleLoad? {
     val target = load.shown
-    val inspection = LocalInspectionMode.current
-    var shown by remember { mutableStateOf(if (target == Shown.Loading && !inspection) Shown.Blank else target) }
-    var loadingSince by remember { mutableLongStateOf(SystemClock.uptimeMillis()) }
-    LaunchedEffect(target) {
-        when {
-            target == shown -> Unit
-
-            target == Shown.Loading -> {
-                delay(OpalMotion.LOADING_DELAY_MILLIS)
-                loadingSince = SystemClock.uptimeMillis()
-                shown = Shown.Loading
-            }
-
-            else -> {
-                if (shown == Shown.Loading) {
-                    delay(loadingSince + OpalMotion.LOADING_MIN_MILLIS - SystemClock.uptimeMillis())
-                }
-                shown = target
-            }
-        }
-    }
-    return when (shown) {
+    return when (rememberPacedPhase(target, loading = Shown.Loading)) {
         target, Shown.Ready -> load
-        Shown.Blank -> null
+        null -> null
         Shown.Loading -> ConsoleLoad.Loading
         Shown.Failed -> ConsoleLoad.Failed
     }
@@ -243,7 +216,7 @@ private fun Body(title: String, shown: ConsoleLoad?, onIntent: (ConsoleIntent) -
         )
         AnimatedContent(
             targetState = shown,
-            contentKey = { it.shown },
+            contentKey = { it?.shown },
             transitionSpec = {
                 if (initialState == null) {
                     EnterTransition.None togetherWith ExitTransition.None using null

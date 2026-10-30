@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -28,6 +29,7 @@ import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -43,6 +45,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import kotlin.math.ceil
 import vadiole.opaltest.R
@@ -154,51 +157,56 @@ internal fun Code(code: String, onCopy: () -> Unit) {
             style = OpalTheme.typography.headline,
             modifier = Modifier.clearAndSetSemantics {}
         )
-        BoxWithConstraints {
-            val cellSize = ReferralDimens.codeCell
-            val gap = ReferralDimens.codeCellGap
-            val perRow = balancedCellsPerRow(code.length, fit = ((maxWidth + gap) / (cellSize.width + gap)).toInt())
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
-                verticalArrangement = Arrangement.spacedBy(gap),
-                maxItemsInEachRow = perRow,
-                modifier = Modifier
-                    .pressFeedback(interactionSource, indicationSource)
-                    .drawWithCache {
-                        val mask = Path()
-                        cells.forEach { cell ->
-                            if (cell != null) {
-                                val outline = shape.createOutline(cell.size, layoutDirection, this)
-                                mask.addPath(Path().apply { addOutline(outline) }, cell.topLeft)
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+            BoxWithConstraints {
+                val cellSize = ReferralDimens.codeCell
+                val gap = ReferralDimens.codeCellGap
+                val perRow = balancedCellsPerRow(code.length, fit = ((maxWidth + gap) / (cellSize.width + gap)).toInt())
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
+                    verticalArrangement = Arrangement.spacedBy(gap),
+                    maxItemsInEachRow = perRow,
+                    modifier = Modifier
+                        .pressFeedback(interactionSource, indicationSource)
+                        .drawWithCache {
+                            val mask = Path()
+                            cells.forEach { cell ->
+                                if (cell != null) {
+                                    val outline = shape.createOutline(cell.size, layoutDirection, this)
+                                    mask.addPath(Path().apply { addOutline(outline) }, cell.topLeft)
+                                }
+                            }
+                            onDrawWithContent {
+                                drawPath(mask, fill)
+                                clipPath(mask) { this@onDrawWithContent.drawContent() }
                             }
                         }
-                        onDrawWithContent {
-                            drawPath(mask, fill)
-                            clipPath(mask) { this@onDrawWithContent.drawContent() }
+                        .indication(
+                            indicationSource,
+                            opalRipple(OpalTheme.colors.content, OpalTheme.alpha.rippleOnFill)
+                        )
+                        .combinedClickable(
+                            interactionSource = interactionSource,
+                            indication = null,
+                            onClickLabel = copyLabel,
+                            onLongClickLabel = copyLabel,
+                            onLongClick = onCopy,
+                            onClick = onCopy
+                        )
+                        .clearAndSetSemantics {
+                            contentDescription = description
+                            heading()
                         }
-                    }
-                    .indication(indicationSource, opalRipple(OpalTheme.colors.content, OpalTheme.alpha.rippleOnFill))
-                    .combinedClickable(
-                        interactionSource = interactionSource,
-                        indication = null,
-                        onClickLabel = copyLabel,
-                        onLongClickLabel = copyLabel,
-                        onLongClick = onCopy,
-                        onClick = onCopy
-                    )
-                    .clearAndSetSemantics {
-                        contentDescription = description
-                        heading()
-                    }
-            ) {
-                code.forEachIndexed { index, char ->
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .size(cellSize)
-                            .onPlaced { cells[index] = it.boundsInParent() }
-                    ) {
-                        Text(text = char.toString(), style = OpalTheme.typography.largeTitle)
+                ) {
+                    code.forEachIndexed { index, char ->
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(cellSize)
+                                .onPlaced { cells[index] = it.boundsInParent() }
+                        ) {
+                            Text(text = char.toString(), style = OpalTheme.typography.largeTitle)
+                        }
                     }
                 }
             }

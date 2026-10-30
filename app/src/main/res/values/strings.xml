@@ -1,37 +1,46 @@
 <resources>
-    <string name="app_name">OpalTest</string>
+    <string name="app_name" translatable="false">Opal Referrals</string>
     <string name="referral_title">Invitations &amp; Rewards</string>
     <string name="referral_back">Back</string>
-    <string name="referral_opal_logo">Opal</string>
+    <string name="referral_opal_logo" translatable="false">Opal</string>
+    <!-- %1$s is the name of the person who invited the user. -->
     <string name="referral_invited_by">Invited by %1$s</string>
+    <!-- Headline. %d is the number of free days the invited friend gets. "Opal PRO" is the brand name, keep it as is. -->
     <plurals name="referral_gift_days">
         <item quantity="one">Gift %d day of Opal PRO, for free!</item>
         <item quantity="other">Gift %d days of Opal PRO, for free!</item>
     </plurals>
+    <!-- %1$s is the highlighted friend count from referral_friends, e.g. "3 friends". Move it anywhere, but keep it exactly once. -->
     <string name="referral_referred">You referred %1$s to Opal. Great job!</string>
     <string name="referral_referred_none">Invite friends to Opal and earn rewards.</string>
+    <!-- Inserted into referral_referred. %1$s is the formatted count. -->
     <plurals name="referral_friends">
         <item quantity="one">%1$s friend</item>
         <item quantity="other">%1$s friends</item>
     </plurals>
     <string name="referral_code_title">Your Opal code</string>
+    <!-- Screen reader label. %1$s is the referral code spelled out, e.g. "F R 3 3 3". -->
     <string name="referral_code_description">Your Opal code: %1$s</string>
     <string name="referral_share">Share invite</string>
     <string name="referral_copy_invite">Copy invite</string>
+    <!-- Text shared to other apps. %1$s is the referral code, %2$d the number of free days, %3$s the invite link. -->
     <plurals name="referral_share_message">
         <item quantity="one">Join me on Opal with my code %1$s and get %2$d day of Opal Pro for free: %3$s</item>
         <item quantity="other">Join me on Opal with my code %1$s and get %2$d days of Opal Pro for free: %3$s</item>
     </plurals>
+    <!-- Number of successful referrals a reward needs. %1$s is the formatted count. -->
     <plurals name="referral_tier_friends">
         <item quantity="one">%1$s Friend</item>
         <item quantity="other">%1$s Friends</item>
     </plurals>
+    <!-- Screen reader progress of a reward. %1$s is the friends referred so far, %2$s the friends needed; the quantity follows %2$s. -->
     <plurals name="referral_tier_progress">
         <item quantity="one">%1$s of %2$s friend</item>
         <item quantity="other">%1$s of %2$s friends</item>
     </plurals>
     <string name="referral_claimed">Claimed</string>
     <string name="referral_claim">Claim</string>
+    <!-- MileStone is a collectible reward. Keep the word "MileStone" as is and translate the adjective. -->
     <string name="referral_milestone_loyal">Loyal MileStone</string>
     <string name="referral_milestone_soulful">Soulful MileStone</string>
     <string name="referral_milestone_popular">Popular MileStone</string>
@@ -42,6 +51,7 @@
     <string name="referral_pro_two_years_description">Contact us to get 2 years of Opal Pro</string>
     <string name="referral_pro_lifetime">Lifetime of Opal Pro</string>
     <string name="referral_pro_lifetime_description">Contact us to get a lifetime of Opal Pro</string>
+    <!-- %1$s is the reward description, %2$s its localized price, e.g. "$199". -->
     <string name="referral_with_value">%1$s (%2$s value)</string>
     <string name="referral_mystery">Mystery gift</string>
     <string name="referral_mystery_description">Contact us to receive a life changing gift from Opal</string>
@@ -50,6 +60,7 @@
     <string name="referral_retry">Try again</string>
     <string name="referral_claim_failed_network">No connection. Try claiming again.</string>
     <string name="referral_claim_failed">Couldn’t claim this reward.</string>
+    <!-- Demo console. Button that opens the screen titled referral_title. -->
     <string name="console_open_referrals">Open Invitations &amp; Rewards</string>
     <string name="console_title">Referral demo</string>
     <plurals name="console_friends">
@@ -64,16 +75,20 @@
     <string name="console_label_plan">Plan</string>
     <string name="console_label_friends">Friends</string>
     <string name="console_label_delay">Delay</string>
+    <!-- Row label for the toggles that make the next request fail. -->
     <string name="console_label_fail">Fail</string>
     <string name="console_free">Free</string>
-    <string name="console_pro">Pro</string>
+    <string name="console_pro" translatable="false">Pro</string>
+    <!-- No simulated network delay. -->
     <string name="console_delay_none">None</string>
+    <!-- %s is a number of seconds, e.g. "1.5". -->
     <string name="console_delay_seconds">%s s</string>
     <string name="console_fail_next_load">Next load</string>
     <string name="console_fail_next_claim">Next claim</string>
     <string name="console_reset">Reset demo</string>
-    <string name="console_add_friend">+1</string>
+    <string name="console_add_friend" translatable="false">+1</string>
     <string name="console_add_friend_description">Add a friend</string>
+    <!-- Button that sets the friend count to the next reward threshold. %s is the formatted count. -->
     <plurals name="console_reach_friends">
         <item quantity="one">Reach %s friend</item>
         <item quantity="other">Reach %s friends</item>
