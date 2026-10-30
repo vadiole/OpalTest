@@ -35,9 +35,9 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             rememberViewModelStoreNavEntryDecorator(),
             transitions.decorator
         ),
-        transitionSpec = { transitions.push() },
-        popTransitionSpec = { transitions.pop() },
-        predictivePopTransitionSpec = { transitions.predictivePop() },
+        transitionSpec = { transitions.hold() },
+        popTransitionSpec = { transitions.hold() },
+        predictivePopTransitionSpec = { transitions.hold() },
         entryProvider = entryProvider {
             entry<ConsoleRoute> {
                 ConsoleScreen(onOpenReferrals = { backStack.add(ReferralRoute) })

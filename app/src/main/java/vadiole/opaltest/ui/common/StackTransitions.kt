@@ -5,22 +5,23 @@ import android.view.View
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -48,71 +49,59 @@ import kotlinx.coroutines.launch
 import vadiole.opaltest.ui.theme.OpalMotion
 
 @Stable
-class StackTransitions<T : Any> internal constructor(private val offsetPx: Int, private val back: PredictiveBackState) {
+class StackTransitions<T : Any> internal constructor(private val motion: StackMotionState) {
 
     val decorator: NavEntryDecorator<T> = NavEntryDecorator { entry ->
         val keyed = remember(entry) {
-            NavEntry<T>(entry) { key: T -> PredictiveBackEntry(back, key) { entry.Content() } }
+            NavEntry<T>(entry) { key: T -> StackEntry(motion, key) { entry.Content() } }
         }
         keyed.Content()
     }
 
-    fun onBackCompleted() = back.onBackCompleted()
+    fun onBackCompleted() = motion.onBackCompleted()
 
-    fun push(): ContentTransform = ContentTransform(
-        targetContentEnter = slideInHorizontally(screenTween()) { offsetPx } +
-            fadeIn(tween(OpalMotion.SCREEN_FADE_IN_DURATION, OpalMotion.SCREEN_FADE_IN_DELAY, LinearEasing)),
-        initialContentExit = slideOutHorizontally(screenTween()) { -offsetPx }
-    )
-
-    fun pop(): ContentTransform = ContentTransform(
-        targetContentEnter = slideInHorizontally(screenTween()) { -offsetPx },
-        initialContentExit = slideOutHorizontally(screenTween()) { offsetPx } + fadeOut(screenTween())
-    )
-
-    fun predictivePop(): ContentTransform = ContentTransform(
+    fun hold(): ContentTransform = ContentTransform(
         targetContentEnter = fadeIn(tween(OpalMotion.SCREEN_DURATION, easing = LinearEasing), initialAlpha = 1f),
         initialContentExit = fadeOut(tween(OpalMotion.SCREEN_DURATION, easing = LinearEasing), targetAlpha = 1f)
     )
-
-    private fun <V> screenTween() = tween<V>(OpalMotion.SCREEN_DURATION, easing = OpalMotion.Emphasized)
 }
 
 @Composable
 fun <T : Any> rememberStackTransitions(backStack: List<T>): StackTransitions<T> {
-    val back = remember { PredictiveBackState() }
+    val motion = remember { StackMotionState() }
+    val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
+    val stack = backStack.toList()
+    SideEffect {
+        motion.density = density
+        motion.onStack(stack, scope)
+    }
     val dispatcher = LocalNavigationEventDispatcherOwner.current?.navigationEventDispatcher
     val currentBackStack by rememberUpdatedState(backStack)
-    LaunchedEffect(back, dispatcher) {
-        val scope = this
+    LaunchedEffect(motion, dispatcher) {
+        val settleScope = this
         dispatcher?.transitionState?.collect { state ->
             when (state) {
                 is NavigationEventTransitionState.InProgress -> {
                     if (state.direction == NavigationEventTransitionState.TRANSITIONING_BACK) {
-                        back.onGesture(state.latestEvent, currentBackStack)
+                        motion.onGesture(state.latestEvent, currentBackStack)
                     }
                 }
 
-                NavigationEventTransitionState.Idle -> back.onRelease(scope, currentBackStack.size)
+                NavigationEventTransitionState.Idle -> motion.onRelease(settleScope)
             }
         }
     }
-    val stackSize = backStack.size
-    LaunchedEffect(back, stackSize) { back.onStackChanged(stackSize) }
-    val density = LocalDensity.current
-    return remember(back, density) {
-        StackTransitions(with(density) { OpalMotion.ScreenOffset.roundToPx() }, back)
-    }
+    return remember(motion) { StackTransitions(motion) }
 }
 
 @Composable
-private fun PredictiveBackEntry(back: PredictiveBackState, key: Any, content: @Composable () -> Unit) {
+private fun StackEntry(motion: StackMotionState, key: Any, content: @Composable () -> Unit) {
     val view = LocalView.current
-    val density = LocalDensity.current
     val scrim = MaterialTheme.colorScheme.scrim
     var size by remember { mutableStateOf(Size.Zero) }
-    val pose by remember(back, key, view, density) {
-        derivedStateOf { back.pose(back.role(key), size, density, displayCornerRadius(view, density)) }
+    val pose by remember(motion, key, view) {
+        derivedStateOf { motion.pose(key, size, displayCornerRadius(view, motion.density)) }
     }
     Box(
         propagateMinConstraints = true,
@@ -149,7 +138,7 @@ private fun displayCornerRadius(view: View, density: Density): Float =
 
 internal enum class BackPhase { Idle, Gesture, Commit, Cancel }
 
-internal enum class BackRole { None, Top, Previous }
+internal enum class StackMotion { None, Push, Pop, Blend }
 
 internal class Pose(
     val scale: Float = 1f,
@@ -162,11 +151,15 @@ internal class Pose(
 
 internal val IdentityPose = Pose()
 
+private val HiddenPose = Pose(alpha = 0f)
+
 @Stable
-internal class PredictiveBackState {
+internal class StackMotionState {
+    var density: Density = Density(1f)
     var phase by mutableStateOf(BackPhase.Idle)
         private set
-    private var session = 0
+    var motion by mutableStateOf(StackMotion.None)
+        private set
     private var progress by mutableFloatStateOf(0f)
     private var touchY by mutableFloatStateOf(0f)
     private var topKey: Any? by mutableStateOf(null)
@@ -174,24 +167,75 @@ internal class PredictiveBackState {
     private var startY = 0f
     private var fromLeft = true
     private var completed = false
-    private var stackSizeAtRelease = 0
+    private var pendingCommitPop = false
+    private var session = 0
     private val settle = Animatable(0f)
     private var settleJob: Job? = null
 
-    fun role(key: Any): BackRole = when {
-        phase == BackPhase.Idle -> BackRole.None
-        key == topKey -> BackRole.Top
-        key == previousKey -> BackRole.Previous
-        else -> BackRole.None
+    private var motionFraction by mutableFloatStateOf(1f)
+    private var motionTop: Any? by mutableStateOf(null)
+    private var motionPrevious: Any? by mutableStateOf(null)
+    private var hiddenKey: Any? by mutableStateOf(null)
+    private var blendTopFrom = IdentityPose
+    private var blendPreviousFrom = IdentityPose
+    private var motionSession = 0
+    private var motionJob: Job? = null
+    private var lastStack: List<Any>? = null
+    private var lastSize = Size.Zero
+    private var lastCornerRadius = 0f
+
+    fun onStack(stack: List<Any>, scope: CoroutineScope) {
+        val old = lastStack
+        lastStack = stack
+        if (old == null || old == stack || stack.isEmpty()) return
+        if (hiddenKey in stack) hiddenKey = null
+        val newTop = stack.last()
+        val newPrevious = stack.getOrNull(stack.lastIndex - 1)
+        val oldTop = old.lastOrNull()
+        when {
+            stack.size < old.size -> {
+                if (pendingCommitPop) {
+                    pendingCommitPop = false
+                    return
+                }
+                endBack()
+                endMotion()
+                if (oldTop != null && oldTop !in stack) hiddenKey = oldTop
+                startMotion(StackMotion.Pop, oldTop, newTop, scope)
+            }
+
+            newTop != oldTop -> {
+                val leaving = when {
+                    phase == BackPhase.Commit -> topKey
+                    motion == StackMotion.Pop -> motionTop
+                    else -> null
+                }
+                if (leaving != null) {
+                    val leavingPrevious = if (phase == BackPhase.Commit) previousKey else motionPrevious
+                    blendTopFrom = pose(leaving, lastSize, lastCornerRadius)
+                    blendPreviousFrom = leavingPrevious?.let { pose(it, lastSize, lastCornerRadius) } ?: IdentityPose
+                    hiddenKey = leaving.takeIf { it != newTop }
+                    endBack()
+                    endMotion()
+                    startMotion(StackMotion.Blend, newTop, newPrevious, scope)
+                } else {
+                    endBack()
+                    endMotion()
+                    startMotion(StackMotion.Push, newTop, newPrevious, scope)
+                }
+            }
+        }
     }
 
     fun onGesture(event: NavigationEvent, backStack: List<Any>) {
         if (phase != BackPhase.Gesture) {
             if (backStack.size <= 1) return
+            endMotion()
             settleJob?.cancel()
             settleJob = null
             session++
             completed = false
+            pendingCommitPop = false
             topKey = backStack[backStack.lastIndex]
             previousKey = backStack[backStack.lastIndex - 1]
             startY = event.touchY
@@ -203,17 +247,20 @@ internal class PredictiveBackState {
     }
 
     fun onBackCompleted() {
-        if (phase == BackPhase.Gesture) completed = true
+        if (phase == BackPhase.Gesture) {
+            completed = true
+            pendingCommitPop = true
+        }
     }
 
-    fun onRelease(scope: CoroutineScope, stackSize: Int) {
+    fun onRelease(scope: CoroutineScope) {
         if (phase != BackPhase.Gesture) return
         val committed = completed
         val releaseSession = session
-        stackSizeAtRelease = stackSize
         settleJob = scope.launch(start = CoroutineStart.UNDISPATCHED) {
             try {
                 settle.snapTo(0f)
+                if (committed) hiddenKey = topKey
                 phase = if (committed) BackPhase.Commit else BackPhase.Cancel
                 val spec = if (committed) {
                     tween<Float>(OpalMotion.SCREEN_DURATION, easing = LinearEasing)
@@ -223,20 +270,101 @@ internal class PredictiveBackState {
                 }
                 settle.animateTo(1f, spec)
             } finally {
-                if (session == releaseSession && phase != BackPhase.Gesture) phase = BackPhase.Idle
+                if (session == releaseSession && phase != BackPhase.Gesture) {
+                    phase = BackPhase.Idle
+                    pendingCommitPop = false
+                }
             }
         }
     }
 
-    fun onStackChanged(stackSize: Int) {
-        if ((phase == BackPhase.Commit || phase == BackPhase.Cancel) && stackSize != stackSizeAtRelease) {
-            settleJob?.cancel()
-            phase = BackPhase.Idle
+    private fun endBack() {
+        settleJob?.cancel()
+        settleJob = null
+        phase = BackPhase.Idle
+    }
+
+    private fun endMotion() {
+        motionJob?.cancel()
+        motionJob = null
+        motionSession++
+        motion = StackMotion.None
+    }
+
+    private fun startMotion(kind: StackMotion, top: Any?, previous: Any?, scope: CoroutineScope) {
+        val id = ++motionSession
+        motionTop = top
+        motionPrevious = previous
+        motionFraction = 0f
+        motion = kind
+        motionJob = scope.launch {
+            try {
+                animate(0f, 1f, animationSpec = tween(OpalMotion.SCREEN_DURATION, easing = LinearEasing)) { value, _ ->
+                    motionFraction = value
+                }
+            } finally {
+                if (motionSession == id) motion = StackMotion.None
+            }
         }
     }
 
-    fun pose(role: BackRole, size: Size, density: Density, cornerRadius: Float): Pose {
-        if (role == BackRole.None) return IdentityPose
+    fun pose(key: Any, size: Size, cornerRadius: Float): Pose {
+        lastSize = size
+        lastCornerRadius = cornerRadius
+        if (phase != BackPhase.Idle) {
+            if (key == topKey) return backPose(top = true, size, cornerRadius)
+            if (key == previousKey) return backPose(top = false, size, cornerRadius)
+        }
+        if (motion != StackMotion.None) {
+            if (key == motionTop) return motionPose(top = true)
+            if (key == motionPrevious) return motionPose(top = false)
+        }
+        return if (key == hiddenKey) HiddenPose else IdentityPose
+    }
+
+    private fun motionPose(top: Boolean): Pose {
+        val f = motionFraction
+        val e = OpalMotion.Emphasized.transform(f)
+        val offset = with(density) { OpalMotion.ScreenOffset.toPx() }
+        return when (motion) {
+            StackMotion.None -> IdentityPose
+
+            StackMotion.Push -> if (top) {
+                Pose(translationX = offset * (1f - e), alpha = fadeGate(f * OpalMotion.SCREEN_DURATION))
+            } else {
+                Pose(translationX = -offset * e)
+            }
+
+            StackMotion.Pop -> if (top) {
+                Pose(translationX = offset * e, alpha = 1f - e)
+            } else {
+                Pose(translationX = -offset * (1f - e))
+            }
+
+            StackMotion.Blend -> if (top) {
+                val from = blendTopFrom
+                val scale = lerp(from.scale, 1f, e)
+                Pose(
+                    scale = scale,
+                    translationX = lerp(from.translationX, 0f, e),
+                    translationY = lerp(from.translationY, 0f, e),
+                    alpha = lerp(from.alpha, 1f, e),
+                    cornerRadius = from.cornerRadius * from.scale / scale
+                )
+            } else {
+                val from = blendPreviousFrom
+                val scale = lerp(from.scale, 1f, e)
+                Pose(
+                    scale = scale,
+                    translationX = lerp(from.translationX, -offset, e),
+                    translationY = lerp(from.translationY, 0f, e),
+                    scrimAlpha = from.scrimAlpha * (1f - e)
+                )
+            }
+        }
+    }
+
+    private fun backPose(top: Boolean, size: Size, cornerRadius: Float): Pose {
         val w = size.width
         val h = size.height
         val offset = with(density) { OpalMotion.ScreenOffset.toPx() }
@@ -253,37 +381,40 @@ internal class PredictiveBackState {
         return when (phase) {
             BackPhase.Idle -> IdentityPose
 
-            BackPhase.Gesture -> when (role) {
-                BackRole.Top -> Pose(gestureScale, gestureTx, gestureTy, cornerRadius = cornerRadius / gestureScale)
-                else -> Pose(gestureScale, -offset, gestureTy, scrimAlpha = OpalMotion.BACK_SCRIM_ALPHA)
+            BackPhase.Gesture -> if (top) {
+                Pose(gestureScale, gestureTx, gestureTy, cornerRadius = cornerRadius / gestureScale)
+            } else {
+                Pose(gestureScale, -offset, gestureTy, scrimAlpha = OpalMotion.BACK_SCRIM_ALPHA)
             }
 
             BackPhase.Commit -> {
                 val e = OpalMotion.Emphasized.transform(f)
                 val scale = gestureScale + (1f - gestureScale) * e
                 val ty = gestureTy * (1f - e)
-                when (role) {
-                    BackRole.Top -> {
-                        val fadeWindow = min(OpalMotion.BACK_COMMIT_TOP_FADE, 1f - progress)
-                        val alpha = if (fadeWindow > 0f) (1f - f / fadeWindow).coerceIn(0f, 1f) else 0f
-                        Pose(scale, gestureTx + offset * e, ty, alpha, cornerRadius / scale)
-                    }
-
-                    else -> {
-                        val scrimFade = (1f - f / OpalMotion.BACK_COMMIT_SCRIM_FADE).coerceAtLeast(0f)
-                        Pose(scale, -offset * (1f - e), ty, scrimAlpha = OpalMotion.BACK_SCRIM_ALPHA * scrimFade)
-                    }
+                if (top) {
+                    val fadeWindow = min(OpalMotion.BACK_COMMIT_TOP_FADE, 1f - progress)
+                    val alpha = if (fadeWindow > 0f) (1f - f / fadeWindow).coerceIn(0f, 1f) else 0f
+                    Pose(scale, gestureTx + offset * e, ty, alpha, cornerRadius / scale)
+                } else {
+                    val scrimFade = (1f - f / OpalMotion.BACK_COMMIT_SCRIM_FADE).coerceAtLeast(0f)
+                    Pose(scale, -offset * (1f - e), ty, scrimAlpha = OpalMotion.BACK_SCRIM_ALPHA * scrimFade)
                 }
             }
 
             BackPhase.Cancel -> {
                 val scale = gestureScale + (1f - gestureScale) * f
                 val ty = gestureTy * (1f - f)
-                when (role) {
-                    BackRole.Top -> Pose(scale, gestureTx * (1f - f), ty, cornerRadius = cornerRadius / scale)
-                    else -> Pose(scale, -offset, ty, scrimAlpha = OpalMotion.BACK_SCRIM_ALPHA)
+                if (top) {
+                    Pose(scale, gestureTx * (1f - f), ty, cornerRadius = cornerRadius / scale)
+                } else {
+                    Pose(scale, -offset, ty, scrimAlpha = OpalMotion.BACK_SCRIM_ALPHA)
                 }
             }
         }
     }
+
+    private fun fadeGate(t: Float): Float =
+        ((t - OpalMotion.SCREEN_FADE_IN_DELAY) / OpalMotion.SCREEN_FADE_IN_DURATION).coerceIn(0f, 1f)
+
+    private fun lerp(from: Float, to: Float, fraction: Float) = from + (to - from) * fraction
 }
