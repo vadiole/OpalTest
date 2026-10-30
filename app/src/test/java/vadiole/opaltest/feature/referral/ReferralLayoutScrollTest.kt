@@ -13,14 +13,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.WindowInfo
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
-import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasScrollToKeyAction
-import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.StateRestorationTester
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollToKey
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -43,7 +46,7 @@ class ReferralLayoutScrollTest {
     @Test
     fun keepsTierOnTopAcrossOneAndTwoPanes() {
         compose.setContent { Screen() }
-        scrollPane(containing = "Loyal MileStone", toKey = "soulful")
+        scrollPane(toKey = "soulful")
         val top = titleTop("Soulful MileStone")
 
         listOf(TABLET, LANDSCAPE, PHONE).forEach { size ->
@@ -56,7 +59,7 @@ class ReferralLayoutScrollTest {
     fun carriesTwoPaneScrollBackToSingleList() {
         window = LANDSCAPE
         compose.setContent { Screen() }
-        scrollPane(containing = "Loyal MileStone", toKey = "popular")
+        scrollPane(toKey = "popular")
         val top = titleTop("Popular MileStone")
 
         window = PHONE
@@ -64,10 +67,21 @@ class ReferralLayoutScrollTest {
     }
 
     @Test
+    fun keepsFirstTierInPlaceWhenLeavingTheTabletLayout() {
+        window = TABLET
+        compose.setContent { Screen() }
+        pane(withKey = "loyal").performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, 40f) }
+        val top = titleTop("Loyal MileStone")
+
+        window = PHONE
+        assertEquals(top, titleTop("Loyal MileStone"), 1f)
+    }
+
+    @Test
     fun keepsTierOnTopWhenRotationRecreatesTheScreen() {
         val restoration = StateRestorationTester(compose)
         restoration.setContent { Screen() }
-        scrollPane(containing = "Loyal MileStone", toKey = "soulful")
+        scrollPane(toKey = "soulful")
         val top = titleTop("Soulful MileStone")
 
         window = LANDSCAPE
@@ -99,10 +113,15 @@ class ReferralLayoutScrollTest {
         }
     }
 
-    private fun scrollPane(containing: String, toKey: String) {
-        compose.onNode(hasScrollToKeyAction() and hasAnyDescendant(hasText(containing)), useUnmergedTree = true)
-            .performScrollToKey(toKey)
+    private fun scrollPane(toKey: String) {
+        pane(withKey = toKey).performScrollToKey(toKey)
     }
+
+    private fun pane(withKey: String) = compose.onNode(
+        hasScrollToKeyAction() and SemanticsMatcher("has item $withKey") {
+            (it.config.getOrNull(SemanticsProperties.IndexForKey)?.invoke(withKey) ?: -1) >= 0
+        }
+    )
 
     private fun titleTop(title: String): Float =
         compose.onNodeWithText(title, useUnmergedTree = true).getUnclippedBoundsInRoot().top.value

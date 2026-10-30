@@ -36,7 +36,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowSizeClass
 import vadiole.opaltest.R
@@ -46,19 +45,7 @@ import vadiole.opaltest.domain.referral.TierStatus
 import vadiole.opaltest.feature.claimreveal.ClaimRevealState
 import vadiole.opaltest.ui.common.OpalButton
 import vadiole.opaltest.ui.theme.OpalLayout
-import vadiole.opaltest.ui.theme.OpalSpacing
 import vadiole.opaltest.ui.theme.OpalTheme
-
-internal object ReferralDimens {
-    val contentTop = OpalLayout.topBarHeight + OpalSpacing.xxSmall
-    val inviteCardHeight = 194.dp
-    val avatarSize = 64.dp
-    val codeCell = DpSize(44.dp, 56.dp)
-    val codeCellGap = 6.dp
-    val tierArtworkSize = 100.dp
-    val tierConnectorHeight = 32.dp
-    val progressMaxWidth = 179.dp
-}
 
 internal enum class PaneLayout { Single, TwoPane, ShortTwoPane }
 
@@ -114,28 +101,28 @@ internal fun Program(
     val gap = OpalTheme.spacing.xLarge
     when (layout) {
         PaneLayout.Single -> ProgramPane(Pane.Single, listState, modifier.fillMaxSize()) {
-            invite(program)
-            codeAndShare(program, onIntent, firstTopPadding = gap)
-            tiers(program, claimingTierId, reveal, onIntent, firstTopPadding = gap)
+            invite(program, gapAfter = gap)
+            codeAndShare(program, onIntent, gapAfter = gap)
+            tiers(program, claimingTierId, reveal, onIntent)
         }
 
         PaneLayout.TwoPane -> Row(modifier.fillMaxSize()) {
             ProgramPane(Pane.Start, headerState) {
-                invite(program)
-                codeAndShare(program, onIntent, firstTopPadding = gap)
+                invite(program, gapAfter = gap)
+                codeAndShare(program, onIntent, gapAfter = 0.dp)
             }
             ProgramPane(Pane.End, tiersState) {
-                tiers(program, claimingTierId, reveal, onIntent, firstTopPadding = 0.dp)
+                tiers(program, claimingTierId, reveal, onIntent)
             }
         }
 
         PaneLayout.ShortTwoPane -> Row(modifier.fillMaxSize()) {
             ProgramPane(Pane.Start, headerState, verticalArrangement = Arrangement.Center) {
-                codeAndShare(program, onIntent, firstTopPadding = 0.dp)
+                codeAndShare(program, onIntent, gapAfter = 0.dp)
             }
             ProgramPane(Pane.End, tiersState) {
-                invite(program)
-                tiers(program, claimingTierId, reveal, onIntent, firstTopPadding = gap)
+                invite(program, gapAfter = gap)
+                tiers(program, claimingTierId, reveal, onIntent)
             }
         }
     }
@@ -177,22 +164,18 @@ private fun ProgramPane(
 
 private enum class HeaderItem { Invite, Code, Share }
 
-private fun LazyListScope.invite(program: ReferralProgram) {
+private fun LazyListScope.invite(program: ReferralProgram, gapAfter: Dp) {
     item(key = HeaderItem.Invite) {
-        InviteCard(program.invitedBy, paneItemModifier)
+        InviteCard(program.invitedBy, paneItemModifier.padding(bottom = gapAfter))
     }
 }
 
-private fun LazyListScope.codeAndShare(
-    program: ReferralProgram,
-    onIntent: (ReferralIntent) -> Unit,
-    firstTopPadding: Dp
-) {
+private fun LazyListScope.codeAndShare(program: ReferralProgram, onIntent: (ReferralIntent) -> Unit, gapAfter: Dp) {
     item(key = HeaderItem.Code) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.large),
-            modifier = paneItemModifier.padding(top = firstTopPadding)
+            modifier = paneItemModifier
         ) {
             Summary(program)
             Code(program.code, onCopy = { onIntent(ReferralIntent.CopyInvite) })
@@ -203,7 +186,7 @@ private fun LazyListScope.codeAndShare(
             text = stringResource(R.string.referral_share),
             onClick = { onIntent(ReferralIntent.Share) },
             leadingIcon = R.drawable.ic_share,
-            modifier = paneItemModifier.padding(top = OpalTheme.spacing.xLarge)
+            modifier = paneItemModifier.padding(top = OpalTheme.spacing.xLarge, bottom = gapAfter)
         )
     }
 }
@@ -212,15 +195,14 @@ private fun LazyListScope.tiers(
     program: ReferralProgram,
     claimingTierId: String?,
     reveal: ClaimRevealState,
-    onIntent: (ReferralIntent) -> Unit,
-    firstTopPadding: Dp
+    onIntent: (ReferralIntent) -> Unit
 ) {
     val activeTierId = program.tiers.firstOrNull { it.status != TierStatus.Claimed }?.id
     itemsIndexed(program.tiers, key = { _, tier -> tier.id }) { index, tier ->
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xxSmall),
-            modifier = paneItemModifier.padding(top = if (index == 0) firstTopPadding else OpalTheme.spacing.xxSmall)
+            modifier = paneItemModifier.padding(top = if (index == 0) 0.dp else OpalTheme.spacing.xxSmall)
         ) {
             if (index > 0) {
                 Box(
