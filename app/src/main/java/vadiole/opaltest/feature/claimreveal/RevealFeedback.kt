@@ -9,7 +9,6 @@ import android.os.VibrationEffect
 import android.os.VibrationEffect.Composition
 import android.os.VibratorManager
 import androidx.annotation.RawRes
-import androidx.compose.ui.util.lerp
 import vadiole.opaltest.R
 
 enum class RevealSound(@RawRes val res: Int, private val peakMs: Int) {
@@ -25,11 +24,6 @@ enum class RevealSound(@RawRes val res: Int, private val peakMs: Int) {
 internal class RevealFeedback(context: Context) {
     private val audio = context.getSystemService(AudioManager::class.java)
     private val vibrator = context.getSystemService(VibratorManager::class.java).defaultVibrator
-    private val primitive = if (vibrator.areAllPrimitivesSupported(Composition.PRIMITIVE_LOW_TICK)) {
-        Composition.PRIMITIVE_LOW_TICK
-    } else {
-        Composition.PRIMITIVE_TICK
-    }
     private val pool = SoundPool.Builder()
         .setMaxStreams(2)
         .setAudioAttributes(
@@ -41,13 +35,14 @@ internal class RevealFeedback(context: Context) {
         .build()
     private val sounds = RevealSound.entries.associateWith { pool.load(context, it.res, 1) }
 
-    fun claim() = tick(CLAIM_SCALE)
-
-    fun travel(closeness: Float) = tick(lerp(TRAVEL_MIN_SCALE, TRAVEL_MAX_SCALE, closeness))
-
-    fun peak() = tick(PEAK_SCALE)
-
-    fun arrive() = tick(ARRIVE_SCALE)
+    fun buttonAppear() {
+        if (!vibrator.hasVibrator()) return
+        val effect = VibrationEffect.startComposition()
+            .addPrimitive(Composition.PRIMITIVE_TICK, APPEAR_SCALE)
+            .addPrimitive(Composition.PRIMITIVE_TICK, APPEAR_SCALE, APPEAR_GAP_MS)
+            .compose()
+        vibrator.vibrate(effect, TouchAttributes)
+    }
 
     fun shine(sound: RevealSound) {
         if (audio.ringerMode != AudioManager.RINGER_MODE_NORMAL) return
@@ -55,19 +50,10 @@ internal class RevealFeedback(context: Context) {
     }
 
     fun release() = pool.release()
-
-    private fun tick(scale: Float) {
-        if (!vibrator.hasVibrator()) return
-        val effect = VibrationEffect.startComposition().addPrimitive(primitive, scale).compose()
-        vibrator.vibrate(effect, TouchAttributes)
-    }
 }
 
 private val TouchAttributes = VibrationAttributes.createForUsage(VibrationAttributes.USAGE_TOUCH)
 internal const val SOUND_RATE = 0.5f
 private const val VOLUME = 0.144f
-private const val CLAIM_SCALE = 0.5f
-private const val TRAVEL_MIN_SCALE = 0.12f
-private const val TRAVEL_MAX_SCALE = 0.35f
-private const val PEAK_SCALE = 0.8f
-private const val ARRIVE_SCALE = 0.5f
+private const val APPEAR_SCALE = 0.8f
+private const val APPEAR_GAP_MS = 90
