@@ -32,7 +32,7 @@ fun OpalProgressBar(progress: Float, modifier: Modifier = Modifier) {
     )
     Canvas(
         modifier = modifier
-            .height(6.dp)
+            .height(OpalTheme.layout.progressBarHeight)
             .semantics { progressBarRangeInfo = ProgressBarRangeInfo(clamped, 0f..1f) }
     ) {
         val radius = CornerRadius(size.height / 2)

@@ -146,10 +146,11 @@ fun ReferralContent(
 ) {
     val title = stringResource(R.string.referral_title)
     val hazeState = rememberHazeState()
-    val twoPane = isTwoPane()
+    val layout = paneLayout()
     val listState = rememberLazyListState()
     val headerState = rememberLazyListState()
     val tiersState = rememberLazyListState()
+    KeepScrollAcrossLayouts(layout, listState, headerState, tiersState)
     val listBlur by rememberTopBlurVisibility(listState)
     val headerBlur by rememberTopBlurVisibility(headerState)
     val tiersBlur by rememberTopBlurVisibility(tiersState)
@@ -183,11 +184,11 @@ fun ReferralContent(
                             skeletonHeaderState.scrollTo(0)
                         }
 
-                        Body.Program -> if (twoPane) {
+                        Body.Program -> if (layout == PaneLayout.Single) {
+                            listState.scrollBy(skeletonListState.value.toFloat())
+                        } else {
                             tiersState.scrollBy(skeletonListState.value.toFloat())
                             headerState.scrollBy(skeletonHeaderState.value.toFloat())
-                        } else {
-                            listState.scrollBy(skeletonListState.value.toFloat())
                         }
 
                         else -> Unit
@@ -212,7 +213,7 @@ fun ReferralContent(
                                 claimingTierId = ready.claimingTierId,
                                 reveal = reveal,
                                 onIntent = onIntent,
-                                twoPane = twoPane,
+                                layout = layout,
                                 listState = listState,
                                 headerState = headerState,
                                 tiersState = tiersState
@@ -235,11 +236,11 @@ fun ReferralContent(
                 visibility = {
                     when {
                         state !is ReferralState.Ready -> 0f
-                        twoPane -> maxOf(headerBlur, tiersBlur)
-                        else -> listBlur
+                        layout == PaneLayout.Single -> listBlur
+                        else -> maxOf(headerBlur, tiersBlur)
                     }
                 },
-                height = OpalTheme.spacing.small * 2 + OpalTheme.layout.iconButtonSize
+                height = OpalTheme.layout.topBarHeight
             )
             OpalIconButton(
                 icon = R.drawable.ic_arrow_back,

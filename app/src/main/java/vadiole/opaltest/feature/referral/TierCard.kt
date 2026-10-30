@@ -95,10 +95,10 @@ internal fun TierCard(
         BoxWithConstraints {
             val minTextWidth = MinTierTextWidth * LocalDensity.current.fontScale
             val spacing = OpalTheme.spacing.large
-            val artworkSize = if (maxWidth - TierArtworkSize - spacing < minTextWidth) {
+            val artworkSize = if (maxWidth - ReferralDimens.tierArtworkSize - spacing < minTextWidth) {
                 CompactTierArtworkSize
             } else {
-                TierArtworkSize
+                ReferralDimens.tierArtworkSize
             }
             Row(
                 horizontalArrangement = Arrangement.spacedBy(spacing),
@@ -173,7 +173,7 @@ private fun TierProgress(tier: RewardTier, successfulReferrals: Int) {
     OpalProgressBar(
         progress = tier.progress(successfulReferrals),
         modifier = Modifier
-            .widthIn(max = 179.dp)
+            .widthIn(max = ReferralDimens.progressMaxWidth)
             .fillMaxWidth()
             .semantics { stateDescription = description }
     )
@@ -264,6 +264,5 @@ private fun TierArtwork(reward: Reward, claimed: Boolean, reveal: ClaimRevealSta
     }
 }
 
-private val TierArtworkSize = 100.dp
 private val CompactTierArtworkSize = 64.dp
 private val MinTierTextWidth = 80.dp

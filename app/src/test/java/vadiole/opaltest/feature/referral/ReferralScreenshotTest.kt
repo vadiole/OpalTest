@@ -63,6 +63,30 @@ class ReferralScreenshotTest {
     )
 
     @Test
+    @Config(qualifiers = "w732dp-h412dp-xxhdpi")
+    fun landscapeNarrow() = capture("referral_landscape_narrow", ReferralState.Ready(previewProgram()))
+
+    @Test
+    @Config(qualifiers = "w732dp-h412dp-xxhdpi")
+    fun loadingLandscapeNarrow() = capture("referral_loading_landscape_narrow", ReferralState.Loading)
+
+    @Test
+    @Config(qualifiers = "w1280dp-h800dp-xhdpi")
+    fun loadingTablet() = capture("referral_loading_tablet", ReferralState.Loading)
+
+    @Test
+    fun longInviter() = capture(
+        "referral_long_inviter",
+        ReferralState.Ready(previewProgram().copy(invitedBy = LONG_INVITER))
+    )
+
+    @Test
+    fun longCode() = capture(
+        "referral_long_code",
+        ReferralState.Ready(previewProgram().copy(code = LONG_CODE))
+    )
+
+    @Test
     @Config(qualifiers = "w320dp-h1861dp-xxhdpi", fontScale = 2f)
     fun narrowLargeFont() = capture("referral_narrow_large_font", ReferralState.Ready(previewProgram()))
 
@@ -80,5 +104,10 @@ class ReferralScreenshotTest {
         output.outputStream().use {
             compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
         }
+    }
+
+    private companion object {
+        const val LONG_INVITER = "Maximilian Alexander von Hohenzollern-Sigmaringen"
+        const val LONG_CODE = "ABCDEFGH23"
     }
 }
