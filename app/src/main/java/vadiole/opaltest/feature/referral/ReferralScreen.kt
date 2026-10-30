@@ -30,7 +30,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -222,7 +221,7 @@ private fun InviteCard(invitedBy: String?) {
                 Text(
                     text = stringResource(R.string.referral_invited_by, invitedBy),
                     style = OpalTheme.typography.caption,
-                    modifier = Modifier.alpha(0.9f)
+                    color = OpalTheme.colors.contentHigh
                 )
             }
         }
@@ -306,7 +305,7 @@ private fun Tiers(program: ReferralProgram, claimingTierId: String?, onIntent: (
                     Icon(
                         painter = painterResource(R.drawable.ic_south),
                         contentDescription = null,
-                        tint = OpalTheme.colors.content.copy(alpha = 0.4f)
+                        tint = OpalTheme.colors.contentTertiary
                     )
                 }
             }
@@ -327,7 +326,7 @@ private fun TierCard(tier: RewardTier, successfulReferrals: Int, claiming: Boole
         highlighted = featured,
         modifier = Modifier
             .fillMaxWidth()
-            .alpha(if (tier.status == TierStatus.Claimed) 0.75f else 1f)
+            .alpha(if (tier.status == TierStatus.Claimed) OpalTheme.alpha.completed else 1f)
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.large),
@@ -408,7 +407,7 @@ private fun TierArtwork(reward: Reward, featured: Boolean) {
         modifier = Modifier
             .size(100.dp)
             .clip(OpalTheme.shapes.medium)
-            .background(if (featured) Color.Transparent else OpalTheme.colors.fillSubtle)
+            .then(if (featured) Modifier else Modifier.background(OpalTheme.colors.fillSubtle))
     ) {
         val image = when (reward) {
             is Reward.Milestone -> when (reward.stone) {

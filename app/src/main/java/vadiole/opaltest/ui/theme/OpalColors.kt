@@ -17,7 +17,9 @@ import kotlin.math.sin
 class OpalColors(
     val background: Color,
     val content: Color,
+    val contentHigh: Color,
     val contentSecondary: Color,
+    val contentTertiary: Color,
     val fill: Color,
     val fillSubtle: Color,
     val border: Color,
@@ -55,7 +57,9 @@ private class AngledLinearGradient(private val colors: List<Color>, private val 
 val DarkOpalColors = OpalColors(
     background = Color(0xFF000000),
     content = Color(0xFFFFFFFF),
+    contentHigh = Color(0xE6FFFFFF),
     contentSecondary = Color(0x99FFFFFF),
+    contentTertiary = Color(0x66FFFFFF),
     fill = Color(0x1AFFFFFF),
     fillSubtle = Color(0x0DFFFFFF),
     border = Color(0x1AFFFFFF),

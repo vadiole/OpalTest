@@ -68,7 +68,7 @@ fun OpalButton(
                 }
             }
             .height(metrics.height)
-            .alpha(if (enabled) 1f else DISABLED_ALPHA)
+            .alpha(if (enabled) 1f else OpalTheme.alpha.disabled)
             .clip(OpalTheme.shapes.pill)
             .background(background)
             .clickable(enabled = enabled && !loading, role = Role.Button, onClick = onClick)
@@ -97,8 +97,6 @@ fun OpalButton(
         }
     }
 }
-
-internal const val DISABLED_ALPHA = 0.4f
 
 private class ButtonMetrics(val height: Dp, val padding: PaddingValues, val iconSize: Dp, val textStyle: TextStyle)
 

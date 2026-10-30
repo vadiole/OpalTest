@@ -29,6 +29,11 @@ object OpalIconSize {
     val large = 28.dp
 }
 
+object OpalAlpha {
+    val disabled = 0.4f
+    val completed = 0.75f
+}
+
 object OpalLayout {
     val maxContentWidth = 480.dp
 }

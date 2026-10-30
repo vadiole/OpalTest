@@ -81,7 +81,7 @@ private fun ChipSurface(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .height(40.dp)
-            .alpha(if (enabled) 1f else DISABLED_ALPHA)
+            .alpha(if (enabled) 1f else OpalTheme.alpha.disabled)
             .clip(OpalTheme.shapes.pill)
             .background(background)
             .then(interactionModifier)
