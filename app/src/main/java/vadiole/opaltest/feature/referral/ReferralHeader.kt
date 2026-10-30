@@ -3,6 +3,7 @@ package vadiole.opaltest.feature.referral
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -19,6 +20,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.addOutline
@@ -30,7 +33,10 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.focused
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.requestFocus
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -94,6 +100,8 @@ internal fun Code(code: String, onCopy: () -> Unit) {
     val fill = OpalTheme.colors.fill
     val interactionSource = remember { MutableInteractionSource() }
     val indicationSource = remember { MutableInteractionSource() }
+    val focusRequester = remember { FocusRequester() }
+    val focused = interactionSource.collectIsFocusedAsState().value
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small)
@@ -131,18 +139,23 @@ internal fun Code(code: String, onCopy: () -> Unit) {
                             indicationSource,
                             opalRipple(OpalTheme.colors.content, OpalTheme.alpha.rippleOnFill)
                         )
-                        .combinedClickable(
-                            interactionSource = interactionSource,
-                            indication = null,
-                            onClickLabel = copyLabel,
-                            onLongClickLabel = copyLabel,
-                            onLongClick = onCopy,
-                            onClick = onCopy
-                        )
                         .clearAndSetSemantics {
                             contentDescription = description
                             heading()
+                            this.focused = focused
+                            onClick(label = copyLabel) {
+                                onCopy()
+                                true
+                            }
+                            requestFocus { focusRequester.requestFocus() }
                         }
+                        .focusRequester(focusRequester)
+                        .combinedClickable(
+                            interactionSource = interactionSource,
+                            indication = null,
+                            onLongClick = onCopy,
+                            onClick = onCopy
+                        )
                 ) {
                     code.forEachIndexed { index, char ->
                         Box(

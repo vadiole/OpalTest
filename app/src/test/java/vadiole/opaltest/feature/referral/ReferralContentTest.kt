@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -16,7 +17,10 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -46,6 +50,7 @@ class ReferralContentTest {
 
     private var state: ReferralState by mutableStateOf(ReferralState.Loading)
     private lateinit var reveal: ClaimRevealState
+    private val intents = mutableListOf<ReferralIntent>()
 
     private fun setContent(initial: ReferralState, probe: RewardTier? = null) {
         state = initial
@@ -55,7 +60,7 @@ class ReferralContentTest {
                 Column {
                     ReferralContent(
                         state = state,
-                        onIntent = {},
+                        onIntent = { intents += it },
                         onBack = {},
                         modifier = Modifier.weight(1f),
                         reveal = reveal
@@ -214,6 +219,19 @@ class ReferralContentTest {
                 ?: node.config.getOrNull(SemanticsProperties.Text)?.firstOrNull()?.text
         }
         assertEquals("Back", spoken.first())
+    }
+
+    @Test
+    fun `code exposes one copy action and still copies on tap and long press`() {
+        setContent(ReferralState.Ready(previewProgram()))
+        val code = compose.onNode(hasContentDescription("Your Opal code", substring = true))
+        val config = code.fetchSemanticsNode().config
+
+        assertEquals("Copy invite", config[SemanticsActions.OnClick].label)
+        assertFalse(config.contains(SemanticsActions.OnLongClick))
+        code.performClick()
+        code.performTouchInput { longClick() }
+        assertEquals(listOf(ReferralIntent.CopyInvite, ReferralIntent.CopyInvite), intents)
     }
 
     private fun SemanticsNodeInteraction.stateDescription(): String? =
