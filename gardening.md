@@ -13,11 +13,12 @@ Maintained by the gardener agent. See [WORKFLOW.md](WORKFLOW.md).
 | Date | Range | Notes |
 |---|---|---|
 | 2026-10-30 | `d36907c..eeb7ab9` | Project skeleton only. No feature code yet, so nothing to garden. |
+| 2026-10-30 | `4501dbc..8c69ba8` | #4 design system and console, #6 console save errors. 7 findings, no crashes. See Active. |
 | 2026-10-30 | `eeb7ab9..4501dbc` | Referral data layer, fake backend, Nav3 with Console and Referral routes. Clean: typed errors, rethrows CancellationException, DTO→domain mapping drops invalid tiers, tested. The screens are placeholders and the main agent is still working on them. No action needed. |
 
 ## Active
 
-- 2026-10-30: Read-only review of #4 (design system, console) and #6 (console save errors) is running.
+- 2026-10-30: Reviewed #4 and #6. The user approved one gardening PR: console loading and error states with retry, Reset as a small OpalButton with a confirm, a font-scale-safe label column, chip haptic and onClick only on a real change, a single max-content-width token (480dp, the console's value), and OpalButton screen-reader text while loading. Waiting for the main agent to confirm there's no overlap before dispatching. ReferralScreen previews and scrolling are left to the main agent, which is still building it.
 
 ## Findings
 
