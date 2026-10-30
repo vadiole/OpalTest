@@ -1,5 +1,6 @@
 package vadiole.opaltest.navigation
 
+import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
@@ -12,6 +13,7 @@ import kotlinx.serialization.Serializable
 import vadiole.opaltest.feature.console.ConsoleScreen
 import vadiole.opaltest.feature.referral.ReferralScreen
 import vadiole.opaltest.ui.common.rememberStackTransitions
+import vadiole.opaltest.ui.theme.OpalTheme
 
 @Serializable
 data object ConsoleRoute : NavKey
@@ -34,7 +36,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
     }
     NavDisplay(
         backStack = backStack,
-        modifier = modifier,
+        modifier = modifier.background(OpalTheme.colors.background),
         onBack = navigateBack,
         entryDecorators = listOf(
             rememberSaveableStateHolderNavEntryDecorator(),
