@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import vadiole.opaltest.R
 import vadiole.opaltest.ui.common.OpalCard
@@ -47,12 +48,18 @@ internal fun Loading(headerState: ScrollState, listState: ScrollState) {
             }
 
             PaneLayout.ShortTwoPane -> Row(Modifier.fillMaxSize()) {
-                SkeletonPane(Pane.Start, headerState, Modifier.weight(1f), Alignment.CenterVertically) {
+                SkeletonPane(
+                    pane = Pane.Start,
+                    scrollState = headerState,
+                    modifier = Modifier.weight(1f),
+                    spacing = OpalTheme.spacing.large,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     CodeSkeleton()
                     ShareSkeleton()
                 }
                 SkeletonPane(Pane.End, listState, Modifier.weight(1f)) {
-                    InviteSkeleton()
+                    CompactInviteSkeleton()
                     TiersSkeleton()
                 }
             }
@@ -65,15 +72,16 @@ private fun SkeletonPane(
     pane: Pane,
     scrollState: ScrollState,
     modifier: Modifier = Modifier,
+    spacing: Dp = OpalTheme.spacing.xLarge,
     verticalAlignment: Alignment.Vertical = Alignment.Top,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Column(
         horizontalAlignment = paneAlignment(pane),
-        verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xLarge, verticalAlignment),
+        verticalArrangement = Arrangement.spacedBy(spacing, verticalAlignment),
         modifier = modifier
             .fillMaxHeight()
-            .verticalScroll(scrollState)
+            .verticalScroll(scrollState, enabled = scrollState.canScrollForward || scrollState.canScrollBackward)
             .padding(paneContentPadding(pane)),
         content = content
     )
@@ -82,6 +90,11 @@ private fun SkeletonPane(
 @Composable
 private fun InviteSkeleton() {
     SkeletonBlock(paneItemModifier.height(ReferralDimens.inviteCardHeight), OpalTheme.shapes.large)
+}
+
+@Composable
+private fun CompactInviteSkeleton() {
+    SkeletonBlock(paneItemModifier.height(ReferralDimens.compactInviteCardHeight), OpalTheme.shapes.xLarge)
 }
 
 @Composable

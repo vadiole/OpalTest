@@ -102,14 +102,14 @@ internal fun Program(
     when (layout) {
         PaneLayout.Single -> ProgramPane(Pane.Single, listState, modifier.fillMaxSize()) {
             invite(program, gapAfter = gap)
-            codeAndShare(program, onIntent, gapAfter = gap)
+            codeAndShare(program, onIntent, shareGap = gap, gapAfter = gap)
             tiers(program, claimingTierId, reveal, onIntent)
         }
 
         PaneLayout.TwoPane -> Row(modifier.fillMaxSize()) {
             ProgramPane(Pane.Start, headerState) {
                 invite(program, gapAfter = gap)
-                codeAndShare(program, onIntent, gapAfter = 0.dp)
+                codeAndShare(program, onIntent, shareGap = gap, gapAfter = 0.dp)
             }
             ProgramPane(Pane.End, tiersState) {
                 tiers(program, claimingTierId, reveal, onIntent)
@@ -118,10 +118,10 @@ internal fun Program(
 
         PaneLayout.ShortTwoPane -> Row(modifier.fillMaxSize()) {
             ProgramPane(Pane.Start, headerState, verticalArrangement = Arrangement.Center) {
-                codeAndShare(program, onIntent, gapAfter = 0.dp)
+                codeAndShare(program, onIntent, shareGap = OpalTheme.spacing.large, gapAfter = 0.dp)
             }
             ProgramPane(Pane.End, tiersState) {
-                invite(program, gapAfter = gap)
+                compactInvite(program, gapAfter = gap)
                 tiers(program, claimingTierId, reveal, onIntent)
             }
         }
@@ -157,6 +157,7 @@ private fun ProgramPane(
         verticalArrangement = verticalArrangement,
         contentPadding = paneContentPadding(pane),
         state = state,
+        userScrollEnabled = state.canScrollForward || state.canScrollBackward,
         modifier = modifier,
         content = content
     )
@@ -170,7 +171,18 @@ private fun LazyListScope.invite(program: ReferralProgram, gapAfter: Dp) {
     }
 }
 
-private fun LazyListScope.codeAndShare(program: ReferralProgram, onIntent: (ReferralIntent) -> Unit, gapAfter: Dp) {
+private fun LazyListScope.compactInvite(program: ReferralProgram, gapAfter: Dp) {
+    item(key = HeaderItem.Invite) {
+        CompactInviteCard(program.invitedBy, paneItemModifier.padding(bottom = gapAfter))
+    }
+}
+
+private fun LazyListScope.codeAndShare(
+    program: ReferralProgram,
+    onIntent: (ReferralIntent) -> Unit,
+    shareGap: Dp,
+    gapAfter: Dp
+) {
     item(key = HeaderItem.Code) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -186,7 +198,7 @@ private fun LazyListScope.codeAndShare(program: ReferralProgram, onIntent: (Refe
             text = stringResource(R.string.referral_share),
             onClick = { onIntent(ReferralIntent.Share) },
             leadingIcon = R.drawable.ic_share,
-            modifier = paneItemModifier.padding(top = OpalTheme.spacing.xLarge, bottom = gapAfter)
+            modifier = paneItemModifier.padding(top = shareGap, bottom = gapAfter)
         )
     }
 }
