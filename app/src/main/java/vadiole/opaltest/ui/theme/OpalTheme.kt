@@ -10,6 +10,6 @@ import androidx.compose.runtime.Composable
 fun OpalTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme(),
-        content = content,
+        content = content
     )
 }
