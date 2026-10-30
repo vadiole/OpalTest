@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.Intent
 import android.content.res.Resources
 import android.widget.Toast
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
@@ -115,6 +116,14 @@ import vadiole.opaltest.domain.referral.Reward
 import vadiole.opaltest.domain.referral.RewardTier
 import vadiole.opaltest.domain.referral.TierStatus
 import vadiole.opaltest.domain.referral.progress
+import vadiole.opaltest.feature.claimreveal.ClaimRevealHost
+import vadiole.opaltest.feature.claimreveal.ClaimRevealState
+import vadiole.opaltest.feature.claimreveal.ClaimedGemGlow
+import vadiole.opaltest.feature.claimreveal.RevealContent
+import vadiole.opaltest.feature.claimreveal.claimRevealSource
+import vadiole.opaltest.feature.claimreveal.rememberClaimRevealState
+import vadiole.opaltest.feature.claimreveal.revealImage
+import vadiole.opaltest.feature.claimreveal.thumbnail
 import vadiole.opaltest.ui.common.OpalButton
 import vadiole.opaltest.ui.common.OpalButtonSize
 import vadiole.opaltest.ui.common.OpalButtonStyle
@@ -145,6 +154,7 @@ fun ReferralScreen(
     val resources = LocalResources.current
     val haptics = LocalHapticFeedback.current
     val clipboard = LocalClipboard.current
+    val reveal = rememberClaimRevealState()
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
@@ -159,7 +169,18 @@ fun ReferralScreen(
                     clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(effect.invite.code, message)))
                 }
 
-                ReferralEffect.ClaimSucceeded -> haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                is ReferralEffect.ClaimSucceeded -> {
+                    val reward = effect.reward
+                    if (reward is Reward.Milestone) {
+                        val content = RevealContent(
+                            gem = reward.stone.revealImage,
+                            title = resources.getString(reward.stone.title)
+                        )
+                        reveal.open(reward.stone, content)
+                    } else {
+                        haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                    }
+                }
 
                 is ReferralEffect.ClaimFailed -> {
                     haptics.performHapticFeedback(HapticFeedbackType.Reject)
@@ -172,7 +193,13 @@ fun ReferralScreen(
             }
         }
     }
-    ReferralContent(state = state, onIntent = viewModel::onIntent, onBack = onBack, modifier = modifier)
+    ReferralContent(
+        state = state,
+        onIntent = viewModel::onIntent,
+        onBack = onBack,
+        modifier = modifier,
+        reveal = reveal
+    )
 }
 
 private fun Resources.inviteMessage(invite: Invite): String =
@@ -183,7 +210,8 @@ fun ReferralContent(
     state: ReferralState,
     onIntent: (ReferralIntent) -> Unit,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    reveal: ClaimRevealState = rememberClaimRevealState()
 ) {
     val title = stringResource(R.string.referral_title)
     val hazeState = rememberHazeState()
@@ -192,45 +220,49 @@ fun ReferralContent(
     val listBlur by rememberTopBlurVisibility(listState)
     val headerBlur by rememberTopBlurVisibility(headerState)
     val program = state.program
-    Box(
+    ClaimRevealHost(
+        state = reveal,
         modifier = modifier
             .fillMaxSize()
             .semantics { paneTitle = title }
     ) {
-        Box(
-            Modifier
-                .matchParentSize()
-                .hazeSource(hazeState)
-                .background(OpalTheme.colors.background)
-        ) {
-            OpalGlow(Modifier.fillMaxWidth())
-            when {
-                program != null -> Program(
-                    program = program,
-                    claimingTierId = state.claimingTierId,
-                    onIntent = onIntent,
-                    listState = listState,
-                    headerState = headerState
-                )
+        Box(Modifier.fillMaxSize()) {
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .hazeSource(hazeState)
+                    .background(OpalTheme.colors.background)
+            ) {
+                OpalGlow(Modifier.fillMaxWidth())
+                when {
+                    program != null -> Program(
+                        program = program,
+                        claimingTierId = state.claimingTierId,
+                        reveal = reveal,
+                        onIntent = onIntent,
+                        listState = listState,
+                        headerState = headerState
+                    )
 
-                state.loadError != null -> LoadError(onRetry = { onIntent(ReferralIntent.Retry) })
+                    state.loadError != null -> LoadError(onRetry = { onIntent(ReferralIntent.Retry) })
 
-                else -> DelayedLoading()
+                    else -> DelayedLoading()
+                }
             }
+            OpalTopBlur(
+                state = hazeState,
+                visibility = { if (program != null) maxOf(listBlur, headerBlur) else 0f },
+                height = OpalTheme.spacing.small * 2 + OpalTheme.layout.iconButtonSize + OpalTheme.spacing.large
+            )
+            OpalIconButton(
+                icon = R.drawable.ic_arrow_back,
+                contentDescription = stringResource(R.string.referral_back),
+                onClick = onBack,
+                modifier = Modifier
+                    .safeDrawingPadding()
+                    .padding(horizontal = OpalTheme.spacing.mediumLarge, vertical = OpalTheme.spacing.small)
+            )
         }
-        OpalTopBlur(
-            state = hazeState,
-            visibility = { if (program != null) maxOf(listBlur, headerBlur) else 0f },
-            height = OpalTheme.spacing.small * 2 + OpalTheme.layout.iconButtonSize + OpalTheme.spacing.large
-        )
-        OpalIconButton(
-            icon = R.drawable.ic_arrow_back,
-            contentDescription = stringResource(R.string.referral_back),
-            onClick = onBack,
-            modifier = Modifier
-                .safeDrawingPadding()
-                .padding(horizontal = OpalTheme.spacing.mediumLarge, vertical = OpalTheme.spacing.small)
-        )
     }
 }
 
@@ -262,6 +294,7 @@ private val paneItemModifier = Modifier
 private fun Program(
     program: ReferralProgram,
     claimingTierId: String?,
+    reveal: ClaimRevealState,
     onIntent: (ReferralIntent) -> Unit,
     listState: LazyListState,
     headerState: LazyListState,
@@ -287,7 +320,7 @@ private fun Program(
                     .weight(1f)
                     .fillMaxHeight()
             ) {
-                tiers(program, claimingTierId, onIntent, firstTopPadding = 0.dp)
+                tiers(program, claimingTierId, reveal, onIntent, firstTopPadding = 0.dp)
             }
         }
     } else {
@@ -298,7 +331,7 @@ private fun Program(
             modifier = modifier.fillMaxSize()
         ) {
             programHeader(program, onIntent)
-            tiers(program, claimingTierId, onIntent, firstTopPadding = OpalTheme.spacing.xLarge)
+            tiers(program, claimingTierId, reveal, onIntent, firstTopPadding = OpalTheme.spacing.xLarge)
         }
     }
 }
@@ -330,6 +363,7 @@ private fun LazyListScope.programHeader(program: ReferralProgram, onIntent: (Ref
 private fun LazyListScope.tiers(
     program: ReferralProgram,
     claimingTierId: String?,
+    reveal: ClaimRevealState,
     onIntent: (ReferralIntent) -> Unit,
     firstTopPadding: Dp
 ) {
@@ -353,6 +387,7 @@ private fun LazyListScope.tiers(
                 successfulReferrals = program.successfulReferrals,
                 claiming = tier.id == claimingTierId,
                 claimable = claimingTierId == null || tier.id == claimingTierId,
+                reveal = reveal,
                 onClaim = { onIntent(ReferralIntent.Claim(tier.id)) }
             )
         }
@@ -498,11 +533,14 @@ private fun TierCard(
     successfulReferrals: Int,
     claiming: Boolean,
     claimable: Boolean,
+    reveal: ClaimRevealState,
     onClaim: () -> Unit
 ) {
     val featured = tier.reward.isFreeYear
+    val stone = (tier.reward as? Reward.Milestone)?.stone
+    val status = if (stone != null && reveal.isHolding(stone)) TierStatus.Claimable else tier.status
     val alpha by animateFloatAsState(
-        targetValue = if (tier.status == TierStatus.Claimed) OpalTheme.alpha.completed else 1f,
+        targetValue = if (status == TierStatus.Claimed) OpalTheme.alpha.completed else 1f,
         animationSpec = OpalMotion.StateSpring,
         label = "tierAlpha"
     )
@@ -516,7 +554,7 @@ private fun TierCard(
             horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.large),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            TierArtwork(tier.reward, featured)
+            TierArtwork(tier.reward, featured, claimed = status == TierStatus.Claimed, reveal = reveal)
             Column(
                 verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small),
                 modifier = Modifier
@@ -524,7 +562,7 @@ private fun TierCard(
                     .padding(vertical = OpalTheme.spacing.xxSmall)
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xxxSmall)) {
-                    TierCaption(tier)
+                    TierCaption(tier, status)
                     Column {
                         Text(text = tier.reward.title(), style = OpalTheme.typography.body)
                         Text(
@@ -535,7 +573,7 @@ private fun TierCard(
                     }
                 }
                 AnimatedContent(
-                    targetState = tier.status == TierStatus.Claimable,
+                    targetState = status == TierStatus.Claimable,
                     transitionSpec = {
                         (fadeIn(OpalMotion.StateSpring) togetherWith fadeOut(OpalMotion.StateSpring))
                             .using(SizeTransform(clip = false) { _, _ -> OpalMotion.SizeSpring })
@@ -567,10 +605,10 @@ private fun TierCard(
 }
 
 @Composable
-private fun TierCaption(tier: RewardTier) {
+private fun TierCaption(tier: RewardTier, status: TierStatus) {
     val style = OpalTheme.typography.caption.copy(brush = OpalTheme.colors.accent)
     AnimatedContent(
-        targetState = tier.status == TierStatus.Claimed,
+        targetState = status == TierStatus.Claimed,
         transitionSpec = {
             (fadeIn(OpalMotion.StateSpring) + slideInVertically(OpalMotion.SlideSpring) { it / 2 }) togetherWith
                 (fadeOut(OpalMotion.StateSpring) + slideOutVertically(OpalMotion.SlideSpring) { -it / 2 })
@@ -615,7 +653,7 @@ private fun TierCaption(tier: RewardTier) {
 }
 
 @Composable
-private fun TierArtwork(reward: Reward, featured: Boolean) {
+private fun TierArtwork(reward: Reward, featured: Boolean, claimed: Boolean, reveal: ClaimRevealState) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -623,15 +661,13 @@ private fun TierArtwork(reward: Reward, featured: Boolean) {
             .clip(OpalTheme.shapes.medium)
             .then(if (featured) Modifier else Modifier.background(OpalTheme.colors.fillSubtle))
     ) {
+        val stone = (reward as? Reward.Milestone)?.stone
+        if (stone != null) {
+            ClaimedGemGlow(gem = stone.thumbnail, visible = claimed, modifier = Modifier.fillMaxSize())
+        }
         val image = when (reward) {
-            is Reward.Milestone -> when (reward.stone) {
-                MilestoneStone.Loyal -> R.drawable.img_milestone_loyal
-                MilestoneStone.Soulful -> R.drawable.img_milestone_soulful
-                MilestoneStone.Popular -> R.drawable.img_milestone_popular
-            }
-
+            is Reward.Milestone -> reward.stone.thumbnail
             is Reward.ProAccess -> if (reward.isFreeYear) R.drawable.img_reward_pro_year else null
-
             Reward.Mystery -> null
         }
         if (image != null) {
@@ -639,7 +675,9 @@ private fun TierArtwork(reward: Reward, featured: Boolean) {
                 id = image,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(if (stone != null) Modifier.claimRevealSource(reveal, stone) else Modifier)
             )
         } else {
             Icon(
@@ -653,17 +691,21 @@ private fun TierArtwork(reward: Reward, featured: Boolean) {
     }
 }
 
+@get:StringRes
+private val MilestoneStone.title: Int
+    get() = when (this) {
+        MilestoneStone.Loyal -> R.string.referral_milestone_loyal
+        MilestoneStone.Soulful -> R.string.referral_milestone_soulful
+        MilestoneStone.Popular -> R.string.referral_milestone_popular
+    }
+
 private val Reward.isFreeYear: Boolean
     get() = this is Reward.ProAccess && term == ProTerm.OneYear
 
 @Composable
 private fun Reward.title(): String = stringResource(
     when (this) {
-        is Reward.Milestone -> when (stone) {
-            MilestoneStone.Loyal -> R.string.referral_milestone_loyal
-            MilestoneStone.Soulful -> R.string.referral_milestone_soulful
-            MilestoneStone.Popular -> R.string.referral_milestone_popular
-        }
+        is Reward.Milestone -> stone.title
 
         is Reward.ProAccess -> when (term) {
             ProTerm.OneYear -> R.string.referral_pro_one_year

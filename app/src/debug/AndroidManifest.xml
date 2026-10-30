@@ -6,12 +6,7 @@
             android:name=".feature.claimreveal.demo.ClaimRevealDemoActivity"
             android:exported="true"
             android:label="@string/claim_reveal_demo_label"
-            android:taskAffinity="vadiole.opaltest.claimreveal">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:taskAffinity="vadiole.opaltest.claimreveal" />
     </application>
 
 </manifest>

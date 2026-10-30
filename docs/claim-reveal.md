@@ -1,6 +1,10 @@
 # Claim reveal
 
-Full-screen reveal that lifts a claimed gem out of its card and returns it. All code lives in `feature/claimreveal/`; the demo is a debug-only launcher activity (`ClaimRevealDemoActivity`).
+Full-screen reveal that lifts a claimed gem out of its card and returns it. All code lives in `feature/claimreveal/`; the referral screen opens it when a MileStone claim succeeds. The tuning demo is a hidden debug activity:
+
+```
+adb shell am start -n vadiole.opaltest.debug/vadiole.opaltest.feature.claimreveal.demo.ClaimRevealDemoActivity
+```
 
 ## Plugging it into a screen
 
@@ -11,6 +15,6 @@ Full-screen reveal that lifts a claimed gem out of its card and returns it. All 
 
 ## Before shipping
 
-- Pick one `RevealSound` and delete the other `claim_reveal_shine_*` files.
+- Each reveal plays a random `RevealSound`; pick one and delete the other `claim_reveal_shine_*` files, or keep the set and load them lazily.
 - Move the glow and blur constants into the design system if other screens need them.
 - Drop sources when their thumbnail leaves composition (needed for lazy lists).
