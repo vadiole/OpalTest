@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -220,7 +221,7 @@ private fun Controls(
     }
     OpalCard(modifier = modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall)) {
-            ControlRow(labels[0], labelWidth) {
+            ControlRow(labels[0], labelWidth, Modifier.selectableGroup()) {
                 OpalChip(
                     text = stringResource(R.string.console_free),
                     selected = debug.plan == Plan.Free,
@@ -232,7 +233,7 @@ private fun Controls(
                     onClick = { onIntent(ConsoleIntent.SetPlan(Plan.Pro)) }
                 )
             }
-            ControlRow(labels[1], labelWidth) {
+            ControlRow(labels[1], labelWidth, Modifier.selectableGroup()) {
                 SimulatedLatency.entries.forEach { latency ->
                     OpalChip(
                         text = stringResource(latency.label()),
