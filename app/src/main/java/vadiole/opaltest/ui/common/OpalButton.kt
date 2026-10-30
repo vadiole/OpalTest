@@ -24,7 +24,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -53,10 +57,12 @@ fun OpalButton(
         OpalButtonStyle.Accent -> colors.accent
         OpalButtonStyle.Primary -> SolidColor(colors.content)
     }
+    val busyDescription = stringResource(R.string.opal_button_loading)
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .minimumInteractiveComponentSize()
+            .semantics { if (loading) stateDescription = busyDescription }
             .height(metrics.height)
             .alpha(if (enabled) 1f else DISABLED_ALPHA)
             .clip(OpalTheme.shapes.pill)
@@ -67,7 +73,7 @@ fun OpalButton(
         Row(
             horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall),
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.alpha(if (loading) 0f else 1f)
+            modifier = if (loading) Modifier.alpha(0f).clearAndSetSemantics {} else Modifier
         ) {
             if (leadingIcon != null) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.size(metrics.iconSize)) {
@@ -80,7 +86,9 @@ fun OpalButton(
             CircularProgressIndicator(
                 color = colors.onAccent,
                 strokeWidth = 2.dp,
-                modifier = Modifier.size(metrics.iconSize)
+                modifier = Modifier
+                    .size(metrics.iconSize)
+                    .clearAndSetSemantics {}
             )
         }
     }
