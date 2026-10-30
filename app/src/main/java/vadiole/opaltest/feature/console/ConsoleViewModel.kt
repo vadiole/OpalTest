@@ -1,5 +1,6 @@
 package vadiole.opaltest.feature.console
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import java.io.IOException
@@ -20,7 +21,10 @@ import vadiole.opaltest.data.fake.ReferralDebugControls
 class ConsoleViewModel(private val controls: ReferralDebugControls) : ViewModel() {
     val state: StateFlow<ConsoleState> = controls.state
         .map { ConsoleState(it) }
-        .catch { if (it !is IOException) throw it }
+        .catch {
+            if (it !is IOException) throw it
+            Log.w(TAG, "Failed to read demo state", it)
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ConsoleState())
 
     private val effectChannel = Channel<ConsoleEffect>(Channel.BUFFERED)
@@ -36,7 +40,8 @@ class ConsoleViewModel(private val controls: ReferralDebugControls) : ViewModel(
         viewModelScope.launch {
             try {
                 mutex.withLock { handle(intent) }
-            } catch (_: IOException) {
+            } catch (e: IOException) {
+                Log.w(TAG, "Failed to save demo state for $intent", e)
             }
         }
     }
@@ -67,5 +72,9 @@ class ConsoleViewModel(private val controls: ReferralDebugControls) : ViewModel(
 
             ConsoleIntent.OpenReferrals -> Unit
         }
+    }
+
+    private companion object {
+        const val TAG = "ConsoleViewModel"
     }
 }
