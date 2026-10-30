@@ -4,8 +4,11 @@ import android.graphics.Bitmap
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.captureToImage
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import java.io.File
 import org.junit.Rule
@@ -27,40 +30,159 @@ class ReferralScreenshotTest {
 
     @Test
     @Config(qualifiers = "w402dp-h1861dp-xxhdpi")
-    fun figma() = capture("referral_figma", ReferralState(program = previewProgram()))
+    fun figma() = capture("referral_figma", ReferralState.Ready(previewProgram()))
 
     @Test
     fun proNoReferrals() = capture(
         "referral_pro_no_referrals",
-        ReferralState(program = previewProgram(plan = Plan.Pro, referrals = 0))
+        ReferralState.Ready(previewProgram(plan = Plan.Pro, referrals = 0))
     )
 
     @Test
     fun claiming() = capture(
         "referral_claiming",
-        ReferralState(program = previewProgram(), claimingTierId = "soulful")
+        ReferralState.Ready(previewProgram(), claimingTierId = "soulful")
     )
 
     @Test
-    fun loading() = capture("referral_loading", ReferralState())
+    fun loading() = capture("referral_loading", ReferralState.Loading)
 
     @Test
-    fun error() = capture("referral_error", ReferralState(loadError = ReferralError.Network))
-
-    @Test
-    @Config(qualifiers = "w874dp-h402dp-xxhdpi")
-    fun landscape() = capture("referral_landscape", ReferralState(program = previewProgram()))
+    fun error() = capture("referral_error", ReferralState.Failed(ReferralError.Network))
 
     @Test
     @Config(qualifiers = "w874dp-h402dp-xxhdpi")
-    fun loadingLandscape() = capture("referral_loading_landscape", ReferralState())
+    fun landscape() = capture("referral_landscape", ReferralState.Ready(previewProgram()))
+
+    @Test
+    @Config(qualifiers = "w874dp-h402dp-xxhdpi")
+    fun loadingLandscape() = capture("referral_loading_landscape", ReferralState.Loading)
 
     @Test
     @Config(qualifiers = "w1280dp-h800dp-xhdpi")
     fun tablet() = capture(
         "referral_tablet",
-        ReferralState(program = previewProgram(referrals = 12))
+        ReferralState.Ready(previewProgram(referrals = 12))
     )
+
+    @Test
+    @Config(qualifiers = "w732dp-h412dp-xxhdpi")
+    fun landscapeNarrow() = capture("referral_landscape_narrow", ReferralState.Ready(previewProgram()))
+
+    @Test
+    @Config(qualifiers = "w732dp-h412dp-xxhdpi")
+    fun loadingLandscapeNarrow() = capture("referral_loading_landscape_narrow", ReferralState.Loading)
+
+    @Test
+    @Config(qualifiers = "w732dp-h412dp-xxhdpi")
+    fun landscapeLongInviter() = capture(
+        "referral_landscape_long_inviter",
+        ReferralState.Ready(previewProgram().copy(invitedBy = LONG_INVITER))
+    )
+
+    @Test
+    @Config(qualifiers = "w874dp-h330dp-xxhdpi")
+    fun landscapeShortWindow() = captureFittingStartPane("referral_landscape_short_window")
+
+    @Test
+    @Config(qualifiers = "w915dp-h340dp-xxhdpi")
+    fun landscapeWideShortWindow() = captureFittingStartPane("referral_landscape_wide_short_window")
+
+    @Test
+    @Config(qualifiers = "w732dp-h340dp-xxhdpi")
+    fun landscapeNarrowShortWindow() = captureFittingStartPane("referral_landscape_narrow_short_window")
+
+    @Test
+    @Config(qualifiers = "w1280dp-h800dp-xhdpi")
+    fun loadingTablet() = capture("referral_loading_tablet", ReferralState.Loading)
+
+    @Test
+    fun longInviter() = capture(
+        "referral_long_inviter",
+        ReferralState.Ready(previewProgram().copy(invitedBy = LONG_INVITER))
+    )
+
+    @Test
+    fun longCode() = capture(
+        "referral_long_code",
+        ReferralState.Ready(previewProgram().copy(code = LONG_CODE))
+    )
+
+    @Test
+    @Config(qualifiers = "w320dp-h1861dp-xxhdpi", fontScale = 2f)
+    fun narrowLargeFont() = capture("referral_narrow_large_font", ReferralState.Ready(previewProgram()))
+
+    @Test
+    @Config(qualifiers = "w320dp-h1861dp-xxhdpi", fontScale = 2f)
+    fun loadingNarrowLargeFont() = capture("referral_loading_narrow_large_font", ReferralState.Loading)
+
+    @Test
+    @Config(qualifiers = "fr-w402dp-h1861dp-xxhdpi")
+    fun french() = capture("referral_fr", ReferralState.Ready(previewProgram()))
+
+    @Test
+    @Config(qualifiers = "es-w402dp-h1861dp-xxhdpi")
+    fun spanish() = capture("referral_es", ReferralState.Ready(previewProgram()))
+
+    @Test
+    @Config(qualifiers = "fr-w874dp-h402dp-xxhdpi")
+    fun frenchLandscape() = capture("referral_fr_landscape", ReferralState.Ready(previewProgram()))
+
+    @Test
+    @Config(qualifiers = "es-w732dp-h412dp-xxhdpi")
+    fun spanishLandscapeNarrow() = capture("referral_es_landscape_narrow", ReferralState.Ready(previewProgram()))
+
+    @Test
+    @Config(qualifiers = "fr-w360dp-h1861dp-xxhdpi", fontScale = 1.5f)
+    fun frenchLargeFont() = capture("referral_fr_font_1_5", ReferralState.Ready(previewProgram(plan = Plan.Pro)))
+
+    @Test
+    @Config(qualifiers = "es-w360dp-h1861dp-xxhdpi", fontScale = 1.5f)
+    fun spanishLargeFont() = capture("referral_es_font_1_5", ReferralState.Ready(previewProgram()))
+
+    @Test
+    @Config(qualifiers = "fr-w402dp-h874dp-xxhdpi")
+    fun frenchError() = capture("referral_fr_error", ReferralState.Failed(ReferralError.Network))
+
+    @Test
+    @Config(qualifiers = "ar-w402dp-h874dp-xxhdpi")
+    fun rtl() = capture("referral_rtl", ReferralState.Ready(previewProgram()))
+
+    @Test
+    @Config(qualifiers = "ar-w732dp-h412dp-xxhdpi")
+    fun rtlLandscapeNarrow() = capture("referral_rtl_landscape_narrow", ReferralState.Ready(previewProgram()))
+
+    @Test
+    fun noInviter() = capture("referral_no_inviter", ReferralState.Ready(previewProgram().copy(invitedBy = null)))
+
+    @Test
+    @Config(qualifiers = "w732dp-h412dp-xxhdpi")
+    fun noInviterLandscapeNarrow() = capture(
+        "referral_no_inviter_landscape_narrow",
+        ReferralState.Ready(previewProgram().copy(invitedBy = null))
+    )
+
+    @Test
+    @Config(qualifiers = "w1280dp-h800dp-xhdpi")
+    fun noInviterTablet() =
+        capture("referral_no_inviter_tablet", ReferralState.Ready(previewProgram().copy(invitedBy = null)))
+
+    @Test
+    @Config(qualifiers = "w320dp-h1861dp-xxhdpi")
+    fun narrow() = capture("referral_narrow", ReferralState.Ready(previewProgram()))
+
+    @Test
+    @Config(qualifiers = "w600dp-h360dp-xxhdpi")
+    fun landscapeSmall() = capture("referral_landscape_small", ReferralState.Ready(previewProgram()))
+
+    @Test
+    @Config(qualifiers = "w600dp-h360dp-xxhdpi")
+    fun loadingLandscapeSmall() = capture("referral_loading_landscape_small", ReferralState.Loading)
+
+    private fun captureFittingStartPane(name: String) {
+        capture(name, ReferralState.Ready(previewProgram()))
+        compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.ScrollBy)).assertCountEquals(1)
+    }
 
     private fun capture(name: String, state: ReferralState) {
         compose.mainClock.autoAdvance = false
@@ -76,5 +198,10 @@ class ReferralScreenshotTest {
         output.outputStream().use {
             compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
         }
+    }
+
+    private companion object {
+        const val LONG_INVITER = "Maximilian Alexander von Hohenzollern-Sigmaringen"
+        const val LONG_CODE = "ABCDEFGH23"
     }
 }

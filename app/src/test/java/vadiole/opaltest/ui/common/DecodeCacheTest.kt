@@ -2,6 +2,7 @@ package vadiole.opaltest.ui.common
 
 import android.content.ComponentCallbacks2
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -16,6 +17,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class DecodeCacheTest {
@@ -75,5 +77,21 @@ class DecodeCacheTest {
         assertEquals(40, cache["b"]?.bytes)
         cache.trim(ComponentCallbacks2.TRIM_MEMORY_BACKGROUND)
         assertNull(cache["b"])
+    }
+
+    @Test
+    fun removeDropsCachedAndInFlightDecodes() = runTest {
+        val cache = cache()
+        cache.getOrDecode("a") { Image(10) }
+        cache.remove("a")
+        assertNull(cache["a"])
+        val evictedMidDecode = cache.getOrDecode("b") {
+            cache.remove("b")
+            Image(10)
+        }
+        assertEquals(10, evictedMidDecode?.bytes)
+        assertNull(cache["b"])
+        assertEquals(20, cache.getOrDecode("b") { Image(20) }?.bytes)
+        assertEquals(20, cache["b"]?.bytes)
     }
 }

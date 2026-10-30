@@ -1,4 +1,4 @@
-package vadiole.opaltest.ui.common
+package vadiole.opaltest.navigation
 
 import android.view.RoundedCorner
 import android.view.View
@@ -14,7 +14,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -41,13 +40,20 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.toSize
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavEntryDecorator
+import androidx.navigation3.runtime.rememberDecoratedNavEntries
+import androidx.navigation3.scene.NavigationBackHandler
+import androidx.navigation3.scene.SinglePaneSceneStrategy
+import androidx.navigation3.scene.rememberNavigationEventState
+import androidx.navigation3.scene.rememberSceneState
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
+import androidx.navigation3.ui.NavDisplay
 import androidx.navigationevent.NavigationEvent
 import androidx.navigationevent.NavigationEventDispatcher
 import androidx.navigationevent.NavigationEventHandler
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.NavigationEventTransitionState
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
+import androidx.navigationevent.compose.NavigationEventState
 import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.sign
@@ -56,13 +62,14 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import vadiole.opaltest.ui.theme.OpalMotion
+import vadiole.opaltest.ui.theme.OpalTheme
 
 @Stable
-class StackTransitions<T : Any> internal constructor(private val motion: StackMotionState) {
+class StackTransitions<T : Any> internal constructor(internal val motion: StackMotionState) {
 
     val isTransitioning: Boolean get() = motion.isTransitioning
 
-    val decorator: NavEntryDecorator<T> = NavEntryDecorator { entry ->
+    internal val decorator: NavEntryDecorator<T> = NavEntryDecorator { entry ->
         val keyed = remember(entry) {
             NavEntry<T>(entry) { key: T -> StackEntry(motion, key) { entry.Content() } }
         }
@@ -71,7 +78,7 @@ class StackTransitions<T : Any> internal constructor(private val motion: StackMo
 
     fun onBackCompleted() = motion.onBackCompleted()
 
-    fun hold(): ContentTransform = ContentTransform(
+    internal fun hold(): ContentTransform = ContentTransform(
         targetContentEnter = fadeIn(tween(OpalMotion.SCREEN_DURATION, easing = LinearEasing), initialAlpha = 1f),
         initialContentExit = fadeOut(tween(OpalMotion.SCREEN_DURATION, easing = LinearEasing), targetAlpha = 1f)
     )
@@ -92,14 +99,43 @@ internal fun <T : Any> rememberStackTransitions(backStack: List<T>, motion: Stac
     }
     val dispatcher = LocalNavigationEventDispatcherOwner.current?.navigationEventDispatcher
     if (dispatcher != null) BlockBackWhileTransitioning(dispatcher, motion)
+    return remember(motion) { StackTransitions(motion) }
+}
+
+@Composable
+fun <T : Any> StackNavDisplay(
+    backStack: List<T>,
+    transitions: StackTransitions<T>,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    entryDecorators: List<NavEntryDecorator<T>> = emptyList(),
+    entryProvider: (key: T) -> NavEntry<T>
+) {
+    val entries = rememberDecoratedNavEntries(backStack, entryDecorators + transitions.decorator, entryProvider)
+    val sceneState = rememberSceneState(entries, listOf(SinglePaneSceneStrategy()), onBack = onBack)
+    val navigationEventState = rememberNavigationEventState(sceneState)
+    NavigationBackHandler(sceneState, navigationEventState, onBackCompleted = onBack)
+    FollowBackGesture(transitions.motion, navigationEventState, backStack)
+    NavDisplay(
+        sceneState = sceneState,
+        navigationEventState = navigationEventState,
+        modifier = modifier,
+        transitionSpec = { transitions.hold() },
+        popTransitionSpec = { transitions.hold() },
+        predictivePopTransitionSpec = { transitions.hold() }
+    )
+}
+
+@Composable
+private fun FollowBackGesture(motion: StackMotionState, state: NavigationEventState<*>, backStack: List<Any>) {
     val currentBackStack by rememberUpdatedState(backStack)
-    LaunchedEffect(motion, dispatcher) {
+    LaunchedEffect(motion, state) {
         val settleScope = this
-        dispatcher?.transitionState?.collect { state ->
-            when (state) {
+        snapshotFlow { state.transitionState }.collect { transition ->
+            when (transition) {
                 is NavigationEventTransitionState.InProgress -> {
-                    if (state.direction == NavigationEventTransitionState.TRANSITIONING_BACK) {
-                        motion.onGesture(state.latestEvent, currentBackStack)
+                    if (transition.direction == NavigationEventTransitionState.TRANSITIONING_BACK) {
+                        motion.onGesture(transition.latestEvent, currentBackStack)
                     }
                 }
 
@@ -107,12 +143,11 @@ internal fun <T : Any> rememberStackTransitions(backStack: List<T>, motion: Stac
             }
         }
     }
-    return remember(motion) { StackTransitions(motion) }
 }
 
 @Composable
 private fun BlockBackWhileTransitioning(dispatcher: NavigationEventDispatcher, motion: StackMotionState) {
-    val blocker = remember(motion) { TransitionBackBlocker(motion) }
+    val blocker = remember(motion) { TransitionBackBlocker() }
     DisposableEffect(dispatcher, blocker) {
         dispatcher.addHandler(blocker, NavigationEventDispatcher.PRIORITY_OVERLAY)
         onDispose { blocker.remove() }
@@ -122,25 +157,12 @@ private fun BlockBackWhileTransitioning(dispatcher: NavigationEventDispatcher, m
     }
 }
 
-private class TransitionBackBlocker(private val motion: StackMotionState) :
+private class TransitionBackBlocker :
     NavigationEventHandler<NavigationEventInfo>(
         NavigationEventInfo.None,
         isBackEnabled = false,
         isForwardEnabled = false
-    ) {
-
-    override fun onBackStarted(event: NavigationEvent) {
-        motion.gestureBlocked = true
-    }
-
-    override fun onBackCompleted() {
-        motion.gestureBlocked = false
-    }
-
-    override fun onBackCancelled() {
-        motion.gestureBlocked = false
-    }
-}
+    )
 
 @Composable
 private fun StackEntry(motion: StackMotionState, key: Any, content: @Composable () -> Unit) {
@@ -149,7 +171,7 @@ private fun StackEntry(motion: StackMotionState, key: Any, content: @Composable 
         label = "hold"
     ) { if (it == EnterExitState.Visible) 1f else 0f }
     val view = LocalView.current
-    val scrim = MaterialTheme.colorScheme.scrim
+    val scrim = OpalTheme.colors.background
     var size by remember { mutableStateOf(Size.Zero) }
     val pose by remember(motion, key, view) {
         derivedStateOf { motion.pose(key, size, displayCornerRadius(view, motion.density)) }
@@ -207,7 +229,6 @@ private val HiddenPose = Pose(alpha = 0f)
 @Stable
 internal class StackMotionState(private val emphasized: Easing = OpalMotion.Emphasized) {
     var density: Density = Density(1f)
-    var gestureBlocked = false
     var phase by mutableStateOf(BackPhase.Idle)
         private set
     var motion by mutableStateOf(StackMotion.None)
@@ -254,7 +275,6 @@ internal class StackMotionState(private val emphasized: Easing = OpalMotion.Emph
     }
 
     fun onGesture(event: NavigationEvent, backStack: List<Any>) {
-        if (gestureBlocked) return
         if (phase != BackPhase.Gesture) {
             if (backStack.size <= 1 || isTransitioning) return
             session++

@@ -1,0 +1,5 @@
+<resources>
+    <string name="claim_reveal_title">%1$s\nest à toi</string>
+    <string name="claim_reveal_message">Merci d’aider tes amis à retrouver leur concentration.</string>
+    <string name="claim_reveal_continue">Continuer</string>
+</resources>

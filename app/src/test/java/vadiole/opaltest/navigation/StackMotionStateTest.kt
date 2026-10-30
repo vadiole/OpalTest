@@ -1,4 +1,4 @@
-package vadiole.opaltest.ui.common
+package vadiole.opaltest.navigation
 
 import androidx.compose.runtime.MonotonicFrameClock
 import androidx.compose.ui.geometry.Size
@@ -124,18 +124,6 @@ class StackMotionStateTest {
         assertEquals(BackPhase.Idle, motion.phase)
         advanceTimeBy(1_000)
         assertFalse(motion.isTransitioning)
-        motion.onGesture(event, stack)
-        assertEquals(BackPhase.Gesture, motion.phase)
-    }
-
-    @Test
-    fun `gesture owned by the blocker is ignored until it ends`() = runTest {
-        val (motion, _) = pushed()
-        advanceTimeBy(1_000)
-        motion.gestureBlocked = true
-        motion.onGesture(event, stack)
-        assertEquals(BackPhase.Idle, motion.phase)
-        motion.gestureBlocked = false
         motion.onGesture(event, stack)
         assertEquals(BackPhase.Gesture, motion.phase)
     }

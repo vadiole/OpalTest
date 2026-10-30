@@ -7,6 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.job
 
 internal class DecodeCache<K : Any, V : Any>(
     maxSize: Int,
@@ -35,10 +36,11 @@ internal class DecodeCache<K : Any, V : Any>(
             cache.get(key)?.let { return it }
             inFlight.getOrPut(key) {
                 scope.async(start = CoroutineStart.LAZY) {
+                    val self = coroutineContext.job
                     try {
-                        decode().also { cache.put(key, it) }
+                        decode().also { synchronized(inFlight) { if (inFlight[key] === self) cache.put(key, it) } }
                     } finally {
-                        synchronized(inFlight) { inFlight.remove(key) }
+                        synchronized(inFlight) { if (inFlight[key] === self) inFlight.remove(key) }
                     }
                 }
             }
@@ -50,6 +52,13 @@ internal class DecodeCache<K : Any, V : Any>(
         } catch (e: Throwable) {
             onError(key, e)
             null
+        }
+    }
+
+    fun remove(key: K) {
+        synchronized(inFlight) {
+            inFlight.remove(key)
+            cache.remove(key)
         }
     }
 

@@ -38,6 +38,10 @@ android {
     buildFeatures {
         compose = true
     }
+    androidResources {
+        generateLocaleConfig = true
+        localeFilters += setOf("en", "fr", "es")
+    }
     testOptions {
         unitTests.isIncludeAndroidResources = true
     }
@@ -68,7 +72,6 @@ dependencies {
     implementation(libs.haze)
     implementation(libs.haze.blur)
     implementation(libs.androidx.datastore)
-    implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)

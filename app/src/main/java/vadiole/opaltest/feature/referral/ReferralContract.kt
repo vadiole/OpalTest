@@ -4,11 +4,13 @@ import vadiole.opaltest.domain.referral.ReferralError
 import vadiole.opaltest.domain.referral.ReferralProgram
 import vadiole.opaltest.domain.referral.Reward
 
-data class ReferralState(
-    val program: ReferralProgram? = null,
-    val loadError: ReferralError? = null,
-    val claimingTierId: String? = null
-)
+sealed interface ReferralState {
+    data object Loading : ReferralState
+
+    data class Failed(val error: ReferralError) : ReferralState
+
+    data class Ready(val program: ReferralProgram, val claimingTierId: String? = null) : ReferralState
+}
 
 sealed interface ReferralIntent {
     data object Retry : ReferralIntent

@@ -1,7 +1,10 @@
 package vadiole.opaltest.ui.common
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.IndicationNodeFactory
+import androidx.compose.foundation.background
+import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.FocusInteraction
 import androidx.compose.foundation.interaction.HoverInteraction
 import androidx.compose.foundation.interaction.InteractionSource
@@ -9,10 +12,16 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.material.ripple.RippleAlpha
 import androidx.compose.material.ripple.createRippleModifierNode
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.GraphicsLayerScope
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.KeyEventType
@@ -42,6 +51,7 @@ import androidx.compose.ui.unit.toOffset
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import vadiole.opaltest.ui.theme.OpalMotion
+import vadiole.opaltest.ui.theme.OpalTheme
 
 fun opalRipple(color: Color, alpha: RippleAlpha): IndicationNodeFactory = OpalRipple(color, alpha)
 
@@ -51,6 +61,27 @@ private data class OpalRipple(val color: Color, val alpha: RippleAlpha) : Indica
             alpha
         }
 }
+
+@Composable
+internal fun animateEnabledAlpha(enabled: Boolean): State<Float> = animateFloatAsState(
+    targetValue = if (enabled) 1f else OpalTheme.alpha.disabled,
+    animationSpec = OpalMotion.StateSpring,
+    label = "enabledAlpha"
+)
+
+internal fun Modifier.pressableSurface(
+    interactionSource: InteractionSource,
+    indicationSource: MutableInteractionSource,
+    shape: Shape,
+    background: Brush,
+    ripple: IndicationNodeFactory,
+    enabled: Boolean = true,
+    alpha: (() -> Float)? = null
+): Modifier = pressFeedback(interactionSource, indicationSource, enabled)
+    .then(if (alpha != null) Modifier.graphicsLayer { this.alpha = alpha() } else Modifier)
+    .clip(shape)
+    .background(background)
+    .indication(indicationSource, ripple)
 
 fun Modifier.pressFeedback(
     interactionSource: InteractionSource,

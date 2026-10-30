@@ -1,4 +1,4 @@
-package vadiole.opaltest.feature.claimreveal
+package vadiole.opaltest.feature.referral
 
 import androidx.annotation.DrawableRes
 import vadiole.opaltest.R

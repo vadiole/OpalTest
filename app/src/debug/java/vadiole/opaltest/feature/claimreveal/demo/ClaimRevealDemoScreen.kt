@@ -53,8 +53,8 @@ import vadiole.opaltest.feature.claimreveal.RevealContent
 import vadiole.opaltest.feature.claimreveal.RevealSound
 import vadiole.opaltest.feature.claimreveal.claimRevealSource
 import vadiole.opaltest.feature.claimreveal.rememberClaimRevealState
-import vadiole.opaltest.feature.claimreveal.revealImage
-import vadiole.opaltest.feature.claimreveal.thumbnail
+import vadiole.opaltest.feature.referral.revealImage
+import vadiole.opaltest.feature.referral.thumbnail
 import vadiole.opaltest.ui.common.OpalButton
 import vadiole.opaltest.ui.common.OpalButtonSize
 import vadiole.opaltest.ui.common.OpalButtonStyle
@@ -80,7 +80,8 @@ fun ClaimRevealDemoScreen(modifier: Modifier = Modifier) {
     fun open(stone: MilestoneStone) {
         last = stone
         claimed = claimed + stone
-        reveal.open(stone, RevealContent(gem = stone.revealImage, title = names.getValue(stone)))
+        val title = demoTiers.first { it.stone == stone }.name
+        reveal.open(stone, RevealContent(gem = stone.revealImage, title = title))
     }
     fun replay() {
         val stone = last ?: return
@@ -122,7 +123,7 @@ fun ClaimRevealDemoScreen(modifier: Modifier = Modifier) {
                     DemoTierCard(
                         tier = tier,
                         name = names.getValue(tier.stone),
-                        claimed = tier.stone in claimed && !reveal.isHolding(tier.stone),
+                        claimed = tier.stone in claimed && !reveal.isPresenting(tier.stone),
                         reveal = reveal,
                         onClaim = { open(tier.stone) }
                     )
@@ -131,7 +132,7 @@ fun ClaimRevealDemoScreen(modifier: Modifier = Modifier) {
                 OpalButton(
                     text = stringResource(R.string.claim_reveal_demo_reset),
                     onClick = { claimed = emptyList() },
-                    style = OpalButtonStyle.Primary,
+                    style = OpalButtonStyle.Neutral,
                     size = OpalButtonSize.Small
                 )
             }
@@ -213,7 +214,7 @@ private fun DemoTierCard(
                     OpalButton(
                         text = stringResource(R.string.claim_reveal_demo_claim),
                         onClick = onClaim,
-                        style = OpalButtonStyle.Primary,
+                        style = OpalButtonStyle.Neutral,
                         size = OpalButtonSize.Small
                     )
                 }

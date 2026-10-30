@@ -1,5 +1,6 @@
 package vadiole.opaltest.data.referral
 
+import java.util.Currency
 import vadiole.opaltest.domain.referral.Fulfillment
 import vadiole.opaltest.domain.referral.MilestoneStone
 import vadiole.opaltest.domain.referral.Money
@@ -10,8 +11,8 @@ import vadiole.opaltest.domain.referral.Reward
 import vadiole.opaltest.domain.referral.RewardTier
 import vadiole.opaltest.domain.referral.TierStatus
 
-fun ReferralProgramDto.toDomain() = ReferralProgram(
-    code = referralCode,
+fun ReferralProgramDto.toDomain(): ReferralProgram? = ReferralProgram(
+    code = referralCode.trim().ifEmpty { return null },
     shareUrl = shareUrl,
     plan = if (plan == "pro") Plan.Pro else Plan.Free,
     successfulReferrals = successfulReferrals.coerceAtLeast(0),
@@ -53,7 +54,7 @@ private fun RewardDto.toDomain(): Reward? = when (type) {
             Reward.ProAccess(
                 term = it,
                 fulfillment = if (fulfillment == "instant") Fulfillment.Instant else Fulfillment.ContactSupport,
-                value = value?.let { money -> Money(money.amountMinor, money.currency) }
+                value = value?.toDomain()
             )
         }
     }
@@ -62,3 +63,8 @@ private fun RewardDto.toDomain(): Reward? = when (type) {
 
     else -> null
 }
+
+private fun MoneyDto.toDomain(): Money? = runCatching { Currency.getInstance(currency) }
+    .getOrNull()
+    ?.takeIf { it.defaultFractionDigits >= 0 }
+    ?.let { Money(amountMinor, it) }
