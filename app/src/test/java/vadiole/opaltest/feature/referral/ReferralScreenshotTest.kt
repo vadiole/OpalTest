@@ -90,6 +90,38 @@ class ReferralScreenshotTest {
     @Config(qualifiers = "w320dp-h1861dp-xxhdpi", fontScale = 2f)
     fun narrowLargeFont() = capture("referral_narrow_large_font", ReferralState.Ready(previewProgram()))
 
+    @Test
+    @Config(qualifiers = "fr-w402dp-h1861dp-xxhdpi")
+    fun french() = capture("referral_fr", ReferralState.Ready(previewProgram()))
+
+    @Test
+    @Config(qualifiers = "es-w402dp-h1861dp-xxhdpi")
+    fun spanish() = capture("referral_es", ReferralState.Ready(previewProgram()))
+
+    @Test
+    @Config(qualifiers = "fr-w874dp-h402dp-xxhdpi")
+    fun frenchLandscape() = capture("referral_fr_landscape", ReferralState.Ready(previewProgram()))
+
+    @Test
+    @Config(qualifiers = "es-w732dp-h412dp-xxhdpi")
+    fun spanishLandscapeNarrow() = capture("referral_es_landscape_narrow", ReferralState.Ready(previewProgram()))
+
+    @Test
+    @Config(qualifiers = "fr-w360dp-h1861dp-xxhdpi", fontScale = 1.5f)
+    fun frenchLargeFont() = capture("referral_fr_font_1_5", ReferralState.Ready(previewProgram(plan = Plan.Pro)))
+
+    @Test
+    @Config(qualifiers = "es-w360dp-h1861dp-xxhdpi", fontScale = 1.5f)
+    fun spanishLargeFont() = capture("referral_es_font_1_5", ReferralState.Ready(previewProgram()))
+
+    @Test
+    @Config(qualifiers = "fr-w402dp-h874dp-xxhdpi")
+    fun frenchError() = capture("referral_fr_error", ReferralState.Failed(ReferralError.Network))
+
+    @Test
+    @Config(qualifiers = "ar-w402dp-h874dp-xxhdpi")
+    fun rtl() = capture("referral_rtl", ReferralState.Ready(previewProgram()))
+
     private fun capture(name: String, state: ReferralState) {
         compose.mainClock.autoAdvance = false
         compose.setContent {

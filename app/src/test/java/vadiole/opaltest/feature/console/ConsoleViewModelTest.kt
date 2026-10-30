@@ -1,11 +1,12 @@
 package vadiole.opaltest.feature.console
 
-import java.io.IOException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -15,10 +16,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import vadiole.opaltest.MainDispatcherRule
+import vadiole.opaltest.data.debug.DebugOutcome
 import vadiole.opaltest.data.debug.ReferralDebugControls
 import vadiole.opaltest.data.debug.ReferralDebugState
 import vadiole.opaltest.data.debug.SimulatedLatency
+import vadiole.opaltest.domain.Outcome
 import vadiole.opaltest.domain.referral.Plan
+import vadiole.opaltest.domain.referral.ReferralError
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConsoleViewModelTest {
@@ -36,40 +40,44 @@ class ConsoleViewModelTest {
         failNextClaim = false
     )
 
-    private inner class FakeControls(var failingReads: Int = 0) : ReferralDebugControls {
+    private inner class FakeControls(var failingReads: Int = 0, var failWrites: Boolean = false) :
+        ReferralDebugControls {
         val data = MutableStateFlow(initial)
         var resets = 0
         val failNextClaimWrites = mutableListOf<Boolean>()
         val referralWrites = mutableListOf<Int>()
 
-        override val state: Flow<ReferralDebugState> = flow {
+        override val state: Flow<DebugOutcome<ReferralDebugState>> = flow {
             if (failingReads > 0) {
                 failingReads--
-                throw IOException()
+                emit(Outcome.Failure(ReferralError.Network))
+            } else {
+                emitAll(data.map { Outcome.Success(it) })
             }
-            emitAll(data)
         }
 
-        override suspend fun setPlan(plan: Plan) = Unit
-
-        override suspend fun setReferrals(count: Int) {
-            referralWrites += count
+        private fun write(block: () -> Unit): DebugOutcome<Unit> = if (failWrites) {
+            Outcome.Failure(ReferralError.Network)
+        } else {
+            Outcome.Success(block())
         }
 
-        override suspend fun advanceToNextTier() = Unit
+        override suspend fun setPlan(plan: Plan) = write {}
 
-        override suspend fun setLatency(latency: SimulatedLatency) = Unit
+        override suspend fun setReferrals(count: Int) = write { referralWrites += count }
 
-        override suspend fun setFailNextLoad(fail: Boolean) = Unit
+        override suspend fun advanceToNextTier() = write {}
 
-        override suspend fun setFailNextClaim(fail: Boolean) {
+        override suspend fun setLatency(latency: SimulatedLatency) = write {}
+
+        override suspend fun setFailNextLoad(fail: Boolean) = write {}
+
+        override suspend fun setFailNextClaim(fail: Boolean) = write {
             failNextClaimWrites += fail
             data.value = data.value.copy(failNextClaim = fail)
         }
 
-        override suspend fun reset() {
-            resets++
-        }
+        override suspend fun reset() = write { resets++ }
     }
 
     private val ConsoleViewModel.isConfirmingReset
@@ -187,5 +195,24 @@ class ConsoleViewModelTest {
         runCurrent()
         assertEquals(listOf(true, false), controls.failNextClaimWrites)
         assertFalse((viewModel.state.value.load as ConsoleLoad.Ready).debug.failNextClaim)
+    }
+
+    @Test
+    fun `failed write sends no effect`() = runTest {
+        val controls = FakeControls(failWrites = true)
+        val viewModel = ConsoleViewModel(controls)
+        val effects = mutableListOf<ConsoleEffect>()
+        backgroundScope.launch { viewModel.effects.collect { effects += it } }
+        runCurrent()
+
+        viewModel.onIntent(ConsoleIntent.AddFriend)
+        viewModel.onIntent(ConsoleIntent.AdvanceToNextTier)
+        runCurrent()
+        assertEquals(emptyList<ConsoleEffect>(), effects)
+
+        controls.failWrites = false
+        viewModel.onIntent(ConsoleIntent.AddFriend)
+        runCurrent()
+        assertEquals(listOf(ConsoleEffect.FriendAdded), effects)
     }
 }

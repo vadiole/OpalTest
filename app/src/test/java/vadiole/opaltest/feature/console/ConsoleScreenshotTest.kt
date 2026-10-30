@@ -77,6 +77,18 @@ class ConsoleScreenshotTest {
     fun smallWindow() = capture("console_360x300", ConsoleState(ConsoleLoad.Ready(debug)))
 
     @Test
+    @Config(qualifiers = "fr-w360dp-h800dp-xxhdpi", fontScale = 1.5f)
+    fun french() = capture("console_fr_font_1_5", ConsoleState(ConsoleLoad.Ready(debug)))
+
+    @Test
+    @Config(qualifiers = "es-w360dp-h800dp-xxhdpi", fontScale = 1.5f)
+    fun spanish() = capture("console_es_font_1_5", ConsoleState(ConsoleLoad.Ready(debug)))
+
+    @Test
+    @Config(qualifiers = "fr-w874dp-h402dp-xxhdpi")
+    fun frenchLandscape() = capture("console_fr_landscape", ConsoleState(ConsoleLoad.Ready(debug)))
+
+    @Test
     fun friendCountRoll() {
         var state by mutableStateOf(ConsoleState(ConsoleLoad.Ready(debug)))
         compose.mainClock.autoAdvance = false

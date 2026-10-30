@@ -79,6 +79,10 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
         prefetchedGem = gem
     }
 
+    fun clearPrefetch() {
+        prefetchedGem = null
+    }
+
     fun open(key: Any, content: RevealContent) {
         if (activeKey != null && !landed) return
         activeKey = key

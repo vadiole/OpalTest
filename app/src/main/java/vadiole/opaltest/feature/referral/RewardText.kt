@@ -2,6 +2,7 @@ package vadiole.opaltest.feature.referral
 
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.res.stringResource
 import java.text.NumberFormat
 import java.util.Locale
@@ -23,6 +24,7 @@ internal val Reward.isFreeYear: Boolean
     get() = this is Reward.ProAccess && term == ProTerm.OneYear
 
 @Composable
+@ReadOnlyComposable
 internal fun Reward.title(): String = stringResource(
     when (this) {
         is Reward.Milestone -> stone.title
@@ -38,6 +40,7 @@ internal fun Reward.title(): String = stringResource(
 )
 
 @Composable
+@ReadOnlyComposable
 internal fun Reward.description(): String = when (this) {
     is Reward.Milestone -> stringResource(R.string.referral_milestone_description)
 

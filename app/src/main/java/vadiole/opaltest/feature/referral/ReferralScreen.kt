@@ -3,7 +3,6 @@ package vadiole.opaltest.feature.referral
 import android.content.ClipData
 import android.content.Intent
 import android.content.res.Resources
-import android.os.SystemClock
 import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.EnterTransition
@@ -29,10 +28,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -40,7 +35,6 @@ import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -56,7 +50,6 @@ import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
-import kotlinx.coroutines.delay
 import vadiole.opaltest.R
 import vadiole.opaltest.container
 import vadiole.opaltest.domain.referral.Plan
@@ -72,6 +65,7 @@ import vadiole.opaltest.ui.common.OpalButtonStyle
 import vadiole.opaltest.ui.common.OpalGlow
 import vadiole.opaltest.ui.common.OpalIconButton
 import vadiole.opaltest.ui.common.OpalTopBlur
+import vadiole.opaltest.ui.common.rememberPacedPhase
 import vadiole.opaltest.ui.common.rememberTopBlurVisibility
 import vadiole.opaltest.ui.theme.OpalMotion
 import vadiole.opaltest.ui.theme.OpalTheme
@@ -114,6 +108,7 @@ fun ReferralScreen(
                 }
 
                 is ReferralEffect.ClaimFailed -> {
+                    reveal.clearPrefetch()
                     haptics.performHapticFeedback(HapticFeedbackType.Reject)
                     val message = when (effect.error) {
                         ReferralError.Network -> R.string.referral_claim_failed_network
@@ -170,12 +165,13 @@ fun ReferralContent(
                     .background(OpalTheme.colors.background)
             ) {
                 OpalGlow(Modifier.fillMaxWidth())
-                val body = rememberBody(
-                    when (state) {
+                val body = rememberPacedPhase(
+                    target = when (state) {
                         is ReferralState.Ready -> Body.Program
                         is ReferralState.Failed -> Body.Error
                         ReferralState.Loading -> Body.Loading
-                    }
+                    },
+                    loading = Body.Loading
                 )
                 LaunchedEffect(body) {
                     when (body) {
@@ -197,7 +193,7 @@ fun ReferralContent(
                 AnimatedContent(
                     targetState = body,
                     transitionSpec = {
-                        if (initialState == Body.Blank) {
+                        if (initialState == null) {
                             EnterTransition.None togetherWith ExitTransition.None using null
                         } else {
                             fadeIn(OpalMotion.CrossFade) togetherWith fadeOut(OpalMotion.CrossFade) using null
@@ -227,7 +223,7 @@ fun ReferralContent(
 
                         Body.Loading -> Loading(headerState = skeletonHeaderState, listState = skeletonListState)
 
-                        Body.Blank -> Unit
+                        null -> Unit
                     }
                 }
             }
@@ -285,33 +281,7 @@ private fun LoadError(retrying: Boolean, onRetry: () -> Unit) {
     }
 }
 
-private enum class Body { Blank, Loading, Error, Program }
-
-@Composable
-private fun rememberBody(target: Body): Body {
-    val inspection = LocalInspectionMode.current
-    var body by remember { mutableStateOf(if (target == Body.Loading && !inspection) Body.Blank else target) }
-    var loadingSince by remember { mutableLongStateOf(SystemClock.uptimeMillis()) }
-    LaunchedEffect(target) {
-        when {
-            target == body -> Unit
-
-            target == Body.Loading -> {
-                delay(OpalMotion.LOADING_DELAY_MILLIS)
-                loadingSince = SystemClock.uptimeMillis()
-                body = Body.Loading
-            }
-
-            else -> {
-                if (body == Body.Loading) {
-                    delay(loadingSince + OpalMotion.LOADING_MIN_MILLIS - SystemClock.uptimeMillis())
-                }
-                body = target
-            }
-        }
-    }
-    return body
-}
+private enum class Body { Loading, Error, Program }
 
 @Preview(widthDp = 402, heightDp = 1861)
 @Composable

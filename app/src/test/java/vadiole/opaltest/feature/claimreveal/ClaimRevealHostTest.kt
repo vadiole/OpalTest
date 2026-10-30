@@ -252,6 +252,16 @@ class ClaimRevealHostTest {
     }
 
     @Test
+    fun `clearing the prefetch releases the reveal image`() {
+        setButtonContent()
+        compose.runOnIdle { state.prefetch(PREFETCHED) }
+        frame()
+        compose.runOnIdle { state.clearPrefetch() }
+        frame()
+        assertNull(state.prefetchedGem)
+    }
+
+    @Test
     fun `gem flies back into a visible source`() {
         setListContent()
         open()
