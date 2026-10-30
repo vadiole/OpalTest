@@ -292,7 +292,10 @@ private fun Loading(modifier: Modifier = Modifier) {
                     ControlRowSkeleton(chipWidths = listOf(44.dp, 128.dp), valueWidth = 12.dp)
                     ControlRowSkeleton(chipWidths = listOf(64.dp, 60.dp, 48.dp))
                     ControlRowSkeleton(chipWidths = listOf(96.dp, 100.dp))
-                    SkeletonBlock(Modifier.size(width = 104.dp, height = 40.dp), OpalTheme.shapes.pill)
+                    SkeletonBlock(
+                        Modifier.size(width = 104.dp, height = OpalTheme.layout.controlHeightSmall),
+                        OpalTheme.shapes.pill
+                    )
                 }
             }
         }
@@ -317,7 +320,12 @@ private fun ControlRowSkeleton(chipWidths: List<Dp>, valueWidth: Dp? = null) {
                     Modifier.padding(horizontal = OpalTheme.spacing.xxSmall)
                 )
             }
-            chipWidths.forEach { SkeletonBlock(Modifier.size(width = it, height = 40.dp), OpalTheme.shapes.pill) }
+            chipWidths.forEach {
+                SkeletonBlock(
+                    Modifier.size(width = it, height = OpalTheme.layout.controlHeightSmall),
+                    OpalTheme.shapes.pill
+                )
+            }
         }
     }
 }

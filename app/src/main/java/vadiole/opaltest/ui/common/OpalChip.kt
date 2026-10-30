@@ -19,7 +19,6 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import vadiole.opaltest.ui.theme.OpalTheme
 
 @Composable
@@ -98,7 +97,7 @@ private fun ChipSurface(
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .heightIn(min = 40.dp)
+            .heightIn(min = OpalTheme.layout.controlHeightSmall)
             .pressableSurface(
                 interactionSource = interactionSource,
                 indicationSource = indicationSource,

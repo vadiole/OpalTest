@@ -41,6 +41,8 @@ object OpalAlpha {
 
 object OpalLayout {
     val maxContentWidth = 480.dp
+    val controlHeight = 50.dp
+    val controlHeightSmall = 40.dp
     val iconButtonSize = 44.dp
     val topBlurRadius = 16.dp
     val topBlurFadeDistance = 32.dp
