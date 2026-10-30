@@ -23,7 +23,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import vadiole.opaltest.R
 import vadiole.opaltest.ui.common.OpalImage
 import vadiole.opaltest.ui.common.outlineBorder
@@ -70,7 +69,7 @@ private fun InviteCardFrame(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .clip(shape)
-            .outlineBorder(1.dp, OpalTheme.colors.borderSubtle, shape)
+            .outlineBorder(OpalTheme.layout.borderWidth, OpalTheme.colors.borderSubtle, shape)
     ) {
         OpalImage(
             id = R.drawable.img_invite_card_background,

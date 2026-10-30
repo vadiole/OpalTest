@@ -17,7 +17,6 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import vadiole.opaltest.R
 import vadiole.opaltest.ui.theme.OpalTheme
 

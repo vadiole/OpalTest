@@ -41,6 +41,7 @@ object OpalAlpha {
 
 object OpalLayout {
     val maxContentWidth = 480.dp
+    val borderWidth = 1.dp
     val controlHeight = 50.dp
     val controlHeightSmall = 40.dp
     val iconButtonSize = 44.dp
