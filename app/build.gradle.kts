@@ -38,6 +38,10 @@ android {
     buildFeatures {
         compose = true
     }
+    androidResources {
+        generateLocaleConfig = true
+        localeFilters += setOf("en", "fr", "es")
+    }
     testOptions {
         unitTests.isIncludeAndroidResources = true
     }
