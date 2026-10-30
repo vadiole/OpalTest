@@ -7,17 +7,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.input.InputMode
+import androidx.compose.ui.input.InputModeManager
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
@@ -53,11 +61,15 @@ class ReferralContentTest {
     private var state: ReferralState by mutableStateOf(ReferralState.Loading)
     private lateinit var reveal: ClaimRevealState
     private val intents = mutableListOf<ReferralIntent>()
+    private lateinit var focusManager: FocusManager
+    private lateinit var inputMode: InputModeManager
 
     private fun setContent(initial: ReferralState, probe: RewardTier? = null) {
         state = initial
         compose.setContent {
             reveal = rememberClaimRevealState()
+            focusManager = LocalFocusManager.current
+            inputMode = LocalInputModeManager.current
             OpalTheme {
                 Column {
                     ReferralContent(
@@ -295,6 +307,25 @@ class ReferralContentTest {
         code.performTouchInput { longClick() }
         assertEquals(listOf(ReferralIntent.CopyInvite, ReferralIntent.CopyInvite), intents)
     }
+
+    private fun assertTabReachesBackFirst() {
+        setContent(ReferralState.Ready(previewProgram()))
+        compose.runOnIdle { inputMode.requestInputMode(InputMode.Keyboard) }
+        compose.onNodeWithContentDescription("Back").assertIsFocused()
+        compose.runOnIdle { focusManager.moveFocus(FocusDirection.Next) }
+        compose.onNodeWithContentDescription("Your Opal code", substring = true).assertIsFocused()
+    }
+
+    @Test
+    fun `back is the first keyboard tab stop`() = assertTabReachesBackFirst()
+
+    @Test
+    @Config(qualifiers = "w732dp-h412dp-xxhdpi")
+    fun `back is the first keyboard tab stop in the short two-pane layout`() = assertTabReachesBackFirst()
+
+    @Test
+    @Config(qualifiers = "w1280dp-h800dp-xhdpi")
+    fun `back is the first keyboard tab stop on a tablet`() = assertTabReachesBackFirst()
 
     private fun SemanticsNodeInteraction.stateDescription(): String? =
         fetchSemanticsNode().config.getOrNull(SemanticsProperties.StateDescription)
