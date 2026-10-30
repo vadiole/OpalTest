@@ -3,24 +3,28 @@ package vadiole.opaltest.data.debug
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import vadiole.opaltest.domain.Outcome
 import vadiole.opaltest.domain.referral.Plan
+import vadiole.opaltest.domain.referral.ReferralError
+
+typealias DebugOutcome<T> = Outcome<T, ReferralError>
 
 interface ReferralDebugControls {
-    val state: Flow<ReferralDebugState>
+    val state: Flow<DebugOutcome<ReferralDebugState>>
 
-    suspend fun setPlan(plan: Plan)
+    suspend fun setPlan(plan: Plan): DebugOutcome<Unit>
 
-    suspend fun setReferrals(count: Int)
+    suspend fun setReferrals(count: Int): DebugOutcome<Unit>
 
-    suspend fun advanceToNextTier()
+    suspend fun advanceToNextTier(): DebugOutcome<Unit>
 
-    suspend fun setLatency(latency: SimulatedLatency)
+    suspend fun setLatency(latency: SimulatedLatency): DebugOutcome<Unit>
 
-    suspend fun setFailNextLoad(fail: Boolean)
+    suspend fun setFailNextLoad(fail: Boolean): DebugOutcome<Unit>
 
-    suspend fun setFailNextClaim(fail: Boolean)
+    suspend fun setFailNextClaim(fail: Boolean): DebugOutcome<Unit>
 
-    suspend fun reset()
+    suspend fun reset(): DebugOutcome<Unit>
 }
 
 data class ReferralDebugState(
