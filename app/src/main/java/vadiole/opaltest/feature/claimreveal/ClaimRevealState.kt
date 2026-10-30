@@ -66,6 +66,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
     internal var target: Rect? by mutableStateOf(null)
     internal var host: LayoutCoordinates? = null
     internal var feedback: RevealFeedback? = null
+    internal var releaseImage: ((Int) -> Unit)? = null
     private val sources = mutableMapOf<Any, LayoutCoordinates>()
     private val lastSourceRects = mutableMapOf<Any, Rect>()
     private var job: Job? = null
@@ -80,6 +81,7 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
     }
 
     fun clearPrefetch() {
+        prefetchedGem?.let { releaseImage?.invoke(it) }
         prefetchedGem = null
     }
 
@@ -265,10 +267,12 @@ class ClaimRevealState internal constructor(private val scope: CoroutineScope) {
     }
 
     private suspend fun finish() {
+        val gem = active?.content?.gem
+        gem?.let { releaseImage?.invoke(it) }
+        if (prefetchedGem == gem) prefetchedGem = null
         active = null
         target = null
         gemReady = false
-        prefetchedGem = null
         reset()
     }
 

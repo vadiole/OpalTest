@@ -42,6 +42,17 @@ class DefaultReferralRepositoryTest {
     }
 
     @Test
+    fun `blank code is a load error`() = runTest {
+        val api = object : ReferralApi {
+            override suspend fun getProgram() = FakeReferralRules.program(FakeServerState()).copy(referralCode = "")
+
+            override suspend fun claimReward(tierId: String) = getProgram()
+        }
+
+        assertEquals(Outcome.Failure(ReferralError.Unknown), DefaultReferralRepository(api).getProgram())
+    }
+
+    @Test
     fun `cancellation is rethrown`() {
         assertThrows(CancellationException::class.java) {
             runTest { DefaultReferralRepository(StubApi(CancellationException())).getProgram() }

@@ -307,6 +307,19 @@ private fun ReferralContentProPreview() {
     }
 }
 
+@Preview(name = "No inviter", widthDp = 402, heightDp = 874)
+@Preview(name = "No inviter, short two-pane", widthDp = 732, heightDp = 412)
+@Composable
+private fun ReferralContentNoInviterPreview() {
+    OpalTheme {
+        ReferralContent(
+            state = ReferralState.Ready(previewProgram().copy(invitedBy = null)),
+            onIntent = {},
+            onBack = {}
+        )
+    }
+}
+
 @Preview(widthDp = 874, heightDp = 402)
 @Composable
 private fun ReferralContentLandscapePreview() {

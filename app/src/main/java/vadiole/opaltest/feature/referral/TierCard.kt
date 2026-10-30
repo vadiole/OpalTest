@@ -265,4 +265,4 @@ private fun TierArtwork(reward: Reward, claimed: Boolean, reveal: ClaimRevealSta
 }
 
 private val CompactTierArtworkSize = 64.dp
-private val MinTierTextWidth = 80.dp
+private val MinTierTextWidth = 150.dp

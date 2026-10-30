@@ -2,6 +2,7 @@ package vadiole.opaltest.feature.referral
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -15,9 +16,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.LineBreak
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import vadiole.opaltest.R
@@ -108,8 +116,23 @@ private fun CodeSkeleton() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall)
         ) {
-            SkeletonLine(OpalTheme.typography.headline, 220.dp)
-            SkeletonLine(OpalTheme.typography.callout, 260.dp)
+            TextSkeleton(
+                text = pluralStringResource(R.plurals.referral_gift_days, SKELETON_TRIAL_DAYS, SKELETON_TRIAL_DAYS),
+                style = OpalTheme.typography.headline.copy(lineBreak = LineBreak.Heading),
+                singleLineWidth = 220.dp
+            )
+            TextSkeleton(
+                text = stringResource(
+                    R.string.referral_referred,
+                    pluralStringResource(
+                        R.plurals.referral_friends,
+                        SKELETON_REFERRALS,
+                        SKELETON_REFERRALS.formatCount()
+                    )
+                ),
+                style = OpalTheme.typography.callout.copy(lineBreak = LineBreak.Heading),
+                singleLineWidth = 260.dp
+            )
         }
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -118,6 +141,25 @@ private fun CodeSkeleton() {
             SkeletonLine(OpalTheme.typography.headline, 140.dp)
             Row(horizontalArrangement = Arrangement.spacedBy(ReferralDimens.codeCellGap)) {
                 repeat(SKELETON_CODE_LENGTH) { SkeletonBlock(Modifier.size(ReferralDimens.codeCell)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TextSkeleton(text: String, style: TextStyle, singleLineWidth: Dp) {
+    BoxWithConstraints {
+        val textMeasurer = rememberTextMeasurer()
+        val density = LocalDensity.current
+        val lineWidths = remember(text, style, constraints.maxWidth, density) {
+            val layout = textMeasurer.measure(text, style, constraints = Constraints(maxWidth = constraints.maxWidth))
+            with(density) { List(layout.lineCount) { (layout.getLineRight(it) - layout.getLineLeft(it)).toDp() } }
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            if (lineWidths.size <= 1) {
+                SkeletonLine(style, singleLineWidth)
+            } else {
+                lineWidths.forEach { SkeletonLine(style, it) }
             }
         }
     }
@@ -175,4 +217,6 @@ private fun TierCardSkeleton() {
 }
 
 private const val SKELETON_CODE_LENGTH = 5
+private const val SKELETON_TRIAL_DAYS = 30
+private const val SKELETON_REFERRALS = 3
 private const val SKELETON_TIERS = 3

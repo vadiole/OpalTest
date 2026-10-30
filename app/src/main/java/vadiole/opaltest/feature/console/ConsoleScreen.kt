@@ -14,6 +14,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -41,6 +42,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -115,8 +117,8 @@ fun ConsoleContent(state: ConsoleState, onIntent: (ConsoleIntent) -> Unit, modif
     val scrollState = rememberScrollState()
     val shown = rememberShownLoad(state.load)
     val spacing = OpalTheme.spacing
-    val maxWidth = OpalTheme.layout.maxContentWidth
-    Box(
+    val maxContentWidth = OpalTheme.layout.maxContentWidth
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(OpalTheme.colors.background)
@@ -124,6 +126,7 @@ fun ConsoleContent(state: ConsoleState, onIntent: (ConsoleIntent) -> Unit, modif
             .safeDrawingPadding()
     ) {
         if (wide && short) {
+            val buttonMaxWidth = (maxWidth - spacing.mediumLarge * 2 - spacing.xLarge) / 2
             Row(
                 horizontalArrangement = Arrangement.spacedBy(spacing.xLarge, Alignment.CenterHorizontally),
                 modifier = Modifier
@@ -136,7 +139,7 @@ fun ConsoleContent(state: ConsoleState, onIntent: (ConsoleIntent) -> Unit, modif
                     onIntent = onIntent,
                     modifier = Modifier
                         .weight(1f, fill = false)
-                        .widthIn(max = maxWidth)
+                        .widthIn(max = maxContentWidth)
                         .fillMaxHeight()
                         .verticalScroll(scrollState)
                         .padding(vertical = spacing.large)
@@ -144,6 +147,7 @@ fun ConsoleContent(state: ConsoleState, onIntent: (ConsoleIntent) -> Unit, modif
                 Column(
                     verticalArrangement = Arrangement.Bottom,
                     modifier = Modifier
+                        .widthIn(max = buttonMaxWidth)
                         .width(IntrinsicSize.Max)
                         .fillMaxHeight()
                         .padding(vertical = spacing.large)
@@ -167,7 +171,7 @@ fun ConsoleContent(state: ConsoleState, onIntent: (ConsoleIntent) -> Unit, modif
                         .verticalScroll(scrollState)
                         .padding(horizontal = spacing.mediumLarge, vertical = spacing.large)
                         .wrapContentWidth()
-                        .widthIn(max = maxWidth)
+                        .widthIn(max = maxContentWidth)
                 )
                 OpenReferralsButton(
                     onIntent = onIntent,
@@ -178,7 +182,7 @@ fun ConsoleContent(state: ConsoleState, onIntent: (ConsoleIntent) -> Unit, modif
                             end = spacing.mediumLarge,
                             bottom = spacing.large
                         )
-                        .widthIn(max = maxWidth)
+                        .widthIn(max = maxContentWidth)
                         .fillMaxWidth()
                 )
             }
@@ -253,19 +257,23 @@ private fun OpenReferralsButton(onIntent: (ConsoleIntent) -> Unit, modifier: Mod
 
 @Composable
 private fun Loading(modifier: Modifier = Modifier) {
+    val labelWidth = rememberLabelWidth()
     OpalSkeleton(description = stringResource(R.string.console_loading), modifier = modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.large)) {
             SkeletonLine(OpalTheme.typography.body, 160.dp)
             OpalCard(modifier = Modifier.fillMaxWidth()) {
-                Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall)) {
-                    ControlRowSkeleton(chipWidths = listOf(56.dp, 52.dp))
-                    ControlRowSkeleton(chipWidths = listOf(44.dp, 128.dp), valueWidth = 12.dp)
-                    ControlRowSkeleton(chipWidths = listOf(64.dp, 60.dp, 48.dp))
-                    ControlRowSkeleton(chipWidths = listOf(96.dp, 100.dp))
-                    SkeletonBlock(
-                        Modifier.size(width = 104.dp, height = OpalTheme.layout.controlHeightSmall),
-                        OpalTheme.shapes.pill
-                    )
+                BoxWithConstraints {
+                    val stacked = stacksLabels(labelWidth, maxWidth)
+                    Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall)) {
+                        ControlRowSkeleton(stacked, chipWidths = listOf(56.dp, 52.dp))
+                        ControlRowSkeleton(stacked, chipWidths = listOf(44.dp, 128.dp), valueWidth = 12.dp)
+                        ControlRowSkeleton(stacked, chipWidths = listOf(64.dp, 60.dp, 48.dp))
+                        ControlRowSkeleton(stacked, chipWidths = listOf(96.dp, 100.dp))
+                        SkeletonBlock(
+                            Modifier.size(width = 104.dp, height = OpalTheme.layout.controlHeightSmall),
+                            OpalTheme.shapes.pill
+                        )
+                    }
                 }
             }
         }
@@ -273,12 +281,11 @@ private fun Loading(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun ControlRowSkeleton(chipWidths: List<Dp>, valueWidth: Dp? = null) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small),
-        verticalAlignment = Alignment.CenterVertically
+private fun ControlRowSkeleton(stacked: Boolean, chipWidths: List<Dp>, valueWidth: Dp? = null) {
+    LabeledRow(
+        stacked = stacked,
+        label = { SkeletonLine(OpalTheme.typography.caption, 40.dp) }
     ) {
-        SkeletonLine(OpalTheme.typography.caption, 40.dp)
         Row(
             horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall),
             verticalAlignment = Alignment.CenterVertically
@@ -299,6 +306,57 @@ private fun ControlRowSkeleton(chipWidths: List<Dp>, valueWidth: Dp? = null) {
         }
     }
 }
+
+@Composable
+private fun LabeledRow(stacked: Boolean, label: @Composable () -> Unit, content: @Composable () -> Unit) {
+    val gap = if (stacked) OpalTheme.spacing.xxSmall else OpalTheme.spacing.small
+    Layout(contents = listOf(label, content)) { (labelMeasurables, contentMeasurables), constraints ->
+        val gapPx = gap.roundToPx()
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val labelPlaceables = labelMeasurables.map { it.measure(loose) }
+        val labelWidth = labelPlaceables.maxOfOrNull { it.width } ?: 0
+        val labelHeight = labelPlaceables.maxOfOrNull { it.height } ?: 0
+        val contentConstraints = if (stacked) {
+            loose
+        } else {
+            loose.copy(maxWidth = (loose.maxWidth - labelWidth - gapPx).coerceAtLeast(0))
+        }
+        val contentPlaceables = contentMeasurables.map { it.measure(contentConstraints) }
+        val contentWidth = contentPlaceables.maxOfOrNull { it.width } ?: 0
+        val contentHeight = contentPlaceables.maxOfOrNull { it.height } ?: 0
+        val width = if (stacked) maxOf(labelWidth, contentWidth) else labelWidth + gapPx + contentWidth
+        val height = if (stacked) labelHeight + gapPx + contentHeight else maxOf(labelHeight, contentHeight)
+        layout(width.coerceIn(constraints.minWidth, constraints.maxWidth), height) {
+            if (stacked) {
+                labelPlaceables.forEach { it.placeRelative(0, 0) }
+                contentPlaceables.forEach { it.placeRelative(0, labelHeight + gapPx) }
+            } else {
+                labelPlaceables.forEach { it.placeRelative(0, (height - it.height) / 2) }
+                contentPlaceables.forEach { it.placeRelative(labelWidth + gapPx, (height - it.height) / 2) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun controlLabels() = listOf(
+    stringResource(R.string.console_label_plan),
+    stringResource(R.string.console_label_friends),
+    stringResource(R.string.console_label_delay),
+    stringResource(R.string.console_label_fail)
+)
+
+@Composable
+private fun rememberLabelWidth(labels: List<String> = controlLabels()): Dp {
+    val style = OpalTheme.typography.caption
+    val textMeasurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    return remember(labels, style, density) {
+        with(density) { labels.maxOf { textMeasurer.measure(it, style, softWrap = false).size.width }.toDp() }
+    }
+}
+
+private fun stacksLabels(labelWidth: Dp, rowWidth: Dp) = labelWidth > rowWidth / 3
 
 @Composable
 private fun LoadError(onRetry: () -> Unit, modifier: Modifier = Modifier) {
@@ -340,103 +398,95 @@ private fun Controls(
     onIntent: (ConsoleIntent) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val labels = listOf(
-        stringResource(R.string.console_label_plan),
-        stringResource(R.string.console_label_friends),
-        stringResource(R.string.console_label_delay),
-        stringResource(R.string.console_label_fail)
-    )
+    val labels = controlLabels()
     val format = rememberNumberFormat()
     val addDescription = stringResource(R.string.console_add_friend_description)
-    val labelStyle = OpalTheme.typography.caption
-    val textMeasurer = rememberTextMeasurer()
-    val labelWidth = with(LocalDensity.current) {
-        labels.maxOf { textMeasurer.measure(it, labelStyle, softWrap = false).size.width }.toDp()
-    }
+    val measuredLabelWidth = rememberLabelWidth(labels)
     OpalCard(modifier = modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall)) {
-            ControlRow(labels[0], labelWidth, group = true) {
-                OpalChip(
-                    text = stringResource(R.string.console_free),
-                    selected = debug.plan == Plan.Free,
-                    onClick = { onIntent(ConsoleIntent.SetPlan(Plan.Free)) }
-                )
-                OpalChip(
-                    text = stringResource(R.string.console_pro),
-                    selected = debug.plan == Plan.Pro,
-                    onClick = { onIntent(ConsoleIntent.SetPlan(Plan.Pro)) }
-                )
-            }
-            ControlRow(labels[1], labelWidth) {
-                val next = debug.nextTierAt
-                FriendCount(debug.successfulReferrals, format, Modifier.padding(horizontal = OpalTheme.spacing.xxSmall))
-                OpalButton(
-                    text = stringResource(R.string.console_add_friend),
-                    onClick = { onIntent(ConsoleIntent.AddFriend) },
-                    style = OpalButtonStyle.Outlined,
-                    size = OpalButtonSize.Small,
-                    enabled = debug.successfulReferrals < debug.maxReferrals,
-                    modifier = Modifier.semantics { contentDescription = addDescription }
-                )
-                OpalButton(
-                    text = if (next != null) {
-                        pluralStringResource(R.plurals.console_reach_friends, next, format.format(next))
-                    } else {
-                        stringResource(R.string.console_all_unlocked)
-                    },
-                    onClick = { onIntent(ConsoleIntent.AdvanceToNextTier) },
-                    style = OpalButtonStyle.Outlined,
-                    size = OpalButtonSize.Small,
-                    enabled = next != null
-                )
-            }
-            ControlRow(labels[2], labelWidth, group = true) {
-                SimulatedLatency.entries.forEach { latency ->
+        BoxWithConstraints {
+            val labelWidth = measuredLabelWidth.takeUnless { stacksLabels(it, maxWidth) }
+            Column(verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall)) {
+                ControlRow(labels[0], labelWidth, group = true) {
                     OpalChip(
-                        text = latency.label(),
-                        selected = debug.latency == latency,
-                        onClick = { onIntent(ConsoleIntent.SetLatency(latency)) }
+                        text = stringResource(R.string.console_free),
+                        selected = debug.plan == Plan.Free,
+                        onClick = { onIntent(ConsoleIntent.SetPlan(Plan.Free)) }
+                    )
+                    OpalChip(
+                        text = stringResource(R.string.console_pro),
+                        selected = debug.plan == Plan.Pro,
+                        onClick = { onIntent(ConsoleIntent.SetPlan(Plan.Pro)) }
                     )
                 }
+                ControlRow(labels[1], labelWidth) {
+                    val next = debug.nextTierAt
+                    FriendCount(
+                        count = debug.successfulReferrals,
+                        format = format,
+                        modifier = Modifier.padding(horizontal = OpalTheme.spacing.xxSmall)
+                    )
+                    OpalButton(
+                        text = stringResource(R.string.console_add_friend),
+                        onClick = { onIntent(ConsoleIntent.AddFriend) },
+                        style = OpalButtonStyle.Outlined,
+                        size = OpalButtonSize.Small,
+                        enabled = debug.successfulReferrals < debug.maxReferrals,
+                        modifier = Modifier.semantics { contentDescription = addDescription }
+                    )
+                    OpalButton(
+                        text = if (next != null) {
+                            pluralStringResource(R.plurals.console_reach_friends, next, format.format(next))
+                        } else {
+                            stringResource(R.string.console_all_unlocked)
+                        },
+                        onClick = { onIntent(ConsoleIntent.AdvanceToNextTier) },
+                        style = OpalButtonStyle.Outlined,
+                        size = OpalButtonSize.Small,
+                        enabled = next != null
+                    )
+                }
+                ControlRow(labels[2], labelWidth, group = true) {
+                    SimulatedLatency.entries.forEach { latency ->
+                        OpalChip(
+                            text = latency.label(),
+                            selected = debug.latency == latency,
+                            onClick = { onIntent(ConsoleIntent.SetLatency(latency)) }
+                        )
+                    }
+                }
+                ControlRow(labels[3], labelWidth) {
+                    OpalToggleChip(
+                        text = stringResource(R.string.console_fail_next_load),
+                        checked = debug.failNextLoad,
+                        onCheckedChange = { onIntent(ConsoleIntent.ToggleFailNextLoad) }
+                    )
+                    OpalToggleChip(
+                        text = stringResource(R.string.console_fail_next_claim),
+                        checked = debug.failNextClaim,
+                        onCheckedChange = { onIntent(ConsoleIntent.ToggleFailNextClaim) }
+                    )
+                }
+                ResetButton(isConfirming = isConfirmingReset, onIntent = onIntent)
             }
-            ControlRow(labels[3], labelWidth) {
-                OpalToggleChip(
-                    text = stringResource(R.string.console_fail_next_load),
-                    checked = debug.failNextLoad,
-                    onCheckedChange = { onIntent(ConsoleIntent.ToggleFailNextLoad) }
-                )
-                OpalToggleChip(
-                    text = stringResource(R.string.console_fail_next_claim),
-                    checked = debug.failNextClaim,
-                    onCheckedChange = { onIntent(ConsoleIntent.ToggleFailNextClaim) }
-                )
-            }
-            ResetButton(isConfirming = isConfirmingReset, onIntent = onIntent)
         }
     }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ControlRow(
-    label: String,
-    labelWidth: Dp,
-    modifier: Modifier = Modifier,
-    group: Boolean = false,
-    content: @Composable () -> Unit
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.small),
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
+private fun ControlRow(label: String, labelWidth: Dp?, group: Boolean = false, content: @Composable () -> Unit) {
+    LabeledRow(
+        stacked = labelWidth == null,
+        label = {
+            Text(
+                text = label,
+                style = OpalTheme.typography.caption,
+                color = OpalTheme.colors.contentSecondary,
+                softWrap = labelWidth == null,
+                modifier = if (labelWidth != null) Modifier.width(labelWidth) else Modifier
+            )
+        }
     ) {
-        Text(
-            text = label,
-            style = OpalTheme.typography.caption,
-            color = OpalTheme.colors.contentSecondary,
-            softWrap = false,
-            modifier = Modifier.width(labelWidth)
-        )
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall),
             verticalArrangement = Arrangement.spacedBy(OpalTheme.spacing.xSmall),
