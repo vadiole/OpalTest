@@ -108,6 +108,7 @@ fun ReferralScreen(
                 }
 
                 is ReferralEffect.ClaimFailed -> {
+                    reveal.clearPrefetch()
                     haptics.performHapticFeedback(HapticFeedbackType.Reject)
                     val message = when (effect.error) {
                         ReferralError.Network -> R.string.referral_claim_failed_network
