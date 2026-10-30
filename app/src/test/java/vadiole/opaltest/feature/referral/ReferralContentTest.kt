@@ -145,6 +145,30 @@ class ReferralContentTest {
     }
 
     @Test
+    fun `invite card shows the inviter`() {
+        setContent(ReferralState.Ready(previewProgram()))
+
+        compose.onNode(hasText("Invited by Kenneth")).assertExists()
+    }
+
+    @Test
+    fun `no inviter hides the invite card`() {
+        setContent(ReferralState.Ready(previewProgram().copy(invitedBy = null)))
+
+        compose.onNode(hasText("Invited by", substring = true)).assertDoesNotExist()
+        compose.onNode(hasText("Gift 30 days of Opal PRO, for free!")).assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w732dp-h412dp-xxhdpi")
+    fun `no inviter hides the compact invite card`() {
+        setContent(ReferralState.Ready(previewProgram().copy(invitedBy = null)))
+
+        compose.onNode(hasText("Invited by", substring = true)).assertDoesNotExist()
+        compose.onNode(hasText("Loyal MileStone")).assertExists()
+    }
+
+    @Test
     fun `large counts are grouped`() {
         setContent(ReferralState.Ready(previewProgram(referrals = 12_345)))
 
