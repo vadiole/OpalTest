@@ -30,7 +30,7 @@ import vadiole.opaltest.ui.common.outlineBorder
 import vadiole.opaltest.ui.theme.OpalTheme
 
 @Composable
-internal fun InviteCard(invitedBy: String?, modifier: Modifier = Modifier) {
+internal fun InviteCard(invitedBy: String, modifier: Modifier = Modifier) {
     InviteCardFrame(
         invitedBy = invitedBy,
         shape = OpalTheme.shapes.large,
@@ -47,7 +47,7 @@ internal fun InviteCard(invitedBy: String?, modifier: Modifier = Modifier) {
 }
 
 @Composable
-internal fun CompactInviteCard(invitedBy: String?, modifier: Modifier = Modifier) {
+internal fun CompactInviteCard(invitedBy: String, modifier: Modifier = Modifier) {
     InviteCardFrame(
         invitedBy = invitedBy,
         shape = OpalTheme.shapes.xLarge,
@@ -59,7 +59,7 @@ internal fun CompactInviteCard(invitedBy: String?, modifier: Modifier = Modifier
 
 @Composable
 private fun InviteCardFrame(
-    invitedBy: String?,
+    invitedBy: String,
     shape: Shape,
     spacing: Dp,
     padding: PaddingValues,
@@ -89,16 +89,14 @@ private fun InviteCardFrame(
                 contentDescription = null,
                 modifier = Modifier.size(ReferralDimens.avatarSize)
             )
-            if (invitedBy != null) {
-                Text(
-                    text = stringResource(R.string.referral_invited_by, invitedBy),
-                    style = OpalTheme.typography.caption,
-                    color = OpalTheme.colors.contentHigh,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            Text(
+                text = stringResource(R.string.referral_invited_by, invitedBy),
+                style = OpalTheme.typography.caption,
+                color = OpalTheme.colors.contentHigh,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }

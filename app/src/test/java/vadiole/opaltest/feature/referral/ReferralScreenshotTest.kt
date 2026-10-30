@@ -160,7 +160,8 @@ class ReferralScreenshotTest {
 
     @Test
     @Config(qualifiers = "w1280dp-h800dp-xhdpi")
-    fun noInviterTablet() = capture("referral_no_inviter_tablet", ReferralState.Ready(previewProgram().copy(invitedBy = null)))
+    fun noInviterTablet() =
+        capture("referral_no_inviter_tablet", ReferralState.Ready(previewProgram().copy(invitedBy = null)))
 
     @Test
     @Config(qualifiers = "w320dp-h1861dp-xxhdpi")
