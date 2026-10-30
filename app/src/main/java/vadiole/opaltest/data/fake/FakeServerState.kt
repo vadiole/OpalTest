@@ -8,6 +8,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import vadiole.opaltest.data.debug.SimulatedLatency
 import vadiole.opaltest.domain.referral.Plan
 
 @Serializable
@@ -32,18 +33,6 @@ enum class ServerPlan {
 }
 
 fun Plan.toServerPlan() = if (this == Plan.Pro) ServerPlan.Pro else ServerPlan.Free
-
-@Serializable
-enum class SimulatedLatency(val millis: Long) {
-    @SerialName("none")
-    None(0),
-
-    @SerialName("normal")
-    Normal(800),
-
-    @SerialName("slow")
-    Slow(3000)
-}
 
 object FakeServerStateSerializer : Serializer<FakeServerState> {
     private val json = Json { ignoreUnknownKeys = true }

@@ -4,10 +4,10 @@ import android.content.Context
 import androidx.datastore.core.DataStoreFactory
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.dataStoreFile
+import vadiole.opaltest.data.debug.ReferralDebugControls
 import vadiole.opaltest.data.fake.FakeReferralApi
 import vadiole.opaltest.data.fake.FakeReferralBackend
 import vadiole.opaltest.data.fake.FakeServerStateSerializer
-import vadiole.opaltest.data.fake.ReferralDebugControls
 import vadiole.opaltest.data.referral.DefaultReferralRepository
 import vadiole.opaltest.data.referral.ReferralRepository
 
