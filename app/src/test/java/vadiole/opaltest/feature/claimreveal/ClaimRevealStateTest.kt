@@ -1,11 +1,13 @@
 package vadiole.opaltest.feature.claimreveal
 
 import androidx.compose.runtime.saveable.SaverScope
+import androidx.compose.ui.MotionDurationScale
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -46,7 +48,23 @@ class ClaimRevealStateTest {
         assertEquals(0f, restored.sparkle.value, 0f)
     }
 
+    @Test
+    fun `a reveal restored with reduced motion shows no motes`() {
+        val reduced = TestScope(NoMotion)
+        val restored = ClaimRevealState.saver(reduced)
+            .restore(listOf(null, 1f, "gem", GEM, TITLE, 7.25f))!!
+            .also { reduced.runCurrent() }
+        assertEquals(RevealPhase.Revealed, restored.phase)
+        assertTrue(restored.reducedMotion)
+        assertEquals(0f, restored.sparkle.value, 0f)
+        assertEquals(0f, restored.sparkleTime, 0f)
+    }
+
     private fun restore(saved: List<Any?>): ClaimRevealState = saver.restore(saved)!!.also { scope.runCurrent() }
+
+    private object NoMotion : MotionDurationScale {
+        override val scaleFactor = 0f
+    }
 
     private companion object {
         const val GEM = 1
