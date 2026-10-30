@@ -1,0 +1,76 @@
+package vadiole.opaltest.data.fake
+
+import androidx.datastore.core.DataStore
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import vadiole.opaltest.data.referral.ReferralProgramDto
+import vadiole.opaltest.domain.referral.Plan
+
+class FakeReferralBackend(private val store: DataStore<FakeServerState>) : ReferralDebugControls {
+    override val state = store.data.map { state ->
+        ReferralDebugState(
+            plan = state.plan.toPlan(),
+            successfulReferrals = state.successfulReferrals,
+            claimedTiers = state.claimedTierIds.size,
+            nextTierAt = FakeReferralRules.nextTierAt(state),
+            latency = state.latency,
+            failNextLoad = state.failNextLoad,
+            failNextClaim = state.failNextClaim
+        )
+    }
+
+    suspend fun program(): ReferralProgramDto = FakeReferralRules.program(store.data.first())
+
+    suspend fun claim(tierId: String): ReferralProgramDto = FakeReferralRules.program(
+        store.updateData {
+            FakeReferralRules.claim(it, tierId)
+        }
+    )
+
+    suspend fun latency(): SimulatedLatency = store.data.first().latency
+
+    suspend fun consumeFailure(call: FakeCall): Boolean {
+        var fail = false
+        store.updateData { state ->
+            when (call) {
+                FakeCall.Load -> state.copy(failNextLoad = false).also { fail = state.failNextLoad }
+                FakeCall.Claim -> state.copy(failNextClaim = false).also { fail = state.failNextClaim }
+            }
+        }
+        return fail
+    }
+
+    override suspend fun setPlan(plan: Plan) {
+        update { it.copy(plan = plan.toServerPlan()) }
+    }
+
+    override suspend fun setReferrals(count: Int) {
+        update { it.copy(successfulReferrals = count.coerceIn(0, FakeReferralRules.MAX_REFERRALS)) }
+    }
+
+    override suspend fun advanceToNextTier() {
+        update { state -> FakeReferralRules.nextTierAt(state)?.let { state.copy(successfulReferrals = it) } ?: state }
+    }
+
+    override suspend fun setLatency(latency: SimulatedLatency) {
+        update { it.copy(latency = latency) }
+    }
+
+    override suspend fun setFailNextLoad(fail: Boolean) {
+        update { it.copy(failNextLoad = fail) }
+    }
+
+    override suspend fun setFailNextClaim(fail: Boolean) {
+        update { it.copy(failNextClaim = fail) }
+    }
+
+    override suspend fun reset() {
+        update { FakeServerStateSerializer.defaultValue }
+    }
+
+    private suspend fun update(transform: (FakeServerState) -> FakeServerState) {
+        store.updateData(transform)
+    }
+}
+
+enum class FakeCall { Load, Claim }
