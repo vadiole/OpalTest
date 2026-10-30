@@ -35,8 +35,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.Dp
@@ -89,7 +87,7 @@ internal fun TierCard(
         modifier = Modifier
             .fillMaxWidth()
             .graphicsLayer { this.alpha = alpha }
-            .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
+            .semantics(mergeDescendants = true) {}
     ) {
         BoxWithConstraints {
             val minTextWidth = ReferralDimens.minTierTextWidth * LocalDensity.current.fontScale

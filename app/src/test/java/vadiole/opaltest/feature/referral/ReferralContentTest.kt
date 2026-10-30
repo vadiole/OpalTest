@@ -34,7 +34,9 @@ import org.robolectric.annotation.GraphicsMode
 import vadiole.opaltest.R
 import vadiole.opaltest.domain.referral.MilestoneStone
 import vadiole.opaltest.domain.referral.ReferralError
+import vadiole.opaltest.domain.referral.ReferralProgram
 import vadiole.opaltest.domain.referral.RewardTier
+import vadiole.opaltest.domain.referral.TierStatus
 import vadiole.opaltest.feature.claimreveal.ClaimRevealState
 import vadiole.opaltest.feature.claimreveal.RevealContent
 import vadiole.opaltest.feature.claimreveal.RevealPhase
@@ -130,6 +132,66 @@ class ReferralContentTest {
             }
         }
         error("reveal never closed")
+    }
+
+    private fun liveRegions() =
+        compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.LiveRegion)).fetchSemanticsNodes()
+
+    private fun announcement(): String? =
+        liveRegions().single().config.getOrNull(SemanticsProperties.ContentDescription)?.single()
+
+    private fun claim(program: ReferralProgram, tierId: String) = program.copy(
+        tiers = program.tiers.map { if (it.id == tierId) it.copy(status = TierStatus.Claimed) else it }
+    )
+
+    @Test
+    fun `claiming the free year announces it once through one status node`() {
+        val program = previewProgram(referrals = 5)
+        setContent(ReferralState.Ready(program, claimingTierId = "year"))
+        assertEquals(null, announcement())
+
+        compose.runOnIdle { state = ReferralState.Ready(claim(program, "year")) }
+        compose.waitForIdle()
+
+        assertEquals(1, liveRegions().size)
+        assertEquals("1 Year of Opal Pro claimed", announcement())
+    }
+
+    @Test
+    fun `rewards already claimed on first show are not announced`() {
+        setContent(ReferralState.Ready(claim(previewProgram(referrals = 5), "year")))
+
+        assertEquals(null, announcement())
+    }
+
+    @Test
+    fun `a milestone is announced when its gem lands`() {
+        val program = previewProgram()
+        setContent(ReferralState.Ready(program))
+        compose.mainClock.autoAdvance = false
+        compose.runOnIdle {
+            reveal.open(
+                MilestoneStone.Soulful,
+                RevealContent(gem = R.drawable.img_milestone_soulful_large, title = R.string.referral_milestone_soulful)
+            )
+            state = ReferralState.Ready(claim(program, "soulful"))
+        }
+        val deadline = System.currentTimeMillis() + 20_000
+        while (reveal.phase != RevealPhase.Revealed) {
+            check(System.currentTimeMillis() < deadline) { "reveal never settled" }
+            Thread.sleep(5)
+            frame()
+        }
+        assertEquals(null, announcement())
+
+        compose.runOnIdle { reveal.close() }
+        while (reveal.phase != RevealPhase.Landed) {
+            check(System.currentTimeMillis() < deadline) { "reveal never landed" }
+            frame()
+            if (reveal.phase != RevealPhase.Landed) assertEquals(null, announcement())
+        }
+        frame()
+        assertEquals("Soulful MileStone claimed", announcement())
     }
 
     @Test

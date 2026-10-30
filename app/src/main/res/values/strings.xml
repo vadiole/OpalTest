@@ -40,6 +40,8 @@
     </plurals>
     <string name="referral_claimed">Claimed</string>
     <string name="referral_claim">Claim</string>
+    <!-- Screen reader announcement after a claim. %1$s is the reward name, e.g. "Soulful MileStone". -->
+    <string name="referral_claimed_announcement">%1$s claimed</string>
     <!-- MileStone is a collectible reward. Keep the word "MileStone" as is and translate the adjective. -->
     <string name="referral_milestone_loyal">Loyal MileStone</string>
     <string name="referral_milestone_soulful">Soulful MileStone</string>
